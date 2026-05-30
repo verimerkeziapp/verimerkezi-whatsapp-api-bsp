@@ -22,7 +22,7 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - Idempotency-Key (24h TTL)
 - Cursor pagination
 - Per-user rate limit (`X-RateLimit-*` header'ları)
-- Tier auto-sync (TIER_50 → UNLIMITED)
+- Tier auto-sync (TIER_50 -> UNLIMITED)
 - Resumable upload (PDF/Image/Video header)
 - Multi-tenant izolasyon
 

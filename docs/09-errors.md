@@ -25,14 +25,14 @@ Tüm hatalar şu yapıyı izler:
 
 ```json
 {
-  "ok": false,
-  "error": {
-    "code": "string",
-    "message": "Türkçe açıklama",
-    "meta_code": 131021,
-    "meta_subcode": null,
-    "details": {}
-  }
+ "ok": false,
+ "error": {
+ "code": "string",
+ "message": "Türkçe açıklama",
+ "meta_code": 131021,
+ "meta_subcode": null,
+ "details": {}
+ }
 }
 ```
 
@@ -123,7 +123,7 @@ Müşteri son 24 saatte mesaj atmadıysa **şablon** kullanın:
 `Retry-After` header'ı kadar bekleyin, sonra tekrar deneyin. SDK kullanıyorsanız bu otomatiktir.
 
 ### 422 `template_not_approved`
-Panel → WhatsApp → Şablonlar → şablon durumunu kontrol edin. `PENDING` ise Meta onayı bekliyor (genelde 5–30 dakika).
+Panel -> WhatsApp -> Şablonlar -> şablon durumunu kontrol edin. `PENDING` ise Meta onayı bekliyor (genelde 5–30 dakika).
 
 ### 422 `invalid_phone`
 Numarayı E.164 formatına çevirin: `905551234567` (başında + olmadan).
@@ -134,14 +134,14 @@ Numarayı E.164 formatına çevirin: `905551234567` (başında + olmadan).
 
 ```json
 {
-  "timestamp": "2026-05-30T13:45:00Z",
-  "request_id": "req_abc123",
-  "endpoint": "POST /wa/messages",
-  "http_status": 422,
-  "error_code": "not_in_24h_window",
-  "meta_code": 131047,
-  "user_action": "Tried to send text outside 24h window",
-  "retry_strategy": "Switch to template"
+ "timestamp": "2026-05-30T13:45:00Z",
+ "request_id": "req_abc123",
+ "endpoint": "POST /wa/messages",
+ "http_status": 422,
+ "error_code": "not_in_24h_window",
+ "meta_code": 131047,
+ "user_action": "Tried to send text outside 24h window",
+ "retry_strategy": "Switch to template"
 }
 ```
 

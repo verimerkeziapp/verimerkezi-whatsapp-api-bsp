@@ -27,17 +27,17 @@ $vm->sendText('1234567890', '905551234567', 'Merhaba!');
 
 // Şablon
 $vm->sendTemplate('1234567890', '905551234567', 'siparis_onayi', 'tr', [
-    [
-        'type' => 'body',
-        'parameters' => [['type' => 'text', 'text' => 'Ahmet']],
-    ],
+ [
+ 'type' => 'body',
+ 'parameters' => [['type' => 'text', 'text' => 'Ahmet']],
+ ],
 ]);
 
 // PDF
 $vm->sendDocument('1234567890', '905551234567',
-    'https://cdn.firmaniz.com/fatura.pdf',
-    'fatura.pdf',
-    'Mayıs faturanız'
+ 'https://cdn.firmaniz.com/fatura.pdf',
+ 'fatura.pdf',
+ 'Mayıs faturanız'
 );
 ```
 
@@ -66,23 +66,23 @@ Tüm metotlar:
 use VeriMerkezi\VeriMerkeziException;
 
 try {
-    $vm->sendText('...', '...', '...');
+ $vm->sendText('...', '...', '...');
 } catch (VeriMerkeziException $e) {
-    echo "Hata: " . $e->getMessage() . "\n";
-    echo "Code: " . $e->getCode() . "\n";          // HTTP status
-    echo "Meta code: " . $e->metaCode . "\n";       // Meta error code
+ echo "Hata: " . $e->getMessage() . "\n";
+ echo "Code: " . $e->getCode() . "\n"; // HTTP status
+ echo "Meta code: " . $e->metaCode . "\n"; // Meta error code
 }
 ```
 
 ## Otomatik Retry
 
-SDK 5xx hatalarda otomatik 3 retry yapar (exponential backoff: 1s → 2s → 4s).
+SDK 5xx hatalarda otomatik 3 retry yapar (exponential backoff: 1s -> 2s -> 4s).
 
 ```php
 $vm = new VeriMerkeziClient(
-    apiKey: 'vmk_live_...',
-    timeout: 30,
-    maxRetries: 3 // varsayılan
+ apiKey: 'vmk_live_...',
+ timeout: 30,
+ maxRetries: 3 // varsayılan
 );
 ```
 

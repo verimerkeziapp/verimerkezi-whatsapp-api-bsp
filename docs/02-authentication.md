@@ -31,18 +31,18 @@ Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsin
 | `reports:read` | Raporlar, analitik |
 | `admin` | Tüm yetkiler |
 
-> 💡 **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:write` + `templates:read` yeterlidir.
+> **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:write` + `templates:read` yeterlidir.
 
 ## Anahtar Yönetimi
 
 ### Yeni anahtar oluştur
-Panel → API → Anahtarlar → **"Yeni Anahtar Oluştur"**
+Panel -> API -> Anahtarlar -> **"Yeni Anahtar Oluştur"**
 
 ### Anahtar iptal et (revoke)
 ```bash
 curl -X POST https://verimerkezi.app/panel/api/anahtarlar/iptal \
-  -H "Cookie: ..." \
-  -d "key_id=42"
+ -H "Cookie: ..." \
+ -d "key_id=42"
 ```
 Veya panel üzerinden tek tıkla.
 
@@ -56,16 +56,16 @@ Production'da düzenli olarak (örn. 90 günde bir) anahtar değiştirin:
 
 ## Güvenlik Önerileri
 
-✅ **YAP:**
+Evet **YAP:**
 - Anahtarları `.env` dosyasında saklayın (asla kaynak koda yazmayın)
 - HTTPS dışında çağrı yapmayın (zaten HTTP reddedilir)
 - Her uygulama / sunucu için ayrı anahtar kullanın
-- IP whitelist ekleyin (Panel → API → Anahtar → Detay → IP Kısıtla)
+- IP whitelist ekleyin (Panel -> API -> Anahtar -> Detay -> IP Kısıtla)
 
-❌ **YAPMA:**
-- Anahtarı frontend kodda (JS) kullanmayın → backend proxy yapın
-- Public Git repo'ya commit etmeyin → `.gitignore` ile koruyun
-- E-posta / Slack'te paylaşmayın → şifreli kanal kullanın
+Hayir **YAPMA:**
+- Anahtarı frontend kodda (JS) kullanmayın -> backend proxy yapın
+- Public Git repo'ya commit etmeyin -> `.gitignore` ile koruyun
+- E-posta / Slack'te paylaşmayın -> şifreli kanal kullanın
 - Tek anahtarı birden fazla projede kullanmayın
 
 ## Sızıntı Durumunda
@@ -73,7 +73,7 @@ Production'da düzenli olarak (örn. 90 günde bir) anahtar değiştirin:
 Anahtarınız sızdıysa:
 1. **Anında iptal edin** (panel veya `revoke` endpoint'i)
 2. Yeni anahtar oluşturun
-3. Panel → **API → Kullanım Log'u** üzerinden son 24 saatte yapılan çağrıları inceleyin
+3. Panel -> **API -> Kullanım Log'u** üzerinden son 24 saatte yapılan çağrıları inceleyin
 4. Şüpheli aktivite varsa bilgi@verimerkezi.app'e bildirin
 
 ## Host Kısıtlaması
@@ -81,9 +81,9 @@ Anahtarınız sızdıysa:
 API yalnızca `https://api.verimerkezi.app/wa/*` üzerinden çağrılabilir.
 
 ```bash
-# ✅ Doğru
+# Evet Doğru
 https://api.verimerkezi.app/wa/messages
 
-# ❌ Yanlış (404 + uyarı döner)
+# Hayir Yanlış (404 + uyarı döner)
 https://verimerkezi.app/api/wa/messages
 ```

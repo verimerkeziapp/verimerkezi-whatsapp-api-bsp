@@ -1,39 +1,39 @@
 {
-    "name": "verimerkezi/whatsapp-sdk",
-    "description": "Veri Merkezi WhatsApp Business API — Resmî PHP SDK",
-    "type": "library",
-    "license": "MIT",
-    "homepage": "https://api.verimerkezi.app",
-    "support": {
-        "email": "bilgi@verimerkezi.app",
-        "docs": "https://api.verimerkezi.app/docs/wa",
-        "issues": "https://github.com/verimerkeziapp/whatsapp-sdk/issues"
-    },
-    "authors": [
-        {
-            "name": "Veri Merkezi",
-            "email": "bilgi@verimerkezi.app",
-            "homepage": "https://verimerkezi.app"
-        }
-    ],
-    "keywords": [
-        "whatsapp",
-        "whatsapp-business",
-        "whatsapp-api",
-        "meta-bsp",
-        "tech-provider",
-        "messaging",
-        "turkey"
-    ],
-    "require": {
-        "php": ">=8.1",
-        "ext-curl": "*",
-        "ext-json": "*"
-    },
-    "autoload": {
-        "psr-4": {
-            "VeriMerkezi\\": "src/"
-        }
-    },
-    "minimum-stability": "stable"
+ "name": "verimerkezi/whatsapp-sdk",
+ "description": "Veri Merkezi WhatsApp Business API — Resmî PHP SDK",
+ "type": "library",
+ "license": "MIT",
+ "homepage": "https://api.verimerkezi.app",
+ "support": {
+ "email": "bilgi@verimerkezi.app",
+ "docs": "https://api.verimerkezi.app/docs/wa",
+ "issues": "https://github.com/verimerkeziapp/whatsapp-sdk/issues"
+ },
+ "authors": [
+ {
+ "name": "Veri Merkezi",
+ "email": "bilgi@verimerkezi.app",
+ "homepage": "https://verimerkezi.app"
+ }
+ ],
+ "keywords": [
+ "whatsapp",
+ "whatsapp-business",
+ "whatsapp-api",
+ "meta-bsp",
+ "tech-provider",
+ "messaging",
+ "turkey"
+ ],
+ "require": {
+ "php": ">=8.1",
+ "ext-curl": "*",
+ "ext-json": "*"
+ },
+ "autoload": {
+ "psr-4": {
+ "VeriMerkezi\\": "src/"
+ }
+ },
+ "minimum-stability": "stable"
 }

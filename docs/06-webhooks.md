@@ -5,9 +5,9 @@ Veri Merkezi, WhatsApp tarafında olan **her olayı** sizin sunucunuza otomatik 
 ## Mimari
 
 ```
-[Müşteri] → [WhatsApp] → [Meta] → [Veri Merkezi] → [Sizin Sunucunuz]
-                                       ↑                    ↓
-                                       └───── ACK 200 ──────┘
+[Müşteri] -> [WhatsApp] -> [Meta] -> [Veri Merkezi] -> [Sizin Sunucunuz]
+ ^ v
+ └───── ACK 200 ──────┘
 ```
 
 Veri Merkezi olayı kuyruğa alır, sunucunuza POST eder ve **HTTP 2xx** yanıtı bekler. Hata durumunda **exponential backoff** ile retry yapar.
@@ -15,36 +15,36 @@ Veri Merkezi olayı kuyruğa alır, sunucunuza POST eder ve **HTTP 2xx** yanıt�
 ## 1) Webhook Aboneliği Kurma
 
 ### Panel üzerinden
-Panel → **API → Webhooks → "Yeni Webhook"**:
+Panel -> **API -> Webhooks -> "Yeni Webhook"**:
 - **Ad:** "Production Bot"
 - **URL:** `https://api.firmaniz.com/wa-webhook`
 - **Event'ler:** seçeceğiniz olaylar (veya tümü için `*`)
-- **Oluştur** → ekranda **secret** (`whsec_xxxxx`) gösterilir — **bir kez** gösterilir, kaydedin
+- **Oluştur** -> ekranda **secret** (`whsec_xxxxx`) gösterilir — **bir kez** gösterilir, kaydedin
 
 ### API üzerinden
 ```bash
 curl -X POST https://api.verimerkezi.app/wa/webhooks \
-  -H "Authorization: Bearer vmk_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Production Bot",
-    "url": "https://api.firmaniz.com/wa-webhook",
-    "events": ["message.received", "message.status.delivered", "message.status.read"]
-  }'
+ -H "Authorization: Bearer vmk_live_..." \
+ -H "Content-Type: application/json" \
+ -d '{
+ "name": "Production Bot",
+ "url": "https://api.firmaniz.com/wa-webhook",
+ "events": ["message.received", "message.status.delivered", "message.status.read"]
+ }'
 ```
 
 **Yanıt:**
 ```json
 {
-  "ok": true,
-  "id": 42,
-  "plain_secret": "whsec_abc123...",
-  "secret_prefix": "whsec_abc123",
-  "events": ["message.received", "message.status.delivered", "message.status.read"]
+ "ok": true,
+ "id": 42,
+ "plain_secret": "whsec_abc123...",
+ "secret_prefix": "whsec_abc123",
+ "events": ["message.received", "message.status.delivered", "message.status.read"]
 }
 ```
 
-> ⚠️ `plain_secret` sadece bu yanıtta görünür. Kaybederseniz webhook'u silip yenisini oluşturmanız gerekir.
+> DIKKAT: `plain_secret` sadece bu yanıtta görünür. Kaybederseniz webhook'u silip yenisini oluşturmanız gerekir.
 
 ## 2) Event Tipleri
 
@@ -69,20 +69,20 @@ Veri Merkezi her event için bu JSON'u **POST** eder:
 
 ```json
 {
-  "event": "message.received",
-  "event_id": "01963a2b-7c1d-7f4e-9b21-...",
-  "occurred_at": "2026-05-30T13:45:00+03:00",
-  "data": {
-    "phone_number_id": "1234567890",
-    "from": "905551112233",
-    "wamid": "wamid.HBgL...",
-    "type": "text",
-    "text": { "body": "Merhaba, sipariş durumunu öğrenebilir miyim?" },
-    "contact": {
-      "wa_id": "905551112233",
-      "profile_name": "Ayşe Müşteri"
-    }
-  }
+ "event": "message.received",
+ "event_id": "01963a2b-7c1d-7f4e-9b21-...",
+ "occurred_at": "2026-05-30T13:45:00+03:00",
+ "data": {
+ "phone_number_id": "1234567890",
+ "from": "905551112233",
+ "wamid": "wamid.HBgL...",
+ "type": "text",
+ "text": { "body": "Merhaba, sipariş durumunu öğrenebilir miyim?" },
+ "contact": {
+ "wa_id": "905551112233",
+ "profile_name": "Ayşe Müşteri"
+ }
+ }
 }
 ```
 
@@ -118,28 +118,28 @@ $rawBody = file_get_contents('php://input');
 
 // Replay koruması — 5 dakikadan eski payload reddedilsin
 if (abs(time() - (int)$timestamp) > 300) {
-    http_response_code(403);
-    exit('expired');
+ http_response_code(403);
+ exit('expired');
 }
 
 // İmza doğrulama
 $expected = 'sha256=' . hash_hmac('sha256', $timestamp . '.' . $rawBody, $secret);
 if (!hash_equals($expected, $signature)) {
-    http_response_code(403);
-    exit('invalid_signature');
+ http_response_code(403);
+ exit('invalid_signature');
 }
 
 // Event işleme
 $event = json_decode($rawBody, true);
 switch ($event['event']) {
-    case 'message.received':
-        // Müşteri mesajı geldi → AI yanıt üret → POST /wa/messages ile gönder
-        handleIncomingMessage($event['data']);
-        break;
-    case 'message.status.delivered':
-        // CRM'de mesaj durumunu güncelle
-        markDelivered($event['data']['wamid']);
-        break;
+ case 'message.received':
+ // Müşteri mesajı geldi -> AI yanıt üret -> POST /wa/messages ile gönder
+ handleIncomingMessage($event['data']);
+ break;
+ case 'message.status.delivered':
+ // CRM'de mesaj durumunu güncelle
+ markDelivered($event['data']['wamid']);
+ break;
 }
 
 // Veri Merkezi 2xx bekliyor — başarılı işlem
@@ -158,32 +158,32 @@ const app = express();
 app.use('/wa-webhook', express.raw({ type: 'application/json' }));
 
 app.post('/wa-webhook', (req, res) => {
-  const secret = process.env.VM_WEBHOOK_SECRET;
-  const signature = req.headers['x-verimerkezi-signature-256'] || '';
-  const timestamp = req.headers['x-verimerkezi-timestamp'] || '';
-  const rawBody = req.body.toString('utf8');
+ const secret = process.env.VM_WEBHOOK_SECRET;
+ const signature = req.headers['x-verimerkezi-signature-256'] || '';
+ const timestamp = req.headers['x-verimerkezi-timestamp'] || '';
+ const rawBody = req.body.toString('utf8');
 
-  // Replay koruması
-  if (Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) > 300) {
-    return res.status(403).send('expired');
-  }
+ // Replay koruması
+ if (Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) > 300) {
+ return res.status(403).send('expired');
+ }
 
-  // İmza doğrulama
-  const expected = 'sha256=' + crypto
-    .createHmac('sha256', secret)
-    .update(timestamp + '.' + rawBody)
-    .digest('hex');
+ // İmza doğrulama
+ const expected = 'sha256=' + crypto
+ .createHmac('sha256', secret)
+ .update(timestamp + '.' + rawBody)
+ .digest('hex');
 
-  if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
-    return res.status(403).send('invalid_signature');
-  }
+ if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
+ return res.status(403).send('invalid_signature');
+ }
 
-  const event = JSON.parse(rawBody);
-  if (event.event === 'message.received') {
-    handleIncomingMessage(event.data);
-  }
+ const event = JSON.parse(rawBody);
+ if (event.event === 'message.received') {
+ handleIncomingMessage(event.data);
+ }
 
-  res.json({ ok: true });
+ res.json({ ok: true });
 });
 ```
 
@@ -198,29 +198,29 @@ SECRET = os.getenv('VM_WEBHOOK_SECRET').encode()
 
 @app.route('/wa-webhook', methods=['POST'])
 def webhook():
-    signature = request.headers.get('X-VeriMerkezi-Signature-256', '')
-    timestamp = request.headers.get('X-VeriMerkezi-Timestamp', '')
-    raw_body = request.get_data(as_text=True)
+ signature = request.headers.get('X-VeriMerkezi-Signature-256', '')
+ timestamp = request.headers.get('X-VeriMerkezi-Timestamp', '')
+ raw_body = request.get_data(as_text=True)
 
-    # Replay koruması
-    if abs(time.time() - int(timestamp)) > 300:
-        abort(403, 'expired')
+ # Replay koruması
+ if abs(time.time() - int(timestamp)) > 300:
+ abort(403, 'expired')
 
-    # İmza doğrulama
-    expected = 'sha256=' + hmac.new(
-        SECRET,
-        f"{timestamp}.{raw_body}".encode(),
-        hashlib.sha256
-    ).hexdigest()
+ # İmza doğrulama
+ expected = 'sha256=' + hmac.new(
+ SECRET,
+ f"{timestamp}.{raw_body}".encode(),
+ hashlib.sha256
+ ).hexdigest()
 
-    if not hmac.compare_digest(expected, signature):
-        abort(403, 'invalid_signature')
+ if not hmac.compare_digest(expected, signature):
+ abort(403, 'invalid_signature')
 
-    event = json.loads(raw_body)
-    if event['event'] == 'message.received':
-        handle_incoming_message(event['data'])
+ event = json.loads(raw_body)
+ if event['event'] == 'message.received':
+ handle_incoming_message(event['data'])
 
-    return {'ok': True}
+ return {'ok': True}
 ```
 
 ## 6) Retry Politikası
@@ -238,7 +238,7 @@ Sunucunuz 2xx dışı yanıt verirse veya timeout (15sn) yaparsa Veri Merkezi ş
 | 7 | +24 saat |
 | 8+ | **dead-letter** (silinir, panelden manuel replay edebilirsiniz) |
 
-> 💡 **Idempotency:** Her event benzersiz `X-VeriMerkezi-Event-Id` taşır. Sunucunuzda bu ID'yi kaydedip duplicate işlemeyin (retry'ler aynı ID ile gelir).
+> **Idempotency:** Her event benzersiz `X-VeriMerkezi-Event-Id` taşır. Sunucunuzda bu ID'yi kaydedip duplicate işlemeyin (retry'ler aynı ID ile gelir).
 
 ## 7) Test Ping
 
@@ -246,34 +246,28 @@ Webhook'u canlıya almadan önce sahte event göndererek test edin:
 
 ```bash
 curl -X POST https://api.verimerkezi.app/wa/webhooks/42/test \
-  -H "Authorization: Bearer vmk_live_..."
+ -H "Authorization: Bearer vmk_live_..."
 ```
 
-Veya panel → Webhook detay → **"Test Ping Gönder"** butonu.
+Veya panel -> Webhook detay -> **"Test Ping Gönder"** butonu.
 
 ## 8) Webhook'u Silme / Pasifleştirme
 
 ```bash
 # Pasifleştir (event göndermez ama kayıt kalır)
 curl -X PATCH https://api.verimerkezi.app/wa/webhooks/42 \
-  -H "Authorization: Bearer vmk_live_..." \
-  -d '{"is_active": false}'
+ -H "Authorization: Bearer vmk_live_..." \
+ -d '{"is_active": false}'
 
 # Tamamen sil
 curl -X DELETE https://api.verimerkezi.app/wa/webhooks/42 \
-  -H "Authorization: Bearer vmk_live_..."
+ -H "Authorization: Bearer vmk_live_..."
 ```
 
 ## Sık Sorulanlar
 
-**S: Webhook URL'mi nasıl test ederim?**  
-**C:** [webhook.site](https://webhook.site) veya [ngrok](https://ngrok.com) kullanarak public URL elde edip Veri Merkezi'ne kaydedin. Test ping ile sahte event gönderin.
+**S: Webhook URL'mi nasıl test ederim?C:** [webhook.site](https://webhook.site) veya [ngrok](https://ngrok.com) kullanarak public URL elde edip Veri Merkezi'ne kaydedin. Test ping ile sahte event gönderin.
 
-**S: HMAC doğrulama yapmazsam ne olur?**  
-**C:** Bir saldırgan sahte event göndererek sisteminizi yanıltabilir. **Mutlaka doğrulayın.**
+**S: HMAC doğrulama yapmazsam ne olur?C:** Bir saldırgan sahte event göndererek sisteminizi yanıltabilir. **Mutlaka doğrulayın.S: Webhook bir kere düşerse mesajları kaybeder miyim?C:** Hayır. Veri Merkezi 7 deneme + 36 saat içinde sunucunuzu denemeye devam eder. Dead-letter'a düşse bile panelden manuel replay edebilirsiniz.
 
-**S: Webhook bir kere düşerse mesajları kaybeder miyim?**  
-**C:** Hayır. Veri Merkezi 7 deneme + 36 saat içinde sunucunuzu denemeye devam eder. Dead-letter'a düşse bile panelden manuel replay edebilirsiniz.
-
-**S: Aynı event birden fazla webhook'a gönderilebilir mi?**  
-**C:** Evet. Birden fazla aktif subscription'ınız varsa her birine bağımsız iletilir.
+**S: Aynı event birden fazla webhook'a gönderilebilir mi?C:** Evet. Birden fazla aktif subscription'ınız varsa her birine bağımsız iletilir.

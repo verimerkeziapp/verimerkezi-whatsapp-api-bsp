@@ -3,78 +3,78 @@
  * Veri Merkezi WhatsApp API — Mesaj Gönderim Örneği (PHP)
  *
  * Çalıştırma:
- *   php examples/php/send-message.php
+ * php examples/php/send-message.php
  */
 
 require __DIR__ . '/../../sdk/php/src/VeriMerkeziClient.php';
 
 // ── Konfigürasyon (production'da .env'den okuyun) ─────────────────
-$apiKey        = getenv('VM_API_KEY')        ?: 'vmk_live_XXXXXXXX';
+$apiKey = getenv('VM_API_KEY') ?: 'vmk_live_XXXXXXXX';
 $phoneNumberId = getenv('VM_PHONE_NUMBER_ID') ?: '1234567890';
-$recipient     = '905551112233'; // E.164 (başında + yok)
+$recipient = '905551112233'; // E.164 (başında + yok)
 
 $vm = new VeriMerkeziClient($apiKey);
 
 // ────────────────────────────────────────────────────────────────
-//  ÖRNEK 1 — Düz Metin (yalnızca 24h service window içinde)
+// ÖRNEK 1 — Düz Metin (yalnızca 24h service window içinde)
 // ────────────────────────────────────────────────────────────────
 try {
-    $response = $vm->sendText($phoneNumberId, $recipient, 'Merhaba! Bu test mesajıdır.');
-    echo "✓ Metin mesajı gönderildi: " . $response['messages'][0]['id'] . "\n";
+ $response = $vm->sendText($phoneNumberId, $recipient, 'Merhaba! Bu test mesajıdır.');
+ echo "Metin mesajı gönderildi: " . $response['messages'][0]['id'] . "\n";
 } catch (Exception $e) {
-    echo "✗ Hata: " . $e->getMessage() . "\n";
+ echo "Hata: " . $e->getMessage() . "\n";
 }
 
 // ────────────────────────────────────────────────────────────────
-//  ÖRNEK 2 — Görsel
+// ÖRNEK 2 — Görsel
 // ────────────────────────────────────────────────────────────────
 try {
-    $response = $vm->sendImage(
-        $phoneNumberId,
-        $recipient,
-        'https://picsum.photos/800/600.jpg',
-        'Test görseli'
-    );
-    echo "✓ Görsel gönderildi: " . $response['messages'][0]['id'] . "\n";
+ $response = $vm->sendImage(
+ $phoneNumberId,
+ $recipient,
+ 'https://picsum.photos/800/600.jpg',
+ 'Test görseli'
+ );
+ echo "Görsel gönderildi: " . $response['messages'][0]['id'] . "\n";
 } catch (Exception $e) {
-    echo "✗ Hata: " . $e->getMessage() . "\n";
+ echo "Hata: " . $e->getMessage() . "\n";
 }
 
 // ────────────────────────────────────────────────────────────────
-//  ÖRNEK 3 — PDF Doküman
+// ÖRNEK 3 — PDF Doküman
 // ────────────────────────────────────────────────────────────────
 try {
-    $response = $vm->sendDocument(
-        $phoneNumberId,
-        $recipient,
-        'https://www.africau.edu/images/default/sample.pdf',
-        'sample.pdf',
-        'Test PDF'
-    );
-    echo "✓ PDF gönderildi: " . $response['messages'][0]['id'] . "\n";
+ $response = $vm->sendDocument(
+ $phoneNumberId,
+ $recipient,
+ 'https://www.africau.edu/images/default/sample.pdf',
+ 'sample.pdf',
+ 'Test PDF'
+ );
+ echo "PDF gönderildi: " . $response['messages'][0]['id'] . "\n";
 } catch (Exception $e) {
-    echo "✗ Hata: " . $e->getMessage() . "\n";
+ echo "Hata: " . $e->getMessage() . "\n";
 }
 
 // ────────────────────────────────────────────────────────────────
-//  ÖRNEK 4 — Şablon (24h dışında zorunlu)
+// ÖRNEK 4 — Şablon (24h dışında zorunlu)
 // ────────────────────────────────────────────────────────────────
 try {
-    $response = $vm->sendTemplate(
-        $phoneNumberId,
-        $recipient,
-        'hosgeldin',  // şablonunuzun adı
-        'tr',
-        [
-            [
-                'type' => 'body',
-                'parameters' => [
-                    ['type' => 'text', 'text' => 'Ahmet'],
-                ],
-            ],
-        ]
-    );
-    echo "✓ Şablon gönderildi: " . $response['messages'][0]['id'] . "\n";
+ $response = $vm->sendTemplate(
+ $phoneNumberId,
+ $recipient,
+ 'hosgeldin', // şablonunuzun adı
+ 'tr',
+ [
+ [
+ 'type' => 'body',
+ 'parameters' => [
+ ['type' => 'text', 'text' => 'Ahmet'],
+ ],
+ ],
+ ]
+ );
+ echo "Şablon gönderildi: " . $response['messages'][0]['id'] . "\n";
 } catch (Exception $e) {
-    echo "✗ Hata: " . $e->getMessage() . "\n";
+ echo "Hata: " . $e->getMessage() . "\n";
 }

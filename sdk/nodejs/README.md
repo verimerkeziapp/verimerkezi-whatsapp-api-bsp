@@ -28,13 +28,13 @@ import { VeriMerkeziClient } from '@verimerkezi/whatsapp-sdk';
 const vm = new VeriMerkeziClient('vmk_live_xxxxxxxxxxxxxxxx');
 
 const response = await vm.sendTemplate(
-  '1234567890',
-  '905551234567',
-  'siparis_onayi',
-  'tr',
-  [
-    { type: 'body', parameters: [{ type: 'text', text: 'Ahmet' }] },
-  ]
+ '1234567890',
+ '905551234567',
+ 'siparis_onayi',
+ 'tr',
+ [
+ { type: 'body', parameters: [{ type: 'text', text: 'Ahmet' }] },
+ ]
 );
 
 console.log('wamid:', response.messages[0].id);
@@ -60,12 +60,12 @@ console.log('wamid:', response.messages[0].id);
 
 ```js
 try {
-  await vm.sendText('...', '...', '...');
+ await vm.sendText('...', '...', '...');
 } catch (err) {
-  console.error('Hata:', err.message);
-  console.error('HTTP:', err.statusCode);
-  console.error('Meta code:', err.metaCode);
-  console.error('Request ID:', err.requestId);
+ console.error('Hata:', err.message);
+ console.error('HTTP:', err.statusCode);
+ console.error('Meta code:', err.metaCode);
+ console.error('Request ID:', err.requestId);
 }
 ```
 
@@ -73,9 +73,9 @@ try {
 
 ```js
 const vm = new VeriMerkeziClient('vmk_live_...', {
-  baseUrl: 'https://api.verimerkezi.app/wa', // varsayılan
-  timeout: 30000,                              // ms
-  maxRetries: 3,
+ baseUrl: 'https://api.verimerkezi.app/wa', // varsayılan
+ timeout: 30000, // ms
+ maxRetries: 3,
 });
 ```
 

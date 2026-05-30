@@ -10,66 +10,66 @@ Bu repo, **kendi uygulamanızı / chatbot'unuzu / CRM entegrasyonunuzu** Veri Me
 
 ---
 
-## 🚀 Hızlı Bakış
+## Hızlı Bakış
 
 ```bash
 curl -X POST https://api.verimerkezi.app/wa/messages \
-  -H "Authorization: Bearer vmk_live_..." \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
-  -d '{
-    "to": "905551234567",
-    "type": "template",
-    "template": {
-      "name": "siparis_onayi",
-      "language": { "code": "tr" },
-      "components": [{
-        "type": "body",
-        "parameters": [{ "type": "text", "text": "Ahmet" }]
-      }]
-    }
-  }'
+ -H "Authorization: Bearer vmk_live_..." \
+ -H "Content-Type: application/json" \
+ -H "Idempotency-Key: $(uuidgen)" \
+ -d '{
+ "to": "905551234567",
+ "type": "template",
+ "template": {
+ "name": "siparis_onayi",
+ "language": { "code": "tr" },
+ "components": [{
+ "type": "body",
+ "parameters": [{ "type": "text", "text": "Ahmet" }]
+ }]
+ }
+ }'
 ```
 
 ---
 
-## 📦 İçindekiler
+## İçindekiler
 
 ```
 .
 ├── schemas/
-│   └── openapi.yaml             # OpenAPI 3.1 — tüm endpoint şeması
+│ └── openapi.yaml # OpenAPI 3.1 — tüm endpoint şeması
 ├── sdk/
-│   ├── php/                     # PHP SDK (PSR-4)
-│   ├── nodejs/                  # Node.js SDK (CommonJS + ESM)
-│   └── python/                  # Python SDK (sync + async destekli)
+│ ├── php/ # PHP SDK (PSR-4)
+│ ├── nodejs/ # Node.js SDK (CommonJS + ESM)
+│ └── python/ # Python SDK (sync + async destekli)
 ├── docs/
-│   ├── 01-getting-started.md    # Onboarding, API key alma
-│   ├── 02-authentication.md     # Bearer token + scope
-│   ├── 03-messages.md           # Mesaj gönderim (text / template / media)
-│   ├── 04-templates.md          # Şablon yönetimi
-│   ├── 05-contacts.md           # Kişi rehberi
-│   ├── 06-webhooks.md           # Outgoing webhook + HMAC doğrulama
-│   ├── 07-rate-limits.md        # Rate limit + Idempotency-Key
-│   ├── 08-pagination.md         # Cursor pagination
-│   └── 09-errors.md             # Hata kodları + Meta subcode haritası
+│ ├── 01-getting-started.md # Onboarding, API key alma
+│ ├── 02-authentication.md # Bearer token + scope
+│ ├── 03-messages.md # Mesaj gönderim (text / template / media)
+│ ├── 04-templates.md # Şablon yönetimi
+│ ├── 05-contacts.md # Kişi rehberi
+│ ├── 06-webhooks.md # Outgoing webhook + HMAC doğrulama
+│ ├── 07-rate-limits.md # Rate limit + Idempotency-Key
+│ ├── 08-pagination.md # Cursor pagination
+│ └── 09-errors.md # Hata kodları + Meta subcode haritası
 ├── examples/
-│   ├── php/                     # Örnek kullanımlar
-│   ├── nodejs/
-│   └── python/
+│ ├── php/ # Örnek kullanımlar
+│ ├── nodejs/
+│ └── python/
 └── postman/
-    └── VeriMerkezi.postman_collection.json
+ └── VeriMerkezi.postman_collection.json
 ```
 
 ---
 
-## 🏁 Başlangıç (3 Adım)
+## Başlangıç (3 Adım)
 
 ### 1) Hesap + WhatsApp Bağlantısı
-[verimerkezi.app](https://verimerkezi.app)'ten kayıt ol → paketini seç → **Embedded Signup** ile kendi WABA numaranı tek tıkla bağla.
+[verimerkezi.app](https://verimerkezi.app)'ten kayıt ol -> paketini seç -> **Embedded Signup** ile kendi WABA numaranı tek tıkla bağla.
 
 ### 2) API Anahtarı Al
-Panel → **API → Anahtarlar** → "Yeni Anahtar Oluştur" → key'i kaydet (sadece bir kez gösterilir).
+Panel -> **API -> Anahtarlar** -> "Yeni Anahtar Oluştur" -> key'i kaydet (sadece bir kez gösterilir).
 
 ### 3) SDK ile Kod Yaz
 
@@ -96,26 +96,26 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 
 ---
 
-## 📡 API Özellikleri
+## API Özellikleri
 
 | Özellik | Durum |
 |---|---|
-| **Mesaj gönderimi** (text / image / document / video / audio / location / contact / sticker / reaction) | ✅ |
-| **Şablon yönetimi** (oluştur / sil / listele / submit) | ✅ |
-| **Resumable Upload** (PDF / görsel / video header) | ✅ |
-| **Kişi rehberi** (CRUD + bulk + opt-out) | ✅ |
-| **Konuşma geçmişi** (cursor-paginated) | ✅ |
-| **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | ✅ |
-| **11 webhook event tipi** (message.received, status.*, template.*, quality.changed) | ✅ |
-| **Idempotency-Key** (24h TTL, replay safe) | ✅ |
-| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | ✅ |
-| **Cursor pagination** (opaque base64, stateless) | ✅ |
-| **Tier auto-sync** (TIER_50 → 250 → 1K → 10K → 100K → UNLIMITED) | ✅ |
-| **Multi-tenant izolasyon** (her API key tek müşteri) | ✅ |
+| **Mesaj gönderimi** (text / image / document / video / audio / location / contact / sticker / reaction) | Evet |
+| **Şablon yönetimi** (oluştur / sil / listele / submit) | Evet |
+| **Resumable Upload** (PDF / görsel / video header) | Evet |
+| **Kişi rehberi** (CRUD + bulk + opt-out) | Evet |
+| **Konuşma geçmişi** (cursor-paginated) | Evet |
+| **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
+| **11 webhook event tipi** (message.received, status.*, template.*, quality.changed) | Evet |
+| **Idempotency-Key** (24h TTL, replay safe) | Evet |
+| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet |
+| **Cursor pagination** (opaque base64, stateless) | Evet |
+| **Tier auto-sync** (TIER_50 -> 250 -> 1K -> 10K -> 100K -> UNLIMITED) | Evet |
+| **Multi-tenant izolasyon** (her API key tek müşteri) | Evet |
 
 ---
 
-## 🔐 Güvenlik
+## Güvenlik
 
 - **HTTPS only** — `https://api.verimerkezi.app/wa` (HTTP otomatik reddedilir)
 - **API key formatı:** `vmk_live_*` (production) / `vmk_test_*` (sandbox)
@@ -127,7 +127,7 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 
 ---
 
-## 📚 Detaylı Dokümantasyon
+## Detaylı Dokümantasyon
 
 | Dosya | İçerik |
 |---|---|
@@ -143,7 +143,7 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 
 ---
 
-## 🧪 Örnekler
+## Örnekler
 
 Her dilde çalışan, kopyala-yapıştır örnekler:
 
@@ -154,17 +154,17 @@ Her dilde çalışan, kopyala-yapıştır örnekler:
 
 ---
 
-## 🔗 Faydalı Bağlantılar
+## Faydalı Bağlantılar
 
-- 🌐 **Web:** [verimerkezi.app](https://verimerkezi.app)
-- 📖 **API Hub:** [api.verimerkezi.app](https://api.verimerkezi.app)
-- 📋 **WhatsApp Dokümanı:** [api.verimerkezi.app/docs/wa](https://api.verimerkezi.app/docs/wa)
-- 📡 **OpenAPI:** [api.verimerkezi.app/sdk/openapi.yaml.txt](https://api.verimerkezi.app/sdk/openapi.yaml.txt)
-- 📞 **Destek:** bilgi@verimerkezi.app · 0332 606 09 24
+- **Web:** [verimerkezi.app](https://verimerkezi.app)
+- **API Hub:** [api.verimerkezi.app](https://api.verimerkezi.app)
+- **WhatsApp Dokümanı:** [api.verimerkezi.app/docs/wa](https://api.verimerkezi.app/docs/wa)
+- **OpenAPI:** [api.verimerkezi.app/sdk/openapi.yaml.txt](https://api.verimerkezi.app/sdk/openapi.yaml.txt)
+- **Destek:** bilgi@verimerkezi.app · 0332 606 09 24
 
 ---
 
-## 📄 Lisans
+## Lisans
 
 [MIT License](LICENSE) — Bu SDK + dokümantasyon depolarını ticari ürünlerinizde özgürce kullanabilirsiniz.
 

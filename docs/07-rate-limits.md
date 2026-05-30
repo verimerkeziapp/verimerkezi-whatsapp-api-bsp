@@ -39,11 +39,11 @@ Retry-After: 23
 Content-Type: application/json
 
 {
-  "error": {
-    "code": "rate_limited",
-    "message": "Çok fazla istek. Lütfen biraz bekleyin.",
-    "retry_after": 23
-  }
+ "error": {
+ "code": "rate_limited",
+ "message": "Çok fazla istek. Lütfen biraz bekleyin.",
+ "retry_after": 23
+ }
 }
 ```
 
@@ -59,10 +59,10 @@ Her **POST/PUT/PATCH/DELETE** isteğinde benzersiz bir UUID gönderin:
 
 ```bash
 curl -X POST https://api.verimerkezi.app/wa/messages \
-  -H "Authorization: Bearer vmk_live_..." \
-  -H "Idempotency-Key: 01963a2b-7c1d-7f4e-9b21-...fcbe43" \
-  -H "Content-Type: application/json" \
-  -d '{ "to": "905551112233", "type": "text", ... }'
+ -H "Authorization: Bearer vmk_live_..." \
+ -H "Idempotency-Key: 01963a2b-7c1d-7f4e-9b21-...fcbe43" \
+ -H "Content-Type: application/json" \
+ -d '{ "to": "905551112233", "type": "text", ... }'
 ```
 
 ### Davranış
@@ -107,16 +107,16 @@ key = str(uuid.uuid4())
 
 Müşterinize sipariş onayı gönderiyorsunuz. Network sorunu çıkıp **timeout** alıyorsunuz:
 
-❌ **Idempotency-Key olmadan:**
+Hayir **Idempotency-Key olmadan:**
 ```
-1. POST /messages → timeout (mesaj aslında gitti)
-2. retry → POST /messages → mesaj 2. kez gönderildi → müşteri 2 mesaj alır
+1. POST /messages -> timeout (mesaj aslında gitti)
+2. retry -> POST /messages -> mesaj 2. kez gönderildi -> müşteri 2 mesaj alır
 ```
 
-✅ **Idempotency-Key ile:**
+Evet **Idempotency-Key ile:**
 ```
-1. POST /messages + Idempotency-Key: abc → timeout (mesaj aslında gitti)
-2. retry → POST /messages + Idempotency-Key: abc → cache'den dönülür → mesaj tek
+1. POST /messages + Idempotency-Key: abc -> timeout (mesaj aslında gitti)
+2. retry -> POST /messages + Idempotency-Key: abc -> cache'den dönülür -> mesaj tek
 ```
 
 ## Best Practices

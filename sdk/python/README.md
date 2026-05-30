@@ -26,25 +26,25 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 
 # Şablon
 vm.send_template(
-    '1234567890',
-    '905551234567',
-    'siparis_onayi',
-    'tr',
-    components=[
-        {
-            'type': 'body',
-            'parameters': [{'type': 'text', 'text': 'Ahmet'}],
-        }
-    ]
+ '1234567890',
+ '905551234567',
+ 'siparis_onayi',
+ 'tr',
+ components=[
+ {
+ 'type': 'body',
+ 'parameters': [{'type': 'text', 'text': 'Ahmet'}],
+ }
+ ]
 )
 
 # PDF
 vm.send_document(
-    '1234567890',
-    '905551234567',
-    url='https://cdn.firmaniz.com/fatura.pdf',
-    filename='fatura.pdf',
-    caption='Mayıs faturanız'
+ '1234567890',
+ '905551234567',
+ url='https://cdn.firmaniz.com/fatura.pdf',
+ filename='fatura.pdf',
+ caption='Mayıs faturanız'
 )
 ```
 
@@ -72,11 +72,11 @@ from verimerkezi import VeriMerkeziClient, VeriMerkeziError
 vm = VeriMerkeziClient('vmk_live_...')
 
 try:
-    vm.send_text('...', '...', '...')
+ vm.send_text('...', '...', '...')
 except VeriMerkeziError as e:
-    print(f"Hata: {e.message}")
-    print(f"HTTP: {e.status_code}")
-    print(f"Meta code: {e.meta_code}")
+ print(f"Hata: {e.message}")
+ print(f"HTTP: {e.status_code}")
+ print(f"Meta code: {e.meta_code}")
 ```
 
 ## Async Sürüm
@@ -90,8 +90,8 @@ import asyncio
 from verimerkezi import AsyncVeriMerkeziClient
 
 async def main():
-    async with AsyncVeriMerkeziClient('vmk_live_...') as vm:
-        await vm.send_text('1234567890', '905551234567', 'Merhaba!')
+ async with AsyncVeriMerkeziClient('vmk_live_...') as vm:
+ await vm.send_text('1234567890', '905551234567', 'Merhaba!')
 
 asyncio.run(main())
 ```
