@@ -1,0 +1,348 @@
+openapi: 3.1.0
+info:
+  title: VeriMerkezi WhatsApp API
+  description: |
+    Tech Provider REST API for sending WhatsApp Business Cloud messages,
+    managing contacts, templates, and business profiles.
+
+    Per-message credit model. Test mode keys (`vmk_test_...`) are free.
+  version: "2.0.0"
+  contact:
+    name: Veri Merkezi
+    url: https://verimerkezi.app
+    email: bilgi@verimerkezi.app
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.verimerkezi.app/wa
+    description: Production
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "vmk_live_xxx or vmk_test_xxx"
+      description: API key - create one at panel/api.
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        ok: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string, example: insufficient_credits }
+            message: { type: string }
+            field: { type: string, nullable: true }
+
+    Contact:
+      type: object
+      properties:
+        id: { type: integer }
+        phone: { type: string, example: "+905551234567" }
+        name: { type: string }
+        email: { type: string, nullable: true }
+        company: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+        source: { type: string }
+        opted_out: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    Template:
+      type: object
+      properties:
+        id: { type: integer }
+        meta_template_id: { type: string, nullable: true }
+        name: { type: string }
+        language: { type: string, example: tr }
+        category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+        status: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED] }
+        components: { type: array, items: { type: object } }
+        rejected_reason: { type: string, nullable: true }
+
+    Number:
+      type: object
+      properties:
+        id: { type: integer }
+        waba_id: { type: string }
+        phone_number_id: { type: string }
+        display_phone_number: { type: string }
+        verified_name: { type: string }
+        quality_rating: { type: string, enum: [GREEN, YELLOW, RED, UNKNOWN] }
+        status: { type: string }
+        connection_type: { type: string, enum: [standard, coexistence] }
+
+  parameters:
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: false
+      schema: { type: string }
+      description: Replays cached response for duplicate requests (24h TTL).
+
+paths:
+  /me:
+    get:
+      summary: Account info and credit balance
+      tags: [Account]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  user: { type: object }
+                  api_key: { type: object }
+                  credits:
+                    type: object
+                    properties:
+                      balance: { type: integer }
+                      packages: { type: array, items: { type: object } }
+
+  /numbers:
+    get:
+      summary: List connected WhatsApp numbers
+      tags: [Numbers]
+      security: [{ BearerAuth: [profile:read] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  numbers:
+                    type: array
+                    items: { $ref: "#/components/schemas/Number" }
+
+  /messages:
+    post:
+      summary: Send a template or text message
+      description: Live mode consumes 1 credit. Test mode is free.
+      tags: [Messages]
+      security: [{ BearerAuth: [messages:send] }]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number_id, to]
+              properties:
+                phone_number_id: { type: string }
+                to: { type: string, example: "905551234567" }
+                template:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    language: { type: string, example: tr }
+                    components: { type: array, items: { type: object } }
+                text: { type: string, description: "Only within the 24h customer service window" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: integer }
+                  wamid: { type: string }
+                  status: { type: string, example: sent }
+                  credits_used: { type: integer }
+                  balance: { type: integer }
+        '402':
+          description: Insufficient credits
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '422':
+          description: Validation or Meta error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /contacts:
+    get:
+      summary: List contacts (cursor pagination)
+      tags: [Contacts]
+      security: [{ BearerAuth: [contacts:read] }]
+      parameters:
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 200 }
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items: { $ref: "#/components/schemas/Contact" }
+                  next_cursor: { type: string, nullable: true }
+                  has_more: { type: boolean }
+    post:
+      summary: Create a single contact
+      tags: [Contacts]
+      security: [{ BearerAuth: [contacts:write] }]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, name]
+              properties:
+                phone: { type: string }
+                name: { type: string }
+                country_code: { type: string, default: "90" }
+                email: { type: string }
+                company: { type: string }
+                tags: { type: array, items: { type: string } }
+      responses:
+        '201': { description: Created }
+        '409': { description: Duplicate }
+
+  /contacts/bulk:
+    post:
+      summary: Bulk insert contacts (max 1000)
+      tags: [Contacts]
+      security: [{ BearerAuth: [contacts:write] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contacts]
+              properties:
+                contacts:
+                  type: array
+                  maxItems: 1000
+                  items:
+                    type: object
+                    properties:
+                      phone: { type: string }
+                      name: { type: string }
+                      email: { type: string }
+                      company: { type: string }
+                      tags: { type: array, items: { type: string } }
+                skip_duplicates: { type: boolean, default: true }
+                country_code: { type: string, default: "90" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inserted: { type: integer }
+                  skipped: { type: integer }
+                  errors: { type: array, items: { type: object } }
+
+  /templates:
+    get:
+      summary: List approved templates
+      tags: [Templates]
+      security: [{ BearerAuth: [templates:read] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates:
+                    type: array
+                    items: { $ref: "#/components/schemas/Template" }
+
+  /profile/{phone_number_id}:
+    get:
+      summary: Read WhatsApp Business Profile
+      tags: [Profile]
+      security: [{ BearerAuth: [profile:read] }]
+      parameters:
+        - in: path
+          name: phone_number_id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+        '404': { description: Number not found }
+    patch:
+      summary: Update WhatsApp Business Profile
+      tags: [Profile]
+      security: [{ BearerAuth: [profile:write] }]
+      parameters:
+        - in: path
+          name: phone_number_id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                about: { type: string, maxLength: 139 }
+                description: { type: string, maxLength: 512 }
+                address: { type: string, maxLength: 256 }
+                email: { type: string }
+                vertical: { type: string }
+                websites: { type: array, maxItems: 2, items: { type: string } }
+      responses:
+        '200': { description: Updated }
+
+  /reports/summary:
+    get:
+      summary: Report summary
+      tags: [Reports]
+      security: [{ BearerAuth: [reports:read] }]
+      parameters:
+        - in: query
+          name: period
+          schema: { type: string, enum: [7d, 30d, 90d], default: 30d }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period: { type: string }
+                  sent: { type: integer }
+                  delivered: { type: integer }
+                  read: { type: integer }
+                  failed: { type: integer }
+                  delivery_rate: { type: number }
+                  read_rate: { type: number }
+                  failure_rate: { type: number }
+                  balance: { type: integer }

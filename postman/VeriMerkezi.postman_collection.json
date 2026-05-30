@@ -1,0 +1,183 @@
+{
+  "info": {
+    "name": "Veri Merkezi — WhatsApp Business API",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi BSP altyapısı için tüm endpoint'ler.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Environment oluşturun:\n   - `api_key`: vmk_live_xxx\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız (905551112233)\n3. Hazırsınız!\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{api_key}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://api.verimerkezi.app/wa" },
+    { "key": "api_key", "value": "vmk_live_REPLACE_ME" },
+    { "key": "phone_number_id", "value": "1234567890" },
+    { "key": "test_recipient", "value": "905551112233" }
+  ],
+  "item": [
+    {
+      "name": "1. Hesap",
+      "item": [
+        {
+          "name": "GET /me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/me", "host": ["{{base_url}}"], "path": ["me"] }
+          }
+        },
+        {
+          "name": "GET /numbers",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/numbers", "host": ["{{base_url}}"], "path": ["numbers"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Mesajlar",
+      "item": [
+        {
+          "name": "POST /messages — Text",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"text\",\n  \"text\": { \"body\": \"Merhaba! Test mesajı.\" }\n}"
+            },
+            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "POST /messages — Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"template\",\n  \"template\": {\n    \"name\": \"hosgeldin\",\n    \"language\": { \"code\": \"tr\" },\n    \"components\": [\n      {\n        \"type\": \"body\",\n        \"parameters\": [{ \"type\": \"text\", \"text\": \"Ahmet\" }]\n      }\n    ]\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "POST /messages — Document (PDF)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"document\",\n  \"document\": {\n    \"link\": \"https://www.africau.edu/images/default/sample.pdf\",\n    \"filename\": \"sample.pdf\",\n    \"caption\": \"Test PDF\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "GET /conversations/:phone",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/conversations/{{test_recipient}}?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["conversations", "{{test_recipient}}"],
+              "query": [{ "key": "limit", "value": "20" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Şablonlar",
+      "item": [
+        {
+          "name": "GET /templates",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/templates", "host": ["{{base_url}}"], "path": ["templates"] }
+          }
+        },
+        {
+          "name": "POST /templates",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"siparis_onayi\",\n  \"language\": \"tr\",\n  \"category\": \"UTILITY\",\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Merhaba {{1}}, siparişiniz #{{2}} onaylandı.\"\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/templates", "host": ["{{base_url}}"], "path": ["templates"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Kişiler",
+      "item": [
+        {
+          "name": "GET /contacts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/contacts?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["contacts"],
+              "query": [{ "key": "limit", "value": "50" }]
+            }
+          }
+        },
+        {
+          "name": "POST /contacts",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"905551234567\",\n  \"full_name\": \"Ayşe Müşteri\",\n  \"email\": \"ayse@firma.com\",\n  \"tags\": [\"vip\", \"istanbul\"]\n}"
+            },
+            "url": { "raw": "{{base_url}}/contacts", "host": ["{{base_url}}"], "path": ["contacts"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Webhooks",
+      "item": [
+        {
+          "name": "POST /webhooks",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Production Bot\",\n  \"url\": \"https://api.firmaniz.com/wa-webhook\",\n  \"events\": [\"message.received\", \"message.status.delivered\"]\n}"
+            },
+            "url": { "raw": "{{base_url}}/webhooks", "host": ["{{base_url}}"], "path": ["webhooks"] }
+          }
+        },
+        {
+          "name": "POST /webhooks/:id/test",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/webhooks/42/test",
+              "host": ["{{base_url}}"],
+              "path": ["webhooks", "42", "test"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

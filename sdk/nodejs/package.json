@@ -1,0 +1,33 @@
+{
+  "name": "@verimerkezi/whatsapp-sdk",
+  "version": "1.0.0",
+  "description": "Veri Merkezi WhatsApp Business API — Resmî Node.js SDK",
+  "main": "lib/verimerkezi-client.js",
+  "types": "lib/verimerkezi-client.d.ts",
+  "scripts": {
+    "test": "echo \"Test komutu yok\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/verimerkeziapp/whatsapp-sdk.git"
+  },
+  "keywords": [
+    "whatsapp",
+    "whatsapp-business",
+    "whatsapp-api",
+    "meta-bsp",
+    "tech-provider",
+    "messaging",
+    "turkey"
+  ],
+  "author": "Veri Merkezi <bilgi@verimerkezi.app> (https://verimerkezi.app)",
+  "license": "MIT",
+  "homepage": "https://api.verimerkezi.app",
+  "bugs": {
+    "url": "https://github.com/verimerkeziapp/whatsapp-sdk/issues",
+    "email": "bilgi@verimerkezi.app"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

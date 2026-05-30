@@ -1,0 +1,60 @@
+# === Veri Merkezi SDK Repo — .gitignore ===
+
+# Ortam & secret
+.env
+.env.local
+.env.*.local
+*.env
+secrets.json
+api-keys.json
+credentials.json
+.ftpconfig
+.sftp-config.json
+
+# IDE / Editor
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Bağımlılıklar
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.python-version
+.venv/
+venv/
+
+# Build / dağıtım
+dist/
+build/
+*.egg-info/
+*.tgz
+*.zip
+*.tar.gz
+*.phar
+
+# Logs / yedek
+*.log
+*.bak
+*.backup
+*.orig
+
+# Test coverage
+coverage/
+.nyc_output/
+.phpunit.result.cache
+.coverage
+htmlcov/
+
+# OS dosyaları
+$RECYCLE.BIN/
+System Volume Information/
