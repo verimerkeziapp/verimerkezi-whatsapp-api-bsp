@@ -155,7 +155,14 @@
  "name": "5. Webhooks",
  "item": [
  {
- "name": "POST /webhooks",
+ "name": "GET /webhooks — Aboneliklerimi listele",
+ "request": {
+ "method": "GET",
+ "url": { "raw": "{{base_url}}/webhooks", "host": ["{{base_url}}"], "path": ["webhooks"] }
+ }
+ },
+ {
+ "name": "POST /webhooks — Yeni abonelik (plain_secret 1 kez döner)",
  "request": {
  "method": "POST",
  "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -167,13 +174,43 @@
  }
  },
  {
- "name": "POST /webhooks/:id/test",
+ "name": "PATCH /webhooks/:id — Aktif/pasif toggle",
+ "request": {
+ "method": "PATCH",
+ "header": [{ "key": "Content-Type", "value": "application/json" }],
+ "body": {
+ "mode": "raw",
+ "raw": "{\n \"is_active\": false\n}"
+ },
+ "url": { "raw": "{{base_url}}/webhooks/42", "host": ["{{base_url}}"], "path": ["webhooks", "42"] }
+ }
+ },
+ {
+ "name": "DELETE /webhooks/:id — Aboneliği sil",
+ "request": {
+ "method": "DELETE",
+ "url": { "raw": "{{base_url}}/webhooks/42", "host": ["{{base_url}}"], "path": ["webhooks", "42"] }
+ }
+ },
+ {
+ "name": "POST /webhooks/:id/test — Sahte event göndererek dene",
  "request": {
  "method": "POST",
  "url": {
  "raw": "{{base_url}}/webhooks/42/test",
  "host": ["{{base_url}}"],
  "path": ["webhooks", "42", "test"]
+ }
+ }
+ },
+ {
+ "name": "GET /webhooks/:id/deliveries — Son 50 teslimat",
+ "request": {
+ "method": "GET",
+ "url": {
+ "raw": "{{base_url}}/webhooks/42/deliveries",
+ "host": ["{{base_url}}"],
+ "path": ["webhooks", "42", "deliveries"]
  }
  }
  }

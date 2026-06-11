@@ -62,9 +62,26 @@ class VeriMerkeziClient:
  def update_profile(self, phone_number_id, fields) -> dict: return self._patch('/profile/' + quote(phone_number_id), fields)
  def reports_summary(self, period='30d') -> dict: return self._get('/reports/summary?period=' + quote(period))
 
+ # ── Webhook Subscriptions ──────────────────────────────────────────────
+ # Olaylar sizin sunucunuza POST edilir. HMAC-SHA256 imzalı, retry'lı.
+ # Tam dokümantasyon: docs/06-webhooks.md
+ def list_webhooks(self) -> dict: return self._get('/webhooks')
+
+ def create_webhook(self, name: str, url: str, events: list = None) -> dict:
+  """Yeni webhook oluştur. plain_secret SADECE bu yanıtta döner — saklayın."""
+  return self._post('/webhooks', {'name': name, 'url': url, 'events': events or ['*']})
+
+ def set_webhook_active(self, webhook_id: int, is_active: bool) -> dict:
+  return self._patch(f'/webhooks/{webhook_id}', {'is_active': is_active})
+
+ def delete_webhook(self, webhook_id: int) -> dict: return self._delete(f'/webhooks/{webhook_id}')
+ def test_webhook(self, webhook_id: int) -> dict: return self._post(f'/webhooks/{webhook_id}/test', {})
+ def webhook_deliveries(self, webhook_id: int) -> dict: return self._get(f'/webhooks/{webhook_id}/deliveries')
+
  def _get(self, path): return self._request('GET', path)
  def _post(self, path, body): return self._request('POST', path, body)
  def _patch(self, path, body): return self._request('PATCH', path, body)
+ def _delete(self, path): return self._request('DELETE', path)
 
  def _request(self, method, path, body=None):
  url = self.base_url + path

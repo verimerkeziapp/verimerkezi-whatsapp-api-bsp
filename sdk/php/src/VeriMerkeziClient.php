@@ -82,9 +82,37 @@ class VeriMerkeziClient
  public function updateProfile(string $phoneNumberId, array $fields): array { return $this->patch('/profile/' . urlencode($phoneNumberId), $fields); }
  public function reportsSummary(string $period = '30d'): array { return $this->get('/reports/summary?period=' . urlencode($period)); }
 
+ // ── Webhook Subscriptions ──────────────────────────────────────────────
+ // Olaylar sizin sunucunuza POST edilir. HMAC-SHA256 imzalı, retry'lı.
+ // Tam dokümantasyon: docs/06-webhooks.md
+ public function listWebhooks(): array { return $this->get('/webhooks'); }
+
+ /**
+  * Yeni webhook oluştur. plain_secret SADECE bu yanıtta döner — saklayın.
+  * @param array $events  Olay listesi (boş veya ['*'] → tümü)
+  */
+ public function createWebhook(string $name, string $url, array $events = ['*']): array
+ {
+     return $this->post('/webhooks', [
+         'name'   => $name,
+         'url'    => $url,
+         'events' => $events,
+     ]);
+ }
+
+ public function setWebhookActive(int $id, bool $isActive): array
+ {
+     return $this->patch('/webhooks/' . $id, ['is_active' => $isActive]);
+ }
+
+ public function deleteWebhook(int $id): array { return $this->delete('/webhooks/' . $id); }
+ public function testWebhook(int $id): array { return $this->post('/webhooks/' . $id . '/test', []); }
+ public function webhookDeliveries(int $id): array { return $this->get('/webhooks/' . $id . '/deliveries'); }
+
  private function get(string $path): array { return $this->request('GET', $path); }
  private function post(string $path, array $body): array { return $this->request('POST', $path, $body); }
  private function patch(string $path, array $body): array { return $this->request('PATCH', $path, $body); }
+ private function delete(string $path): array { return $this->request('DELETE', $path); }
 
  private function request(string $method, string $path, ?array $body = null): array
  {

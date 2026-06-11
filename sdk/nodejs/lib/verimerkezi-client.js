@@ -71,9 +71,30 @@ class VeriMerkeziClient {
  updateProfile(phoneNumberId, fields) { return this._patch('/profile/' + encodeURIComponent(phoneNumberId), fields); }
  reportsSummary(period = '30d') { return this._get('/reports/summary?period=' + encodeURIComponent(period)); }
 
+ // ── Webhook Subscriptions ──────────────────────────────────────────────
+ // Olaylar sizin sunucunuza POST edilir. HMAC-SHA256 imzalı, retry'lı.
+ // Tam dokümantasyon: docs/06-webhooks.md
+ listWebhooks() { return this._get('/webhooks'); }
+
+ /**
+  * Yeni webhook oluştur. plain_secret SADECE bu yanıtta döner — saklayın.
+  */
+ createWebhook(name, url, events = ['*']) {
+ return this._post('/webhooks', { name, url, events });
+ }
+
+ setWebhookActive(id, isActive) {
+ return this._patch('/webhooks/' + id, { is_active: isActive });
+ }
+
+ deleteWebhook(id) { return this._delete('/webhooks/' + id); }
+ testWebhook(id) { return this._post('/webhooks/' + id + '/test', {}); }
+ webhookDeliveries(id) { return this._get('/webhooks/' + id + '/deliveries'); }
+
  _get(path) { return this._request('GET', path); }
  _post(path, body) { return this._request('POST', path, body); }
  _patch(path, body) { return this._request('PATCH', path, body); }
+ _delete(path) { return this._request('DELETE', path); }
 
  async _request(method, path, body = null) {
  const url = this.baseUrl + path;

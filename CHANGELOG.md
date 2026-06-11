@@ -2,6 +2,25 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.1.0] — 2026-06-11
+
+### Eklenenler — Webhook Subscription CRUD
+- **PHP SDK**: `listWebhooks()`, `createWebhook(name, url, events)`, `setWebhookActive(id, bool)`, `deleteWebhook(id)`, `testWebhook(id)`, `webhookDeliveries(id)` metodları
+- **Node.js SDK**: `listWebhooks()`, `createWebhook(name, url, events)`, `setWebhookActive(id, isActive)`, `deleteWebhook(id)`, `testWebhook(id)`, `webhookDeliveries(id)` metodları
+- **Python SDK**: `list_webhooks()`, `create_webhook(name, url, events)`, `set_webhook_active(id, is_active)`, `delete_webhook(id)`, `test_webhook(id)`, `webhook_deliveries(id)` metodları
+- **OpenAPI 3.1 şeması**: `/webhooks` (GET, POST), `/webhooks/{id}` (PATCH, DELETE), `/webhooks/{id}/test` (POST), `/webhooks/{id}/deliveries` (GET) endpoint'leri
+- **Postman koleksiyonu**: 6 yeni request (CRUD + test + deliveries)
+- HTTP DELETE method desteği SDK request helper'larında
+
+### Sunucu Tarafı — Backend İyileştirmeleri (üretim ortamı)
+- `OutgoingWebhookService::dispatch()` `WaDispatcher` cron'a entegre edildi — her dakika kuyruk işlenir
+- `MetaWhatsAppController::saveIncomingMessage` publish sonrası anında `dispatch(5)` çağrısı — yeni mesajlar 1-2 sn içinde müşteri sunucusuna ulaşır (cron beklemez)
+- Webhook delivery teslimat geçmişi GET endpoint'i ile sorgulanabilir
+
+### Notlar
+- Bu sürüm geriye dönük uyumlu — mevcut webhook entegrasyonları aynen çalışmaya devam eder
+- `plain_secret` hâlâ yalnızca `createWebhook` yanıtında 1 kez döner; HMAC imza akışı değişmedi (`sha256=hmac_sha256(ts + '.' + body, secret)`)
+
 ## [1.0.0] — 2026-05-30
 
 ### Eklenenler

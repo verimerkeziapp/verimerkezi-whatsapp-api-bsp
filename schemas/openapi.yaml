@@ -346,3 +346,169 @@ paths:
  read_rate: { type: number }
  failure_rate: { type: number }
  balance: { type: integer }
+
+ /webhooks:
+ get:
+ summary: List webhook subscriptions
+ tags: [Webhooks]
+ security: [{ BearerAuth: [webhooks:read] }]
+ responses:
+ '200':
+ description: List of subscriptions
+ content:
+ application/json:
+ schema:
+ type: object
+ properties:
+ ok: { type: boolean }
+ subscriptions:
+ type: array
+ items:
+ type: object
+ properties:
+ id: { type: integer }
+ name: { type: string }
+ url: { type: string, format: uri }
+ secret_prefix: { type: string }
+ events: { type: array, items: { type: string } }
+ is_active: { type: boolean }
+ last_success_at: { type: string, format: date-time, nullable: true }
+ last_failure_at: { type: string, format: date-time, nullable: true }
+ failure_count: { type: integer }
+ created_at: { type: string, format: date-time }
+ post:
+ summary: Create webhook subscription (plain_secret returned once)
+ tags: [Webhooks]
+ security: [{ BearerAuth: [webhooks:write] }]
+ requestBody:
+ required: true
+ content:
+ application/json:
+ schema:
+ type: object
+ required: [name, url]
+ properties:
+ name: { type: string, minLength: 1, maxLength: 80, example: "Production Bot" }
+ url: { type: string, format: uri, example: "https://api.firmaniz.com/wa-webhook" }
+ events:
+ type: array
+ items:
+ type: string
+ enum:
+ - "*"
+ - message.received
+ - message.status.sent
+ - message.status.delivered
+ - message.status.read
+ - message.status.failed
+ - template.approved
+ - template.rejected
+ - template.flagged
+ - template.paused
+ - quality.changed
+ - account.alert
+ default: ["*"]
+ responses:
+ '200':
+ description: Created
+ content:
+ application/json:
+ schema:
+ type: object
+ properties:
+ ok: { type: boolean }
+ subscription:
+ type: object
+ properties:
+ id: { type: integer }
+ secret_prefix: { type: string }
+ events: { type: array, items: { type: string } }
+ plain_secret:
+ type: string
+ description: "Bu yanıtta SADECE 1 KEZ döner. HMAC doğrulaması için saklayın."
+ warning: { type: string }
+
+ /webhooks/{id}:
+ parameters:
+ - in: path
+ name: id
+ required: true
+ schema: { type: integer }
+ patch:
+ summary: Activate / deactivate webhook
+ tags: [Webhooks]
+ security: [{ BearerAuth: [webhooks:write] }]
+ requestBody:
+ required: true
+ content:
+ application/json:
+ schema:
+ type: object
+ properties:
+ is_active: { type: boolean }
+ responses:
+ '200': { description: Updated }
+ delete:
+ summary: Delete webhook subscription
+ tags: [Webhooks]
+ security: [{ BearerAuth: [webhooks:write] }]
+ responses:
+ '200': { description: Deleted }
+
+ /webhooks/{id}/test:
+ post:
+ summary: Send a synthetic test ping immediately
+ tags: [Webhooks]
+ security: [{ BearerAuth: [webhooks:write] }]
+ parameters:
+ - in: path
+ name: id
+ required: true
+ schema: { type: integer }
+ responses:
+ '200':
+ description: Result
+ content:
+ application/json:
+ schema:
+ type: object
+ properties:
+ ok: { type: boolean }
+ result:
+ type: string
+ enum: [delivered, failed, dead]
+
+ /webhooks/{id}/deliveries:
+ get:
+ summary: List last 50 deliveries for a webhook
+ tags: [Webhooks]
+ security: [{ BearerAuth: [webhooks:read] }]
+ parameters:
+ - in: path
+ name: id
+ required: true
+ schema: { type: integer }
+ responses:
+ '200':
+ description: Deliveries
+ content:
+ application/json:
+ schema:
+ type: object
+ properties:
+ ok: { type: boolean }
+ deliveries:
+ type: array
+ items:
+ type: object
+ properties:
+ id: { type: integer }
+ event_id: { type: string }
+ event_type: { type: string }
+ status: { type: string, enum: [pending, delivered, failed, dead] }
+ attempt: { type: integer }
+ response_status: { type: integer, nullable: true }
+ response_preview: { type: string, nullable: true }
+ next_retry_at: { type: string, format: date-time, nullable: true }
+ delivered_at: { type: string, format: date-time, nullable: true }
+ created_at: { type: string, format: date-time }
