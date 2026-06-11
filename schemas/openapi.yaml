@@ -397,6 +397,7 @@ paths:
  enum:
  - "*"
  - message.received
+ - message.echo
  - message.status.sent
  - message.status.delivered
  - message.status.read

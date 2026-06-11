@@ -51,6 +51,7 @@ curl -X POST https://api.verimerkezi.app/wa/webhooks \
 | Event | Açıklama |
 |---|---|
 | `message.received` | Müşteriden yeni mesaj geldi (chatbot için en kritik) |
+| `message.echo` | **CoExistence**: işletme WhatsApp uygulamasından telefon üzerinden mesaj yazdığında — `data.from` işletme numarası, `data.to` müşteri |
 | `message.status.sent` | Meta gönderimi kabul etti |
 | `message.status.delivered` | Alıcının cihazına teslim edildi |
 | `message.status.read` | Alıcı mesajı okudu (mavi tik) |
@@ -62,6 +63,27 @@ curl -X POST https://api.verimerkezi.app/wa/webhooks \
 | `quality.changed` | Numaranızın kalite puanı değişti (GREEN/YELLOW/RED) |
 | `account.alert` | Hesap düzeyinde önemli uyarı |
 | `*` | Tüm event'ler (wildcard) |
+
+### `message.echo` payload örneği
+
+```json
+{
+  "event": "message.echo",
+  "event_id": "01963a2b-...",
+  "occurred_at": "2026-06-11T16:58:22+03:00",
+  "data": {
+    "wamid": "wamid.HBgM...",
+    "from": "908503092016",
+    "to": "905326060924",
+    "type": "text",
+    "text": "Teşekkürler, en kısa sürede dönüyorum.",
+    "source": "coexistence_app",
+    "phone_number_id": "314055571788368"
+  }
+}
+```
+
+> CoExistence Mode'da kullanıcı WhatsApp Business uygulamasından telefon üzerinden müşteriye yanıt yazınca Meta size echo gönderir. Bu sayede chatbot tarafınız hangi müşteriye işletmenin manuel cevap verdiğini görür, çift cevabı engelleyebilir.
 
 ## 3) Webhook Payload Formatı
 
