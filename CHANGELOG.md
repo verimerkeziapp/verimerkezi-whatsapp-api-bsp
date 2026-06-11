@@ -2,6 +2,14 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.2.0] — 2026-06-11
+
+### Eklenenler — CoExistence Echo Webhook
+- Yeni event tipi: **`message.echo`** — işletme WhatsApp uygulamasından telefon üzerinden müşteriye doğrudan yazdığında Meta'nın gönderdiği `smb_message_echoes` event'i artık müşteri webhook'una iletilir
+- `data.from` = işletme numarası, `data.to` = müşteri numarası, `data.source = "coexistence_app"`
+- Mesaj `v2_wa_messages`'a `direction='outbound'` + kaynak `coexistence_app` olarak yazılır; konuşma `last_message_at` güncellenir
+- OpenAPI events enum + docs/06-webhooks.md güncellendi
+
 ## [1.1.0] — 2026-06-11
 
 ### Eklenenler — Webhook Subscription CRUD
