@@ -2,6 +2,17 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.2.1] — 2026-06-11
+
+### Düzeltildi — `message.echo` payload parse bug'ı
+- **Bug:** `smb_message_echoes` field'ında Meta mesajları `value.message_echoes` array'inde gönderir; biz `value.messages` arıyorduk → echo'lar webhook_log'a alınıyor ama outgoing webhook'a publish edilmiyordu
+- **Düzeltme:** `MetaWhatsAppController::handleCoexistenceEcho()` her iki alanı da kabul ediyor (`message_echoes` öncelikli, `messages` fallback)
+- Etki: CoExistence Mode kullanan müşteriler `message.echo` event'ini artık almaya başlar
+- Müşteri kodunda değişiklik gerekmez — abonelik `events: ["*"]` veya `message.echo` içeriyorsa otomatik akar
+
+### Doğrulama
+- Bug fix sonrası mevcut bir Tech Provider hesabında son 1 saatteki 20 echo replay edildi → tümü ilk denemede HTTP 200 ile teslim edildi
+
 ## [1.2.0] — 2026-06-11
 
 ### Eklenenler — CoExistence Echo Webhook

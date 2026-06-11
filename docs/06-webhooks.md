@@ -85,6 +85,11 @@ curl -X POST https://api.verimerkezi.app/wa/webhooks \
 
 > CoExistence Mode'da kullanıcı WhatsApp Business uygulamasından telefon üzerinden müşteriye yanıt yazınca Meta size echo gönderir. Bu sayede chatbot tarafınız hangi müşteriye işletmenin manuel cevap verdiğini görür, çift cevabı engelleyebilir.
 
+#### Ön koşullar
+- Numaranızın **CoExistence Mode**'da olması gerekir (Meta tarafında platform_type kontrolü ile doğrulanabilir).
+- Meta tarafında `smb_message_echoes` webhook field'ı WABA aboneliğinizde subscribed olmalı.
+- Hem ön koşulu hem aboneliği BSP yetkili tarafımız sizin için otomatik açar — siz sadece `events: ["*"]` veya `events: ["message.echo"]` ile subscription kurarsınız.
+
 ## 3) Webhook Payload Formatı
 
 Veri Merkezi her event için bu JSON'u **POST** eder:
