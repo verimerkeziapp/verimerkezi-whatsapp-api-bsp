@@ -12,6 +12,8 @@ Veri Merkezi, WhatsApp tarafında olan **her olayı** sizin sunucunuza otomatik 
 
 Veri Merkezi olayı kuyruğa alır, sunucunuza POST eder ve **HTTP 2xx** yanıtı bekler. Hata durumunda **exponential backoff** ile retry yapar.
 
+> **Teslimat hızı:** Teslimat **olay-anındadır (event-driven)** — mesaj Meta'dan Veri Merkezi'ne ulaştığı anda webhook'unuz tetiklenir; tipik uçtan uca gecikme **~1 saniyedir**. Kuyruk yalnızca başarısız denemelerin retry'ı için kullanılır.
+
 ## 1) Webhook Aboneliği Kurma
 
 ### Panel üzerinden
@@ -69,19 +71,24 @@ curl -X POST https://api.verimerkezi.app/wa/webhooks \
 ```json
 {
   "event": "message.echo",
-  "event_id": "01963a2b-...",
+  "event_id": "evt_f813nXuoBeugOqcXq4QTg7Ux",
+  "event_type": "message.echo",
   "occurred_at": "2026-06-11T16:58:22+03:00",
+  "created_at": "2026-06-11 16:58:22",
   "data": {
     "wamid": "wamid.HBgM...",
     "from": "908503092016",
     "to": "905326060924",
     "type": "text",
     "text": "Teşekkürler, en kısa sürede dönüyorum.",
+    "timestamp": "1781305966",
     "source": "coexistence_app",
     "phone_number_id": "314055571788368"
   }
 }
 ```
+
+> `event_type` ve `created_at`, `event` ve `occurred_at`'in eşanlamlılarıdır (geriye dönük uyumluluk için her ikisi de gönderilir).
 
 > CoExistence Mode'da kullanıcı WhatsApp Business uygulamasından telefon üzerinden müşteriye yanıt yazınca Meta size echo gönderir. Bu sayede chatbot tarafınız hangi müşteriye işletmenin manuel cevap verdiğini görür, çift cevabı engelleyebilir.
 
@@ -92,19 +99,24 @@ curl -X POST https://api.verimerkezi.app/wa/webhooks \
 
 ## 3) Webhook Payload Formatı
 
-Veri Merkezi her event için bu JSON'u **POST** eder:
+Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneği):
 
 ```json
 {
  "event": "message.received",
- "event_id": "01963a2b-7c1d-7f4e-9b21-...",
+ "event_id": "evt_RbbtD3PpGtPnKkhlKJUAXphq",
+ "event_type": "message.received",
  "occurred_at": "2026-05-30T13:45:00+03:00",
+ "created_at": "2026-05-30 13:45:00",
  "data": {
- "phone_number_id": "1234567890",
- "from": "905551112233",
  "wamid": "wamid.HBgL...",
+ "from": "905551112233",
+ "name": "Ayşe Müşteri",
  "type": "text",
- "text": { "body": "Merhaba, sipariş durumunu öğrenebilir miyim?" },
+ "text": "Merhaba, sipariş durumunu öğrenebilir miyim?",
+ "media": null,
+ "timestamp": "1781297896",
+ "phone_number_id": "1234567890",
  "contact": {
  "wa_id": "905551112233",
  "profile_name": "Ayşe Müşteri"
@@ -112,6 +124,8 @@ Veri Merkezi her event için bu JSON'u **POST** eder:
  }
 }
 ```
+
+> **Not:** `data.text` düz **string**'dir (Meta'daki gibi `{ "body": ... }` nesnesi değil). Medya mesajlarında (`type: image/video/document/audio`) içerik `data.media` alanında gelir.
 
 ## 4) Header'lar (Doğrulama için)
 
@@ -252,11 +266,11 @@ def webhook():
 
 ## 6) Retry Politikası
 
-Sunucunuz 2xx dışı yanıt verirse veya timeout (15sn) yaparsa Veri Merkezi şu aralıklarla retry yapar:
+Sunucunuz 2xx dışı yanıt verirse veya timeout (10sn) yaparsa Veri Merkezi şu aralıklarla retry yapar:
 
 | Deneme | Beklenme süresi |
 |---|---|
-| 1 | hemen |
+| 1 | hemen (mesaj gelişiyle aynı saniyede, ~1sn) |
 | 2 | +1 dakika |
 | 3 | +5 dakika |
 | 4 | +30 dakika |
