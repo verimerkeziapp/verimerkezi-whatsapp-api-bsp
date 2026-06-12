@@ -2,6 +2,25 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.2.2] — 2026-06-13
+
+### İyileştirildi — Olay-anında (event-driven) webhook teslimatı
+- Webhook teslimatı artık **olay-anında**: mesaj Meta'dan ulaştığı anda müşteri endpoint'ine POST edilir — uçtan uca tipik gecikme **~1 saniye** (önceden kuyruk periyodik işlendiği için 60 saniyeye kadar çıkabiliyordu)
+- Dakikalık kuyruk işleyici yalnızca **retry/yedek** olarak çalışmaya devam eder; retry takvimi değişmedi
+- Eşzamanlı teslimata karşı satır bazlı kilit eklendi — aynı event'in çift teslim edilmesi mimari olarak engellendi
+
+### Eklendi — Doküman uyumu (geriye dönük uyumlu)
+- Payload gövdesine `event` ve `occurred_at` alanları eklendi (dokümandaki sözleşme); mevcut `event_type` ve `created_at` alanları aynen korunur — **mevcut entegrasyonlarda değişiklik gerekmez**
+- Yeni header'lar: `X-VeriMerkezi-Delivery-Attempt` ve `User-Agent: VeriMerkezi-Webhook/1.0`
+- `message.echo` payload'ına `from`, `source: "coexistence_app"`, `phone_number_id` alanları eklendi
+- `message.received` payload'ına `phone_number_id` ve `contact` nesnesi eklendi
+
+### Düzeltildi — Dokümantasyon
+- `docs/06-webhooks.md`: payload örnekleri canlı formatla birebir eşitlendi (`data.text` düz string'dir, `event_id` formatı `evt_...`), timeout değeri düzeltildi (10sn), olay-anında teslimat notu eklendi
+
+### Doğrulama
+- Canlı uçtan uca test: imzalı event → teslimat **0.11 sn**, HMAC imza doğrulandı, tüm yeni alan ve header'lar teyit edildi
+
 ## [1.2.1] — 2026-06-11
 
 ### Düzeltildi — `message.echo` payload parse bug'ı
