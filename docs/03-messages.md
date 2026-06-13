@@ -103,6 +103,8 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 }
 ```
 
+> **`language` alanı esnektir:** Hem Meta'nın nesne formatı `"language": { "code": "tr" }` hem de kısa string formu `"language": "tr"` kabul edilir — ikisi de aynı şekilde çalışır. (Dil kodunu birebir şablonunuzun onaylandığı dille gönderin; örn. `tr`.)
+
 ### 6) Header Medyalı Şablon (PDF, görsel, video)
 
 ```json
