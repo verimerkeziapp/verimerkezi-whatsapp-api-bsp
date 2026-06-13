@@ -2,6 +2,16 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.2.3] — 2026-06-13
+
+### Düzeltildi — `language` alanı her iki formatı kabul ediyor (#132001)
+- `POST /wa/messages` template gönderiminde `language` alanı artık HEM `"tr"` (string) HEM `{"code":"tr"}` (Meta nesne formatı) kabul ediyor. Önceden yalnız string bekleniyor, nesne gönderildiğinde içeride `"Array"`'e dönüşüp Meta **132001 "template language not available"** veriyordu.
+- Etki: Meta'nın native formatını (`{"code":"tr"}`) gönderen entegrasyonlar artık sorunsuz çalışır. Müşteri kodunda değişiklik gerekmez.
+
+### Düzeltildi — Dokümantasyon
+- `docs/03-messages.md`: `language` alanının iki formatı da kabul ettiği netleştirildi.
+- `docs/07-rate-limits.md`: rate limit değerleri gerçek uygulamayla eşitlendi — her API anahtarı için **120/dakika** (mesaj gönderimi ayrı sayaçta, yine 120/dakika). Önceki tablo yanlış olarak 60/20/30 gösteriyordu.
+
 ## [1.2.2] — 2026-06-13
 
 ### İyileştirildi — Olay-anında (event-driven) webhook teslimatı
