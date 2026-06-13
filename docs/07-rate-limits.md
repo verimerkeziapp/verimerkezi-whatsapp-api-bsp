@@ -2,26 +2,24 @@
 
 ## Rate Limit
 
-API her uç nokta için **dakikalık fixed-window** limit uygular.
+API, **dakikalık fixed-window** limit uygular. Her API anahtarı için **dakika başına 120 istek** geçerlidir. Mesaj gönderimi (`POST /wa/messages`) ayrı bir sayaçta tutulur — GET istekleriniz mesaj gönderim hakkınızı tüketmez; her sayaç bağımsız olarak 120/dakika ile sınırlıdır.
 
 ### Varsayılan Limitler
 
-| Endpoint kategorisi | Limit |
+| Sayaç | Limit |
 |---|---|
-| Genel (GET) | 120 / dakika |
-| Mesaj gönderim (POST /wa/messages) | 60 / dakika |
-| Şablon (POST /wa/templates) | 20 / dakika |
-| Webhook yönetimi | 30 / dakika |
+| Genel istekler (GET/POST/PATCH/DELETE) | 120 / dakika |
+| Mesaj gönderim (POST /wa/messages) | 120 / dakika (ayrı sayaç) |
 
-> Daha yüksek limitler için bilgi@verimerkezi.app
+> Yüksek hacimli kullanım için anahtar bazında limit artırımı: bilgi@verimerkezi.app
 
 ### Yanıt Header'ları
 
 Her başarılı yanıtla birlikte:
 
 ```
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 47
+X-RateLimit-Limit: 120
+X-RateLimit-Remaining: 117
 X-RateLimit-Reset: 1717068360
 ```
 
