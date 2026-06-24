@@ -38,68 +38,50 @@ vm.send_template(
  ]
 )
 
-# PDF
-vm.send_document(
- '1234567890',
- '905551234567',
- url='https://cdn.firmaniz.com/fatura.pdf',
- filename='fatura.pdf',
- caption='Mayıs faturanız'
-)
+# Yanıt düz bir nesnedir; gönderilen mesajın WhatsApp ID'si r['wamid'] içindedir.
+r = vm.send_text('1234567890', '905551234567', 'Merhaba!')
+print(r['wamid'])
 ```
 
 ## API
 
 | Metot | Açıklama |
 |---|---|
-| `send_text(phone_id, to, body)` | Düz metin |
-| `send_image(phone_id, to, url, caption=None)` | Görsel |
-| `send_document(phone_id, to, url, filename, caption=None)` | Doküman |
-| `send_video(phone_id, to, url, caption=None)` | Video |
-| `send_template(phone_id, to, name, language, components=None)` | Şablon |
-| `send_location(phone_id, to, lat, lng, name=None, address=None)` | Konum |
-| `send_reaction(phone_id, to, message_id, emoji)` | Reaction |
-| `get_conversation(phone, cursor=None)` | Sohbet geçmişi |
-| `create_template(payload)` | Şablon oluştur |
-| `list_templates()` | Şablon listesi |
+| `send_text(phone_id, to, body)` | Düz metin gönder |
+| `send_template(phone_id, to, name, language, components=None)` | Şablon gönder |
 | `me()` | Hesap bilgisi |
+| `numbers()` | Telefon numaraları |
+| `list_templates()` | Şablon listesi |
+| `get_profile(phone_id)` | Profil bilgisi |
+| `update_profile(phone_id, fields)` | Profil güncelle |
+| `list_contacts(cursor=None, limit=50, search=None)` | Kişi listesi |
+| `create_contact(phone, name, **extra)` | Kişi oluştur |
+| `bulk_contacts(contacts, skip_duplicates=True)` | Toplu kişi ekle |
+| `reports_summary(period='30d')` | Rapor özeti |
+
+> Gönderim yanıtı düz bir nesnedir: `{ok, id, wamid, to, type, status, mode, simulated, credits_used, balance}`. Gönderilen mesajın WhatsApp ID'si `r['wamid']` içindedir (`messages[]` dizisi YOKTUR).
+
+> Webhook'lar API üzerinden değil, [verimerkezi.app](https://verimerkezi.app) panelinden yapılandırılır. Gelen olayları doğrulamak için `examples/python/webhook_receiver.py` örneğine ve `VeriMerkeziClient.verify_webhook_signature(...)` yardımcısına bakın.
 
 ## Hata Yönetimi
 
 ```python
-from verimerkezi import VeriMerkeziClient, VeriMerkeziError
+from verimerkezi import VeriMerkeziClient, VeriMerkeziException
 
 vm = VeriMerkeziClient('vmk_live_...')
 
 try:
  vm.send_text('...', '...', '...')
-except VeriMerkeziError as e:
- print(f"Hata: {e.message}")
+except VeriMerkeziException as e:
+ print(f"Hata: {e}")
  print(f"HTTP: {e.status_code}")
- print(f"Meta code: {e.meta_code}")
-```
-
-## Async Sürüm
-
-```bash
-pip install verimerkezi[async]
-```
-
-```python
-import asyncio
-from verimerkezi import AsyncVeriMerkeziClient
-
-async def main():
- async with AsyncVeriMerkeziClient('vmk_live_...') as vm:
- await vm.send_text('1234567890', '905551234567', 'Merhaba!')
-
-asyncio.run(main())
+ print(f"Hata kodu: {e.error_code}")
 ```
 
 ## Gereksinimler
 
 - Python 3.9+
-- `requests` (sync) veya `httpx` (async)
+- `requests`
 
 ## Lisans
 

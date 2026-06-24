@@ -13,51 +13,20 @@ $apiKey = getenv('VM_API_KEY') ?: 'vmk_live_XXXXXXXX';
 $phoneNumberId = getenv('VM_PHONE_NUMBER_ID') ?: '1234567890';
 $recipient = '905551112233'; // E.164 (başında + yok)
 
-$vm = new VeriMerkeziClient($apiKey);
+$vm = new VeriMerkezi\VeriMerkeziClient($apiKey);
 
 // ────────────────────────────────────────────────────────────────
 // ÖRNEK 1 — Düz Metin (yalnızca 24h service window içinde)
 // ────────────────────────────────────────────────────────────────
 try {
  $response = $vm->sendText($phoneNumberId, $recipient, 'Merhaba! Bu test mesajıdır.');
- echo "Metin mesajı gönderildi: " . $response['messages'][0]['id'] . "\n";
+ echo "Metin mesajı gönderildi: " . $response['wamid'] . "\n";
 } catch (Exception $e) {
  echo "Hata: " . $e->getMessage() . "\n";
 }
 
 // ────────────────────────────────────────────────────────────────
-// ÖRNEK 2 — Görsel
-// ────────────────────────────────────────────────────────────────
-try {
- $response = $vm->sendImage(
- $phoneNumberId,
- $recipient,
- 'https://picsum.photos/800/600.jpg',
- 'Test görseli'
- );
- echo "Görsel gönderildi: " . $response['messages'][0]['id'] . "\n";
-} catch (Exception $e) {
- echo "Hata: " . $e->getMessage() . "\n";
-}
-
-// ────────────────────────────────────────────────────────────────
-// ÖRNEK 3 — PDF Doküman
-// ────────────────────────────────────────────────────────────────
-try {
- $response = $vm->sendDocument(
- $phoneNumberId,
- $recipient,
- 'https://www.africau.edu/images/default/sample.pdf',
- 'sample.pdf',
- 'Test PDF'
- );
- echo "PDF gönderildi: " . $response['messages'][0]['id'] . "\n";
-} catch (Exception $e) {
- echo "Hata: " . $e->getMessage() . "\n";
-}
-
-// ────────────────────────────────────────────────────────────────
-// ÖRNEK 4 — Şablon (24h dışında zorunlu)
+// ÖRNEK 2 — Şablon (24h dışında zorunlu)
 // ────────────────────────────────────────────────────────────────
 try {
  $response = $vm->sendTemplate(
@@ -74,7 +43,7 @@ try {
  ],
  ]
  );
- echo "Şablon gönderildi: " . $response['messages'][0]['id'] . "\n";
+ echo "Şablon gönderildi: " . $response['wamid'] . "\n";
 } catch (Exception $e) {
  echo "Hata: " . $e->getMessage() . "\n";
 }

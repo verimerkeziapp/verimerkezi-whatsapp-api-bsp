@@ -12,84 +12,14 @@ Müşterilerinize 24 saat dışında ulaşmak için **Meta onaylı şablonlar** 
 
 ## Şablon Oluşturma
 
-```bash
-curl -X POST https://api.verimerkezi.app/wa/templates \
- -H "Authorization: Bearer vmk_live_..." \
- -H "Content-Type: application/json" \
- -d '{
- "name": "siparis_onayi",
- "language": "tr",
- "category": "UTILITY",
- "components": [
- {
- "type": "HEADER",
- "format": "TEXT",
- "text": "Sipariş Onayınız"
- },
- {
- "type": "BODY",
- "text": "Merhaba {{1}}, sipariş #{{2}} onaylandı. Kargo: {{3}}",
- "example": {
- "body_text": [["Ahmet", "VM-2026-1234", "Yarın 14:00-18:00"]]
- }
- },
- {
- "type": "FOOTER",
- "text": "Veri Merkezi"
- },
- {
- "type": "BUTTONS",
- "buttons": [
- { "type": "QUICK_REPLY", "text": "Siparişi takip et" },
- { "type": "PHONE_NUMBER", "text": "Bizi ara", "phone_number": "+903326060924" }
- ]
- }
- ]
- }'
-```
+> **Şablonlar panel üzerinden yönetilir.** Şablon oluşturma, header medyası yükleme ve Meta'ya gönderim (submit) işlemleri **panelden** yapılır — bu işlemler için API endpoint'i bulunmamaktadır. API üzerinden yalnızca onaylı şablonlarınızı **listeleyebilir** (`GET /wa/templates`) ve `POST /wa/messages` ile **kullanabilirsiniz**.
 
-## Header Medyalı Şablon
-
-Eğer şablonunuzun başlığında **görsel / video / PDF** varsa, **header_handle** vermeniz gerekir. Bu handle Meta'ya direkt yüklenir.
-
-**1) Önce medyayı yükleyin:**
-```bash
-curl -X POST https://api.verimerkezi.app/wa/media/upload \
- -H "Authorization: Bearer vmk_live_..." \
- -F "file=@/path/to/header.pdf" \
- -F "type=document"
-```
-
-**Yanıt:**
-```json
-{
- "ok": true,
- "id": 42,
- "url": "https://cdn.verimerkezi.app/u/123/wa-media/...pdf",
- "handle": "h:abc123..."
-}
-```
-
-**2) Şablon oluştururken handle'ı ekleyin:**
-```json
-{
- "name": "fatura_bildirimi",
- "language": "tr",
- "category": "UTILITY",
- "components": [
- {
- "type": "HEADER",
- "format": "DOCUMENT",
- "example": { "header_handle": ["h:abc123..."] }
- },
- {
- "type": "BODY",
- "text": "Merhaba {{1}}, faturanız hazır.",
- "example": { "body_text": [["Ahmet"]] }
- }
- ]
-}
-```
+Panel -> **WhatsApp -> Şablonlar -> "Yeni Şablon"**:
+- Kategori seçin (`UTILITY` / `MARKETING` / `AUTHENTICATION`)
+- HEADER / BODY / FOOTER / BUTTONS bileşenlerini ekleyin
+- Header'da görsel / video / PDF kullanacaksanız medyayı panelden yükleyin (Meta'ya `header_handle` olarak otomatik gönderilir)
+- Parametreler için örnek değer girin
+- **Meta'ya Gönder** -> Meta inceler (genelde 5-30 dk)
 
 ## Şablon Durumları
 
@@ -128,10 +58,7 @@ curl https://api.verimerkezi.app/wa/templates \
 
 ## Şablon Silme
 
-```bash
-curl -X DELETE https://api.verimerkezi.app/wa/templates/siparis_onayi \
- -H "Authorization: Bearer vmk_live_..."
-```
+Şablon silme işlemi **panelden** yapılır: Panel -> WhatsApp -> Şablonlar -> ilgili şablon -> **Sil**.
 
 > DIKKAT: Şablon silinince **gerçek geçmiş mesajlar etkilenmez** ama bir daha o isimle kullanılamaz.
 

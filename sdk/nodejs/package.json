@@ -3,7 +3,6 @@
  "version": "1.0.0",
  "description": "Veri Merkezi WhatsApp Business API — Resmî Node.js SDK",
  "main": "lib/verimerkezi-client.js",
- "types": "lib/verimerkezi-client.d.ts",
  "scripts": {
  "test": "echo \"Test komutu yok\" && exit 0"
  },

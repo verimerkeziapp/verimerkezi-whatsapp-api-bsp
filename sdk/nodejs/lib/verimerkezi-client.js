@@ -71,25 +71,10 @@ class VeriMerkeziClient {
  updateProfile(phoneNumberId, fields) { return this._patch('/profile/' + encodeURIComponent(phoneNumberId), fields); }
  reportsSummary(period = '30d') { return this._get('/reports/summary?period=' + encodeURIComponent(period)); }
 
- // ── Webhook Subscriptions ──────────────────────────────────────────────
- // Olaylar sizin sunucunuza POST edilir. HMAC-SHA256 imzalı, retry'lı.
- // Tam dokümantasyon: docs/06-webhooks.md
- listWebhooks() { return this._get('/webhooks'); }
-
- /**
-  * Yeni webhook oluştur. plain_secret SADECE bu yanıtta döner — saklayın.
-  */
- createWebhook(name, url, events = ['*']) {
- return this._post('/webhooks', { name, url, events });
- }
-
- setWebhookActive(id, isActive) {
- return this._patch('/webhooks/' + id, { is_active: isActive });
- }
-
- deleteWebhook(id) { return this._delete('/webhooks/' + id); }
- testWebhook(id) { return this._post('/webhooks/' + id + '/test', {}); }
- webhookDeliveries(id) { return this._get('/webhooks/' + id + '/deliveries'); }
+ // ── Webhooks ───────────────────────────────────────────────────────────
+ // Webhook'lar programatik API ile değil, panel üzerinden yapılandırılır:
+ // https://verimerkezi.app/panel/wa (Webhook ayarları)
+ // Gelen olayları doğrulamak için statik verifyWebhookSignature() kullanın.
 
  _get(path) { return this._request('GET', path); }
  _post(path, body) { return this._request('POST', path, body); }
@@ -122,16 +107,20 @@ class VeriMerkeziClient {
  signal: controller.signal,
  });
  clearTimeout(t);
- const data = await resp.json();
+ // Yanıt gövdesi boş veya JSON olmayabilir (502/204) — önce metni oku,
+ // sonra güvenli şekilde parse et. Böylece 5xx/429 retry dalları bozulmaz.
+ const text = await resp.text();
+ let data;
+ try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
 
  // 5xx -> retry
  if (resp.status >= 500 && attempt < this.maxRetries) {
  await new Promise(r => setTimeout(r, attempt * 1000));
  continue;
  }
- // 429 -> respect Retry-After
+ // 429 -> Retry-After header veya gövdedeki retry_after
  if (resp.status === 429 && attempt < this.maxRetries) {
- const retryAfter = parseInt(resp.headers.get('Retry-After') || '5', 10);
+ const retryAfter = parseInt(resp.headers.get('Retry-After') || '', 10) || data?.error?.retry_after || 5;
  await new Promise(r => setTimeout(r, Math.min(30000, retryAfter * 1000)));
  continue;
  }
@@ -163,9 +152,10 @@ class VeriMerkeziClient {
  * Webhook signature doğrulama (müşteri tarafında).
  */
  static verifyWebhookSignature(secret, body, signature, timestamp, toleranceSec = 300) {
- if (Math.abs(Date.now() / 1000 - timestamp) > toleranceSec) return false;
+ const ts = parseInt(timestamp, 10);
+ if (!ts || Math.abs(Date.now() / 1000 - ts) > toleranceSec) return false;
  const expected = 'sha256=' + crypto.createHmac('sha256', secret)
- .update(timestamp + '.' + body)
+ .update(ts + '.' + body)
  .digest('hex');
  try {
  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));

@@ -196,10 +196,12 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
  "error": {
  "code": "invalid_recipient",
  "message": "Alıcı numarası WhatsApp'ta kayıtlı değil.",
- "meta_code": 131021
+ "field": "to"
  }
 }
 ```
+
+> `field` opsiyoneldir — yalnızca hata belirli bir girdi alanına bağlıysa döner. Hata zarfı `code`, `message` ve opsiyonel `field` dışında alan içermez.
 
 Tüm hata kodları için [09-errors.md](09-errors.md) bölümüne bakın.
 
