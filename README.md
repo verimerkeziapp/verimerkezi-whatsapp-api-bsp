@@ -47,12 +47,12 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 │ ├── 01-getting-started.md # Onboarding, API key alma
 │ ├── 02-authentication.md # Bearer token + scope
 │ ├── 03-messages.md # Mesaj gönderim (text / template / media)
-│ ├── 04-templates.md # Şablon yönetimi
-│ ├── 05-contacts.md # Kişi rehberi
-│ ├── 06-webhooks.md # Outgoing webhook + HMAC doğrulama
+│ ├── 04-templates.md # Şablon listeleme (oluşturma panelden)
+│ ├── 05-contacts.md # Kişi rehberi (ekle / toplu / listele)
+│ ├── 06-webhooks.md # Webhook alıcı + HMAC doğrulama
 │ ├── 07-rate-limits.md # Rate limit + Idempotency-Key
 │ ├── 08-pagination.md # Cursor pagination
-│ └── 09-errors.md # Hata kodları + Meta subcode haritası
+│ └── 09-errors.md # Hata kodları + Meta kod referansı
 ├── examples/
 │ ├── php/ # Örnek kullanımlar
 │ ├── nodejs/
@@ -100,16 +100,18 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 
 | Özellik | Durum |
 |---|---|
-| **Mesaj gönderimi** (text / image / document / video / audio / location / contact / sticker / reaction) | Evet |
-| **Şablon yönetimi** (oluştur / sil / listele / submit) | Evet |
-| **Resumable Upload** (PDF / görsel / video header) | Evet |
-| **Kişi rehberi** (CRUD + bulk + opt-out) | Evet |
-| **Konuşma geçmişi** (cursor-paginated) | Evet |
-| **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
+| **Mesaj gönderimi** (text / image / document / video / audio / location / contact / sticker / reaction) | Evet — `POST /messages` |
+| **Şablon listeleme** (`GET /templates`) | Evet (oluşturma/silme/submit panelden) |
+| **Kişi rehberi** (ekle / toplu ekle / listele) | Evet — `POST /contacts`, `/contacts/bulk`, `GET /contacts` |
+| **Hesap & numaralar** (`GET /me`, `GET /numbers`) | Evet |
+| **Raporlar** (`GET /reports/summary`) | Evet |
+| **Kredi** (`GET /credit/balance\|packages\|usage\|transactions`) | Evet |
+| **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
+| **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet (abonelik **panelden** — programatik API yok) |
 | **11 webhook event tipi** (message.received, status.*, template.*, quality.changed) | Evet |
-| **Idempotency-Key** (24h TTL, replay safe) | Evet |
-| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet |
-| **Cursor pagination** (opaque base64, stateless) | Evet |
+| **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
+| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk |
+| **Cursor pagination** (opaque, stateless) | Evet — `/contacts`, `/credit/transactions` |
 | **Tier auto-sync** (TIER_50 -> 250 -> 1K -> 10K -> 100K -> UNLIMITED) | Evet |
 | **Multi-tenant izolasyon** (her API key tek müşteri) | Evet |
 
@@ -134,9 +136,9 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 | [01-getting-started.md](docs/01-getting-started.md) | Hesap + WABA bağlantı + ilk API çağrısı |
 | [02-authentication.md](docs/02-authentication.md) | Bearer token, scope, key rotation |
 | [03-messages.md](docs/03-messages.md) | Tüm mesaj tipleri + örnekler |
-| [04-templates.md](docs/04-templates.md) | Şablon oluşturma + Meta onay süreci |
-| [05-contacts.md](docs/05-contacts.md) | Kişi CRUD + bulk + tags + opt-out |
-| [06-webhooks.md](docs/06-webhooks.md) | Outgoing webhook subscribe + HMAC doğrulama |
+| [04-templates.md](docs/04-templates.md) | Şablon listeleme (oluşturma panelden) + Meta onay süreci |
+| [05-contacts.md](docs/05-contacts.md) | Kişi ekleme + toplu içe aktarma + listeleme |
+| [06-webhooks.md](docs/06-webhooks.md) | Webhook alıcı (receiver) + HMAC doğrulama (abonelik panelden) |
 | [07-rate-limits.md](docs/07-rate-limits.md) | Rate limit politikası + Idempotency-Key |
 | [08-pagination.md](docs/08-pagination.md) | Cursor pagination kullanımı |
 | [09-errors.md](docs/09-errors.md) | HTTP + Meta hata kodları |

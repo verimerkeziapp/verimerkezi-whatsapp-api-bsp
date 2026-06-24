@@ -1,14 +1,12 @@
 """
 VeriMerkezi WhatsApp API — Python SDK (v1.0)
 
-INDIRMEDEN SONRA: dosyayı verimerkezi.py olarak yeniden adlandırın.
-
 Kullanım:
- from verimerkezi import VeriMerkeziClient
- vm = VeriMerkeziClient('vmk_live_xxxxxxxxxxxxxxxx')
- vm.send_template('1234567890', '905551234567', 'hosgeldin_mesaji', 'tr', [
- {'type': 'body', 'parameters': [{'type': 'text', 'text': 'Ahmet'}]}
- ])
+    from verimerkezi import VeriMerkeziClient
+    vm = VeriMerkeziClient('vmk_live_xxxxxxxxxxxxxxxx')
+    vm.send_template('1234567890', '905551234567', 'hosgeldin_mesaji', 'tr', [
+        {'type': 'body', 'parameters': [{'type': 'text', 'text': 'Ahmet'}]}
+    ])
 
 Bağımlılık: pip install requests
 """
@@ -17,120 +15,121 @@ import re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
+
 class VeriMerkeziException(Exception):
- def __init__(self, message: str, status_code: int = 0, error_code: str = None, error_data: dict = None):
- super().__init__(message)
- self.status_code = status_code
- self.error_code = error_code
- self.error_data = error_data or {}
+    def __init__(self, message: str, status_code: int = 0, error_code: str = None, error_data: dict = None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.error_code = error_code
+        self.error_data = error_data or {}
+
 
 class VeriMerkeziClient:
- def __init__(self, api_key: str, base_url: str = 'https://api.verimerkezi.app/wa', timeout: int = 30, max_retries: int = 3):
- if not re.match(r'^vmk_(live|test)_', api_key):
- raise ValueError('API key formatı geçersiz (vmk_live_... veya vmk_test_... olmalı)')
- self.api_key = api_key
- self.base_url = base_url.rstrip('/')
- self.timeout = timeout
- self.max_retries = max_retries
+    def __init__(self, api_key: str, base_url: str = 'https://api.verimerkezi.app/wa', timeout: int = 30, max_retries: int = 3):
+        if not re.match(r'^vmk_(live|test)_', api_key):
+            raise ValueError('API key formatı geçersiz (vmk_live_... veya vmk_test_... olmalı)')
+        self.api_key = api_key
+        self.base_url = base_url.rstrip('/')
+        self.timeout = timeout
+        self.max_retries = max_retries
 
- def me(self) -> dict: return self._get('/me')
- def numbers(self) -> dict: return self._get('/numbers')
+    def me(self) -> dict: return self._get('/me')
+    def numbers(self) -> dict: return self._get('/numbers')
 
- def send_template(self, phone_number_id, to, template_name, language='tr', components=None) -> dict:
- return self._post('/messages', {
- 'phone_number_id': phone_number_id, 'to': to,
- 'template': {'name': template_name, 'language': language, 'components': components or []},
- })
+    def send_template(self, phone_number_id, to, template_name, language='tr', components=None) -> dict:
+        return self._post('/messages', {
+            'phone_number_id': phone_number_id, 'to': to,
+            'template': {'name': template_name, 'language': language, 'components': components or []},
+        })
 
- def send_text(self, phone_number_id, to, text) -> dict:
- return self._post('/messages', {'phone_number_id': phone_number_id, 'to': to, 'text': text})
+    def send_text(self, phone_number_id, to, text) -> dict:
+        return self._post('/messages', {'phone_number_id': phone_number_id, 'to': to, 'text': text})
 
- def list_contacts(self, cursor=None, limit=50, search=None) -> dict:
- params = {'limit': limit}
- if cursor: params['cursor'] = cursor
- if search: params['q'] = search
- return self._get('/contacts?' + urlencode(params))
+    def list_contacts(self, cursor=None, limit=50, search=None) -> dict:
+        params = {'limit': limit}
+        if cursor: params['cursor'] = cursor
+        if search: params['q'] = search
+        return self._get('/contacts?' + urlencode(params))
 
- def create_contact(self, phone, name, **extra) -> dict:
- return self._post('/contacts', {'phone': phone, 'name': name, **extra})
+    def create_contact(self, phone, name, **extra) -> dict:
+        return self._post('/contacts', {'phone': phone, 'name': name, **extra})
 
- def bulk_contacts(self, contacts, skip_duplicates=True) -> dict:
- return self._post('/contacts/bulk', {'contacts': contacts, 'skip_duplicates': skip_duplicates})
+    def bulk_contacts(self, contacts, skip_duplicates=True) -> dict:
+        return self._post('/contacts/bulk', {'contacts': contacts, 'skip_duplicates': skip_duplicates})
 
- def list_templates(self) -> dict: return self._get('/templates')
- def get_profile(self, phone_number_id) -> dict: return self._get('/profile/' + quote(phone_number_id))
- def update_profile(self, phone_number_id, fields) -> dict: return self._patch('/profile/' + quote(phone_number_id), fields)
- def reports_summary(self, period='30d') -> dict: return self._get('/reports/summary?period=' + quote(period))
+    def list_templates(self) -> dict: return self._get('/templates')
+    def get_profile(self, phone_number_id) -> dict: return self._get('/profile/' + quote(phone_number_id))
+    def update_profile(self, phone_number_id, fields) -> dict: return self._patch('/profile/' + quote(phone_number_id), fields)
+    def reports_summary(self, period='30d') -> dict: return self._get('/reports/summary?period=' + quote(period))
 
- # ── Webhook Subscriptions ──────────────────────────────────────────────
- # Olaylar sizin sunucunuza POST edilir. HMAC-SHA256 imzalı, retry'lı.
- # Tam dokümantasyon: docs/06-webhooks.md
- def list_webhooks(self) -> dict: return self._get('/webhooks')
+    # Not: Webhook'lar API üzerinden değil, panelden yapılandırılır
+    # (https://verimerkezi.app paneli). Gelen olayları doğrulamak için
+    # statik verify_webhook_signature yardımcısını kullanın.
 
- def create_webhook(self, name: str, url: str, events: list = None) -> dict:
-  """Yeni webhook oluştur. plain_secret SADECE bu yanıtta döner — saklayın."""
-  return self._post('/webhooks', {'name': name, 'url': url, 'events': events or ['*']})
+    def _get(self, path): return self._request('GET', path)
+    def _post(self, path, body): return self._request('POST', path, body)
+    def _patch(self, path, body): return self._request('PATCH', path, body)
+    def _delete(self, path): return self._request('DELETE', path)
 
- def set_webhook_active(self, webhook_id: int, is_active: bool) -> dict:
-  return self._patch(f'/webhooks/{webhook_id}', {'is_active': is_active})
+    def _request(self, method, path, body=None):
+        url = self.base_url + path
+        idempotency_key = str(uuid.uuid4())
 
- def delete_webhook(self, webhook_id: int) -> dict: return self._delete(f'/webhooks/{webhook_id}')
- def test_webhook(self, webhook_id: int) -> dict: return self._post(f'/webhooks/{webhook_id}/test', {})
- def webhook_deliveries(self, webhook_id: int) -> dict: return self._get(f'/webhooks/{webhook_id}/deliveries')
+        for attempt in range(1, self.max_retries + 1):
+            headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'VeriMerkezi-Python-SDK/1.0',
+            }
+            if method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+                headers['Idempotency-Key'] = idempotency_key
 
- def _get(self, path): return self._request('GET', path)
- def _post(self, path, body): return self._request('POST', path, body)
- def _patch(self, path, body): return self._request('PATCH', path, body)
- def _delete(self, path): return self._request('DELETE', path)
+            try:
+                resp = requests.request(method, url, headers=headers, json=body, timeout=self.timeout)
+            except requests.RequestException as e:
+                if attempt < self.max_retries:
+                    time.sleep(attempt * 0.5); continue
+                raise VeriMerkeziException(f'Bağlantı hatası: {e}', 0)
 
- def _request(self, method, path, body=None):
- url = self.base_url + path
- idempotency_key = str(uuid.uuid4())
+            # 5xx ve 429 yeniden denemeleri JSON parse'tan ÖNCE — gövde JSON olmayabilir
+            if resp.status_code >= 500 and attempt < self.max_retries:
+                time.sleep(attempt * 1.0); continue
+            if resp.status_code == 429 and attempt < self.max_retries:
+                retry_after = 5
+                try:
+                    body_json = resp.json()
+                    retry_after = int(body_json.get('error', {}).get('retry_after')
+                                      or resp.headers.get('Retry-After', 5))
+                except (ValueError, TypeError):
+                    retry_after = int(resp.headers.get('Retry-After', '5'))
+                time.sleep(min(30, retry_after)); continue
 
- for attempt in range(1, self.max_retries + 1):
- headers = {
- 'Authorization': f'Bearer {self.api_key}',
- 'Content-Type': 'application/json',
- 'Accept': 'application/json',
- 'User-Agent': 'VeriMerkezi-Python-SDK/1.0',
- }
- if method in ('POST', 'PUT', 'PATCH', 'DELETE'):
- headers['Idempotency-Key'] = idempotency_key
+            try:
+                data = resp.json()
+            except ValueError:
+                raise VeriMerkeziException('Geçersiz JSON yanıt', resp.status_code)
 
- try:
- resp = requests.request(method, url, headers=headers, json=body, timeout=self.timeout)
- except requests.RequestException as e:
- if attempt < self.max_retries:
- time.sleep(attempt * 0.5); continue
- raise VeriMerkeziException(f'Bağlantı hatası: {e}', 0)
+            if resp.status_code >= 400:
+                err = data.get('error', {})
+                raise VeriMerkeziException(
+                    err.get('message', 'API hatası'),
+                    resp.status_code, err.get('code'), err
+                )
+            return data
 
- try:
- data = resp.json()
- except ValueError:
- raise VeriMerkeziException('Geçersiz JSON yanıt', resp.status_code)
+        raise VeriMerkeziException('Max retry aşıldı', 0)
 
- if resp.status_code >= 500 and attempt < self.max_retries:
- time.sleep(attempt * 1.0); continue
- if resp.status_code == 429 and attempt < self.max_retries:
- retry_after = int(resp.headers.get('Retry-After', '5'))
- time.sleep(min(30, retry_after)); continue
-
- if resp.status_code >= 400:
- err = data.get('error', {})
- raise VeriMerkeziException(
- err.get('message', 'API hatası'),
- resp.status_code, err.get('code'), err
- )
- return data
-
- raise VeriMerkeziException('Max retry aşıldı', 0)
-
- @staticmethod
- def verify_webhook_signature(secret, body, signature, timestamp, tolerance_sec=300):
- if abs(time.time() - timestamp) > tolerance_sec: return False
- expected = 'sha256=' + hmac.new(
- secret.encode('utf-8'),
- f'{timestamp}.{body}'.encode('utf-8'),
- hashlib.sha256
- ).hexdigest()
- return hmac.compare_digest(expected, signature)
+    @staticmethod
+    def verify_webhook_signature(secret, body, signature, timestamp, tolerance_sec=300):
+        try:
+            ts = int(timestamp)
+        except (ValueError, TypeError):
+            return False
+        if abs(time.time() - ts) > tolerance_sec: return False
+        expected = 'sha256=' + hmac.new(
+            secret.encode('utf-8'),
+            f'{timestamp}.{body}'.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        return hmac.compare_digest(expected, signature)

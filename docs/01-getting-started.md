@@ -29,11 +29,11 @@ Veri Merkezi, Meta'nın resmî **Embedded Signup v4** akışını kullanır:
 
 1. Panel -> **API -> Anahtarlar** sayfasına gidin.
 2. **"Yeni Anahtar Oluştur"** -> bir ad verin (örn. "Production Bot") -> scope seçin:
- - `messages:write` — mesaj gönderme
- - `templates:write` — şablon yönetimi
- - `contacts:write` — kişi rehberi
- - `webhooks:write` — webhook abonelik
- - `admin` — tüm yetkiler (dikkatli kullanın)
+ - `messages:send` — mesaj gönderme
+ - `templates:read` — şablon listesi
+ - `contacts:read` / `contacts:write` — kişi rehberi okuma / ekleme
+ - `profile:read` / `profile:write` — işletme profili okuma / güncelleme
+ - `reports:read` — raporlar ve analitik
 3. **Oluştur**'a basın -> anahtar **bir kez** gösterilir:
  - `vmk_live_abc123...` (production)
  - `vmk_test_xyz789...` (sandbox)
@@ -84,6 +84,66 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 ```
 
 > DIKKAT: **24 saat kuralı:** Müşteriniz size son 24 saat içinde mesaj atmadıysa, sadece **onaylı bir şablon** ile mesaj gönderebilirsiniz. Düz metin ancak service window içinde çalışır.
+
+## 5) Hesap & Yardımcı Endpoint'ler
+
+Mesaj gönderiminin yanında, hesabınızı yönetmek için aşağıdaki **salt-okunur** ve profil endpoint'leri mevcuttur. Tümü `https://api.verimerkezi.app/wa` tabanı altındadır ve Bearer token ister.
+
+### Hesap & Numaralar
+
+| Endpoint | Açıklama | Scope |
+|---|---|---|
+| `GET /me` | Hesap bilgisi + bağlı numaralar özeti | — |
+| `GET /numbers` | Bağlı WhatsApp numaralarınız (tier, kalite puanı, durum) | — |
+
+```bash
+curl https://api.verimerkezi.app/wa/numbers \
+ -H "Authorization: Bearer vmk_live_..."
+```
+
+### Raporlar
+
+| Endpoint | Açıklama | Scope |
+|---|---|---|
+| `GET /reports/summary?period=7d\|30d\|90d` | Seçilen dönem için gönderim/teslim/okunma özeti | `reports:read` |
+
+```bash
+curl "https://api.verimerkezi.app/wa/reports/summary?period=30d" \
+ -H "Authorization: Bearer vmk_live_..."
+```
+
+### Kredi
+
+| Endpoint | Açıklama | Scope |
+|---|---|---|
+| `GET /credit/balance` | Güncel kredi bakiyesi | — |
+| `GET /credit/packages` | Satın alınabilir kredi paketleri | — |
+| `GET /credit/usage?days=N` | Son N günün kredi kullanımı | — |
+| `GET /credit/transactions?limit=&cursor=&type=&source=` | Kredi hareketleri (cursor-paginated) | — |
+
+```bash
+curl https://api.verimerkezi.app/wa/credit/balance \
+ -H "Authorization: Bearer vmk_live_..."
+```
+
+### İşletme Profili
+
+| Endpoint | Açıklama | Scope |
+|---|---|---|
+| `GET /profile/{phone_number_id}` | Numaranın işletme profili (hakkında, adres, e-posta, web) | `profile:read` |
+| `PATCH /profile/{phone_number_id}` | İşletme profilini güncelle | `profile:write` |
+
+```bash
+# Profili oku
+curl https://api.verimerkezi.app/wa/profile/1234567890 \
+ -H "Authorization: Bearer vmk_live_..."
+
+# Profili güncelle
+curl -X PATCH https://api.verimerkezi.app/wa/profile/1234567890 \
+ -H "Authorization: Bearer vmk_live_..." \
+ -H "Content-Type: application/json" \
+ -d '{ "about": "7/24 müşteri desteği", "email": "destek@firma.com" }'
+```
 
 ## Sonraki Adımlar
 

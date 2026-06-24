@@ -2,6 +2,17 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.3.0] — 2026-06-24
+
+### Değişti — Dokümantasyon ve SDK canlı API ile hizalandı
+Bu sürüm, doküman ve SDK'yı **gerçekte uygulanan** uç noktalarla birebir eşitler. Canlı API'de bulunmayan uç noktalara dair anlatımlar kaldırıldı.
+
+- **Webhook:** Programatik webhook abonelik API'si (POST/PATCH/DELETE `/webhooks`, `/webhooks/{id}/test`, `plain_secret` oluşturma yanıtı) **kaldırıldı** — webhook'lar artık yalnızca **panelden** yapılandırılır (`panel/api/webhooks`). HMAC alıcı (receiver) örnekleri, event payload şekilleri ve retry politikası korundu.
+- **Scope adları düzeltildi:** `messages:write` → **`messages:send`**. Gerçek scope listesi: `messages:send`, `contacts:read`, `contacts:write`, `templates:read`, `profile:read`, `profile:write`, `reports:read`. Var olmayan `webhooks:write`, `admin`, `templates:write`, `messages:read` scope'ları kaldırıldı.
+- **Kaldırılan uygulanmamış uç noktalar:** şablon oluştur/sil + medya yükleme (panelden yönetilir; yalnızca `GET /templates` listeleme kaldı), kişi güncelle/sil + etiket + opt-out + bulk-action (yalnızca `GET /contacts`, `POST /contacts`, `POST /contacts/bulk` kaldı), `/messages` `/conversations` `/campaigns` `/webhooks/deliveries` listeleme uç noktaları.
+- **Belgelendi:** `GET /numbers`, `GET /reports/summary`, `GET /credit/balance|packages|usage|transactions`, `GET`/`PATCH /profile/{phone_number_id}` uç noktaları dokümana eklendi.
+- **Düzeltmeler:** rate limit her yerde **120/dk** olarak tutarlı hâle getirildi; `Idempotency-Key` yalnızca `POST /wa/messages` (24h TTL) için belgelendi; hata zarfı standardı `{"ok":false,"error":{"code","message","field"?}}` olarak netleştirildi (standart dışı `meta_code`/`meta_subcode`/`details` alanları kaldırıldı); kişi listesi filtreleri yalnızca `q` / `cursor` / `limit` (max 100).
+
 ## [1.2.3] — 2026-06-13
 
 ### Düzeltildi — `language` alanı her iki formatı kabul ediyor (#132001)

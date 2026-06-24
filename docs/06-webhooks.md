@@ -16,6 +16,8 @@ Veri Merkezi olayı kuyruğa alır, sunucunuza POST eder ve **HTTP 2xx** yanıt�
 
 ## 1) Webhook Aboneliği Kurma
 
+> **Önemli:** Webhook abonelikleri **yalnızca panelden** yönetilir (`panel/api/webhooks`). **Programatik bir webhook API'si yoktur** — webhook oluşturma / güncelleme / silme / test için REST endpoint bulunmamaktadır.
+
 ### Panel üzerinden
 Panel -> **API -> Webhooks -> "Yeni Webhook"**:
 - **Ad:** "Production Bot"
@@ -23,30 +25,7 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**:
 - **Event'ler:** seçeceğiniz olaylar (veya tümü için `*`)
 - **Oluştur** -> ekranda **secret** (`whsec_xxxxx`) gösterilir — **bir kez** gösterilir, kaydedin
 
-### API üzerinden
-```bash
-curl -X POST https://api.verimerkezi.app/wa/webhooks \
- -H "Authorization: Bearer vmk_live_..." \
- -H "Content-Type: application/json" \
- -d '{
- "name": "Production Bot",
- "url": "https://api.firmaniz.com/wa-webhook",
- "events": ["message.received", "message.status.delivered", "message.status.read"]
- }'
-```
-
-**Yanıt:**
-```json
-{
- "ok": true,
- "id": 42,
- "plain_secret": "whsec_abc123...",
- "secret_prefix": "whsec_abc123",
- "events": ["message.received", "message.status.delivered", "message.status.read"]
-}
-```
-
-> DIKKAT: `plain_secret` sadece bu yanıtta görünür. Kaybederseniz webhook'u silip yenisini oluşturmanız gerekir.
+> DIKKAT: Secret sadece oluşturma anında ekranda görünür. Kaybederseniz webhook'u silip yenisini oluşturmanız gerekir.
 
 ## 2) Event Tipleri
 
@@ -95,7 +74,7 @@ curl -X POST https://api.verimerkezi.app/wa/webhooks \
 #### Ön koşullar
 - Numaranızın **CoExistence Mode**'da olması gerekir (Meta tarafında platform_type kontrolü ile doğrulanabilir).
 - Meta tarafında `smb_message_echoes` webhook field'ı WABA aboneliğinizde subscribed olmalı.
-- Hem ön koşulu hem aboneliği BSP yetkili tarafımız sizin için otomatik açar — siz sadece `events: ["*"]` veya `events: ["message.echo"]` ile subscription kurarsınız.
+- Hem ön koşulu hem aboneliği BSP yetkili tarafımız sizin için otomatik açar — siz panelden webhook'unuzu kurarken `*` (tümü) veya `message.echo` event'ini seçmeniz yeterlidir.
 
 ## 3) Webhook Payload Formatı
 
@@ -283,27 +262,17 @@ Sunucunuz 2xx dışı yanıt verirse veya timeout (10sn) yaparsa Veri Merkezi ş
 
 ## 7) Test Ping
 
-Webhook'u canlıya almadan önce sahte event göndererek test edin:
+Webhook'u canlıya almadan önce panelden sahte event gönderebilirsiniz:
 
-```bash
-curl -X POST https://api.verimerkezi.app/wa/webhooks/42/test \
- -H "Authorization: Bearer vmk_live_..."
-```
-
-Veya panel -> Webhook detay -> **"Test Ping Gönder"** butonu.
+Panel -> Webhook detay -> **"Test Ping Gönder"** butonu.
 
 ## 8) Webhook'u Silme / Pasifleştirme
 
-```bash
-# Pasifleştir (event göndermez ama kayıt kalır)
-curl -X PATCH https://api.verimerkezi.app/wa/webhooks/42 \
- -H "Authorization: Bearer vmk_live_..." \
- -d '{"is_active": false}'
+Webhook'lar **panelden** yönetilir — pasifleştirme ve silme işlemleri için:
 
-# Tamamen sil
-curl -X DELETE https://api.verimerkezi.app/wa/webhooks/42 \
- -H "Authorization: Bearer vmk_live_..."
-```
+Panel -> **API -> Webhooks** -> ilgili webhook -> **Pasifleştir** / **Sil**.
+
+> Programatik (REST) bir webhook yönetim endpoint'i yoktur; tüm webhook işlemleri panel üzerinden yapılır.
 
 ## Sık Sorulanlar
 

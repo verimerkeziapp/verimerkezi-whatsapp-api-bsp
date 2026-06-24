@@ -3,8 +3,11 @@ Veri Merkezi WhatsApp Business API — Resmî Python SDK
 """
 from setuptools import setup, find_packages
 
-with open("README.md", "r", encoding="utf-8") as fh:
- long_description = fh.read() if fh.readable() else "Veri Merkezi WhatsApp SDK"
+try:
+ with open("README.md", "r", encoding="utf-8") as fh:
+  long_description = fh.read()
+except FileNotFoundError:
+ long_description = "Veri Merkezi WhatsApp SDK"
 
 setup(
  name="verimerkezi",
@@ -36,9 +39,6 @@ setup(
  install_requires=[
  "requests>=2.28.0",
  ],
- extras_require={
- "async": ["httpx>=0.24.0"],
- },
  keywords="whatsapp business api meta bsp tech-provider messaging turkey",
  license="MIT",
 )

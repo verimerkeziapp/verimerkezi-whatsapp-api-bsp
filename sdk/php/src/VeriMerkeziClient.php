@@ -12,6 +12,9 @@
  * v1.0 — 2026-05-27
  * https://verimerkezi.app/panel/api/dokuman
  */
+
+namespace VeriMerkezi;
+
 class VeriMerkeziClient
 {
  private string $apiKey;
@@ -26,7 +29,7 @@ class VeriMerkeziClient
  int $maxRetries = 3
  ) {
  if (!preg_match('/^vmk_(live|test)_/', $apiKey)) {
- throw new InvalidArgumentException('API key formatı geçersiz (vmk_live_... veya vmk_test_... olmalı)');
+ throw new \InvalidArgumentException('API key formatı geçersiz (vmk_live_... veya vmk_test_... olmalı)');
  }
  $this->apiKey = $apiKey;
  $this->baseUrl = rtrim($baseUrl, '/');
@@ -82,32 +85,10 @@ class VeriMerkeziClient
  public function updateProfile(string $phoneNumberId, array $fields): array { return $this->patch('/profile/' . urlencode($phoneNumberId), $fields); }
  public function reportsSummary(string $period = '30d'): array { return $this->get('/reports/summary?period=' . urlencode($period)); }
 
- // ── Webhook Subscriptions ──────────────────────────────────────────────
- // Olaylar sizin sunucunuza POST edilir. HMAC-SHA256 imzalı, retry'lı.
- // Tam dokümantasyon: docs/06-webhooks.md
- public function listWebhooks(): array { return $this->get('/webhooks'); }
-
- /**
-  * Yeni webhook oluştur. plain_secret SADECE bu yanıtta döner — saklayın.
-  * @param array $events  Olay listesi (boş veya ['*'] → tümü)
-  */
- public function createWebhook(string $name, string $url, array $events = ['*']): array
- {
-     return $this->post('/webhooks', [
-         'name'   => $name,
-         'url'    => $url,
-         'events' => $events,
-     ]);
- }
-
- public function setWebhookActive(int $id, bool $isActive): array
- {
-     return $this->patch('/webhooks/' . $id, ['is_active' => $isActive]);
- }
-
- public function deleteWebhook(int $id): array { return $this->delete('/webhooks/' . $id); }
- public function testWebhook(int $id): array { return $this->post('/webhooks/' . $id . '/test', []); }
- public function webhookDeliveries(int $id): array { return $this->get('/webhooks/' . $id . '/deliveries'); }
+ // ── Webhooks ───────────────────────────────────────────────────────────
+ // Webhook'lar panelden yapılandırılır (panel/api/webhooks) — programatik
+ // webhook API'si yoktur. SDK yalnızca alıcı + imza doğrulaması sağlar:
+ // verifyWebhookSignature() (aşağıda) ve examples/php/webhook-receiver.php.
 
  private function get(string $path): array { return $this->request('GET', $path); }
  private function post(string $path, array $body): array { return $this->request('POST', $path, $body); }
@@ -190,7 +171,7 @@ class VeriMerkeziClient
  }
 }
 
-class VeriMerkeziException extends RuntimeException
+class VeriMerkeziException extends \RuntimeException
 {
  public ?string $errorCode;
  public ?array $errorData;

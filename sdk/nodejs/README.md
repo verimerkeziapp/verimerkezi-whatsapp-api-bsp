@@ -37,24 +37,37 @@ const response = await vm.sendTemplate(
  ]
 );
 
-console.log('wamid:', response.messages[0].id);
+console.log('wamid:', response.wamid);
 ```
 
 ## API
 
 | Metot | İmza |
 |---|---|
-| `sendText(phoneId, to, body)` | `Promise<MessageResponse>` |
-| `sendImage(phoneId, to, url, caption?)` | `Promise<MessageResponse>` |
-| `sendDocument(phoneId, to, url, filename, caption?)` | `Promise<MessageResponse>` |
-| `sendVideo(phoneId, to, url, caption?)` | `Promise<MessageResponse>` |
-| `sendTemplate(phoneId, to, name, lang, components?)` | `Promise<MessageResponse>` |
-| `sendLocation(phoneId, to, lat, lng, name?, address?)` | `Promise<MessageResponse>` |
-| `sendReaction(phoneId, to, messageId, emoji)` | `Promise<MessageResponse>` |
-| `getConversation(phone, cursor?)` | `Promise<ConversationResponse>` |
-| `createTemplate(payload)` | `Promise<TemplateResponse>` |
-| `listTemplates()` | `Promise<TemplateListResponse>` |
 | `me()` | `Promise<AccountInfo>` |
+| `numbers()` | `Promise<NumberList>` |
+| `sendText(phoneId, to, body)` | `Promise<MessageResponse>` |
+| `sendTemplate(phoneId, to, name, lang, components?)` | `Promise<MessageResponse>` |
+| `listContacts({ cursor?, limit?, search? })` | `Promise<ContactList>` |
+| `createContact(phone, name, extra?)` | `Promise<Contact>` |
+| `bulkContacts(contacts, skipDuplicates?)` | `Promise<BulkResult>` |
+| `listTemplates()` | `Promise<TemplateListResponse>` |
+| `getProfile(phoneId)` | `Promise<Profile>` |
+| `updateProfile(phoneId, fields)` | `Promise<Profile>` |
+| `reportsSummary(period?)` | `Promise<ReportSummary>` |
+
+`POST /messages` düz (flat) bir yanıt döner — `messages[]` dizisi **yoktur**:
+
+```js
+const r = await vm.sendText('1234567890', '905551234567', 'Merhaba!');
+console.log(r.wamid, r.status, r.credits_used, r.balance);
+// { ok, id, wamid, to, type, status, mode, simulated, credits_used, balance }
+```
+
+> Webhook'lar SDK ile değil, panel üzerinden yapılandırılır:
+> https://verimerkezi.app/panel/wa — Gelen olayların imzasını doğrulamak için
+> `VeriMerkeziClient.verifyWebhookSignature(secret, body, signature, timestamp)`
+> statik metodunu ve `examples/nodejs/webhook-receiver.js` örneğini kullanın.
 
 ## Hata Yönetimi
 
@@ -64,8 +77,8 @@ try {
 } catch (err) {
  console.error('Hata:', err.message);
  console.error('HTTP:', err.statusCode);
- console.error('Meta code:', err.metaCode);
- console.error('Request ID:', err.requestId);
+ console.error('Hata kodu:', err.errorCode);
+ console.error('Detay:', err.errorData);
 }
 ```
 
