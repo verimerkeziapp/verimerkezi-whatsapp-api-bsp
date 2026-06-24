@@ -17,22 +17,9 @@ const vm = new VeriMerkeziClient(apiKey);
  // ───── Düz Metin ─────
  try {
  const r = await vm.sendText(phoneNumberId, recipient, 'Merhaba! Bu test mesajıdır.');
- console.log('Metin:', r.messages[0].id);
+ console.log('Metin:', r.wamid);
  } catch (e) {
  console.error('HATA: Metin hatası:', e.message);
- }
-
- // ───── Görsel ─────
- try {
- const r = await vm.sendImage(
- phoneNumberId,
- recipient,
- 'https://picsum.photos/800/600.jpg',
- 'Test görseli'
- );
- console.log('Görsel:', r.messages[0].id);
- } catch (e) {
- console.error('HATA: Görsel hatası:', e.message);
  }
 
  // ───── Şablon ─────
@@ -49,7 +36,7 @@ const vm = new VeriMerkeziClient(apiKey);
  },
  ]
  );
- console.log('Şablon:', r.messages[0].id);
+ console.log('Şablon:', r.wamid);
  } catch (e) {
  console.error('HATA: Şablon hatası:', e.message);
  }

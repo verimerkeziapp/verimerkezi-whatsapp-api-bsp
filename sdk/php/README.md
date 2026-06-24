@@ -26,19 +26,15 @@ $vm = new VeriMerkezi\VeriMerkeziClient('vmk_live_xxxxxxxxxxxxxxxx');
 $vm->sendText('1234567890', '905551234567', 'Merhaba!');
 
 // Şablon
-$vm->sendTemplate('1234567890', '905551234567', 'siparis_onayi', 'tr', [
+$response = $vm->sendTemplate('1234567890', '905551234567', 'siparis_onayi', 'tr', [
  [
  'type' => 'body',
  'parameters' => [['type' => 'text', 'text' => 'Ahmet']],
  ],
 ]);
 
-// PDF
-$vm->sendDocument('1234567890', '905551234567',
- 'https://cdn.firmaniz.com/fatura.pdf',
- 'fatura.pdf',
- 'Mayıs faturanız'
-);
+// Yanıt düz bir nesnedir; gönderilen mesaj kimliği:
+echo $response['wamid'];
 ```
 
 ## API Referansı
@@ -47,18 +43,24 @@ Tüm metotlar:
 
 | Metot | Açıklama |
 |---|---|
-| `sendText($phoneId, $to, $body)` | Düz metin |
-| `sendImage($phoneId, $to, $url, $caption = null)` | Görsel |
-| `sendDocument($phoneId, $to, $url, $filename, $caption = null)` | PDF/Doküman |
-| `sendVideo($phoneId, $to, $url, $caption = null)` | Video |
-| `sendTemplate($phoneId, $to, $name, $lang, $components = [])` | Şablon |
-| `sendLocation($phoneId, $to, $lat, $lng, $name = null, $address = null)` | Konum |
-| `sendReaction($phoneId, $to, $messageId, $emoji)` | Reaction |
-| `getConversation($phone, $cursor = null)` | Sohbet geçmişi |
-| `createTemplate($payload)` | Şablon oluştur |
-| `listTemplates()` | Şablon listesi |
-| `uploadMedia($filePath, $type)` | Medya yükle |
+| `sendText($phoneId, $to, $body)` | Düz metin (24h service window içinde) |
+| `sendTemplate($phoneId, $to, $name, $lang, $components = [])` | Şablon mesajı |
 | `me()` | Hesap bilgisi |
+| `numbers()` | WhatsApp numaraları |
+| `listContacts($cursor = null, $limit = 50, $search = null)` | Kişi listesi |
+| `createContact($phone, $name, $extra = [])` | Kişi oluştur |
+| `bulkContacts($contacts, $skipDuplicates = true)` | Toplu kişi ekle |
+| `listTemplates()` | Şablon listesi |
+| `getProfile($phoneId)` | Numara profili |
+| `updateProfile($phoneId, $fields)` | Profil güncelle |
+| `reportsSummary($period = '30d')` | Rapor özeti |
+
+`POST /messages` yanıtı düz bir nesnedir (`messages[]` dizisi yoktur):
+
+```php
+['ok' => true, 'id' => ..., 'wamid' => ..., 'to' => ..., 'type' => ...,
+ 'status' => ..., 'mode' => ..., 'simulated' => ..., 'credits_used' => ..., 'balance' => ...]
+```
 
 ## Hata Yönetimi
 
@@ -70,16 +72,18 @@ try {
 } catch (VeriMerkeziException $e) {
  echo "Hata: " . $e->getMessage() . "\n";
  echo "Code: " . $e->getCode() . "\n"; // HTTP status
- echo "Meta code: " . $e->metaCode . "\n"; // Meta error code
+ echo "Error code: " . $e->errorCode . "\n"; // error.code
+ // $e->errorData → tüm error nesnesi (code, message, field?)
 }
 ```
 
 ## Otomatik Retry
 
-SDK 5xx hatalarda otomatik 3 retry yapar (exponential backoff: 1s -> 2s -> 4s).
+SDK 5xx hatalarda otomatik 3 retry yapar (linear backoff: 1s -> 2s).
+429 (rate limit) durumunda yanıttaki `retry_after` saniyesi kadar bekler.
 
 ```php
-$vm = new VeriMerkeziClient(
+$vm = new VeriMerkezi\VeriMerkeziClient(
  apiKey: 'vmk_live_...',
  timeout: 30,
  maxRetries: 3 // varsayılan
@@ -88,11 +92,8 @@ $vm = new VeriMerkeziClient(
 
 ## Idempotency
 
-SDK her POST için otomatik UUID üretir. Manuel kontrol:
-
-```php
-$vm->withIdempotencyKey('order-42')->sendTemplate(...);
-```
+SDK her POST/PATCH isteği için otomatik bir `Idempotency-Key` (UUID) başlığı üretir;
+böylece retry'larda aynı işlem iki kez gerçekleşmez.
 
 ## Gereksinimler
 

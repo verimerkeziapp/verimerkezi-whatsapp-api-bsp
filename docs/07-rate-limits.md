@@ -53,7 +53,7 @@ Aynı isteği yanlışlıkla iki kez göndermenizi (örn. network timeout sonras
 
 ### Nasıl Kullanılır?
 
-Her **POST/PUT/PATCH/DELETE** isteğinde benzersiz bir UUID gönderin:
+`Idempotency-Key` **yalnızca `POST /wa/messages`** isteğinde desteklenir (24 saat TTL). Bu istekte benzersiz bir UUID gönderin:
 
 ```bash
 curl -X POST https://api.verimerkezi.app/wa/messages \
@@ -119,10 +119,10 @@ Evet **Idempotency-Key ile:**
 
 ## Best Practices
 
-1. **Her zaman Idempotency-Key gönderin** — bedelsiz, garantili duplicate koruması
+1. **Mesaj gönderirken her zaman Idempotency-Key gönderin** — bedelsiz, garantili duplicate koruması (`POST /wa/messages`)
 2. **Rate limit header'larını izleyin** — proaktif yavaşlama yapın
 3. **429 alırsanız `Retry-After` saniyesini bekleyin** — toplam yedek deneme stratejisi (3 deneme + exponential backoff)
-4. **Toplu mesaj için throttling yapın** — örn. saniyede 10 istek (limit 60/dk = ortalama 1/sn ama bursty olabilirsiniz)
+4. **Toplu mesaj için throttling yapın** — örn. saniyede 2 istek (limit 120/dk = ortalama 2/sn ama bursty olabilirsiniz)
 5. **`X-RateLimit-Remaining` düşükse arka plana atın** — kritik mesajlar için kapasite bırakın
 
 ## SDK Otomatiği

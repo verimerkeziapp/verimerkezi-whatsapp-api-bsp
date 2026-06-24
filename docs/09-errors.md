@@ -5,8 +5,7 @@
 | Code | Açıklama |
 |---|---|
 | `200 OK` | Başarılı |
-| `201 Created` | Yeni kaynak oluşturuldu (şablon, kişi, webhook) |
-| `204 No Content` | Başarılı, gövde yok (DELETE) |
+| `201 Created` | Yeni kaynak oluşturuldu (kişi) |
 | `400 Bad Request` | İstek formatı hatalı (JSON parse, eksik alan) |
 | `401 Unauthorized` | API key eksik veya geçersiz |
 | `403 Forbidden` | Yetkisiz (yanlış scope, IP whitelist dışı, host kısıtı) |
@@ -29,12 +28,16 @@ Tüm hatalar şu yapıyı izler:
  "error": {
  "code": "string",
  "message": "Türkçe açıklama",
- "meta_code": 131021,
- "meta_subcode": null,
- "details": {}
+ "field": "to"
  }
 }
 ```
+
+- `code` — makine-okunur hata kodu (aşağıdaki tabloya bakın)
+- `message` — Türkçe açıklama
+- `field` — **opsiyonel**; validasyon hatalarında hangi alanın sorunlu olduğunu belirtir (örn. `to`, `phone`). Hata alana özgü değilse bulunmaz.
+
+> **Not:** Sunucu hata zarfı yalnızca `code`, `message` ve opsiyonel `field` alanlarını döner. Eski dokümanlarda görülebilen `meta_code` / `meta_subcode` / `details` alanları **standart zarfın parçası değildir** ve API tarafından gönderilmez.
 
 ## API Hata Kodları (`error.code`)
 
@@ -55,13 +58,12 @@ Tüm hatalar şu yapıyı izler:
 | `quota_exceeded` | 429 | Günlük tier limiti aşıldı |
 | `media_too_large` | 422 | Medya dosyası limit aşımı |
 | `media_invalid_format` | 422 | Desteklenmeyen MIME |
-| `webhook_url_invalid` | 422 | URL HTTPS değil veya erişilemez |
 | `payment_required` | 402 | Hesabınızda ödeme yöntemi yok |
 | `account_suspended` | 403 | Meta hesabınızı askıya aldı |
 
-## Meta Hata Kodları (Otomatik Türkçeleştirme)
+## Meta Kaynaklı Hatalar (Referans)
 
-`error.meta_code` Meta Graph API'nin orijinal kodu. Aşağıdakileri otomatik Türkçeleştiriyoruz:
+Aşağıdaki durumlar Meta Graph API tarafından üretilir; sunucu bunları yakalayıp standart hata zarfıyla (`code` + Türkçe `message`) döndürür. Tabloda referans olması için Meta'nın orijinal kod numaraları listelenmiştir — bu numaralar **yanıt gövdesinde ayrı bir alan olarak gönderilmez**, yalnızca tanı amaçlıdır.
 
 | Meta Code | Açıklama |
 |---|---|
@@ -88,22 +90,6 @@ Tüm hatalar şu yapıyı izler:
 | `132015` | Şablon askıya alınmış (kalite/rate) |
 | `133010` | Telefon numarası kayıtlı değil |
 | `133011` | Numara kalite eşiğini geçemedi |
-
-## Şablon Hata Subcode'ları
-
-Şablon oluştururken `meta_subcode` görebilirsiniz:
-
-| Subcode | Açıklama |
-|---|---|
-| `2388043` | Aynı isimde şablon var |
-| `2388044` | Şablon adı geçersiz (sadece a-z, 0-9, _) |
-| `2388045` | Kategori içerikle uyumsuz |
-| `2388046` | Şablon dili desteklenmiyor |
-| `2388047` | Body 3+ ardışık boş satır içeriyor |
-| `2388048` | Buton yapısı hatalı |
-| `2388049` | Header medyası yüklenemedi |
-| `2388050` | Parametre sıralaması hatalı |
-| `2388051` | Ödeme yöntemi gerekli |
 
 ## Tipik Çözümler
 
@@ -139,7 +125,7 @@ Numarayı E.164 formatına çevirin: `905551234567` (başında + olmadan).
  "endpoint": "POST /wa/messages",
  "http_status": 422,
  "error_code": "not_in_24h_window",
- "meta_code": 131047,
+ "error_field": "type",
  "user_action": "Tried to send text outside 24h window",
  "retry_strategy": "Switch to template"
 }

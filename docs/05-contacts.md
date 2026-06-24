@@ -1,6 +1,8 @@
 # 05 · Kişi Rehberi
 
-Veri Merkezi, müşterilerinizin telefon + isim + etiketlerini saklamak için kişi rehberi sunar. Bu sayede toplu mesaj, segmentasyon, opt-out yönetimi yapabilirsiniz.
+Veri Merkezi, müşterilerinizin telefon + isim + etiketlerini saklamak için kişi rehberi sunar. API üzerinden kişi **ekleyebilir** (`POST /wa/contacts`), **toplu ekleyebilir** (`POST /wa/contacts/bulk`) ve **listeleyebilirsiniz** (`GET /wa/contacts`).
+
+> **Not:** Kişi güncelleme/silme, etiket ekleme/çıkarma, opt-out ve toplu işlem (bulk-action) için API endpoint'i bulunmamaktadır; bu işlemler panel üzerinden yapılır.
 
 ## Kişi Ekleme
 
@@ -53,7 +55,7 @@ curl -X POST https://api.verimerkezi.app/wa/contacts/bulk \
 ## Kişi Listesi
 
 ```bash
-curl "https://api.verimerkezi.app/wa/contacts?limit=50&tag=vip" \
+curl "https://api.verimerkezi.app/wa/contacts?limit=50&q=ayse" \
  -H "Authorization: Bearer vmk_live_..."
 ```
 
@@ -63,72 +65,9 @@ curl "https://api.verimerkezi.app/wa/contacts?limit=50&tag=vip" \
 |---|---|
 | `limit` | Sayfa başına kayıt (max 100) |
 | `cursor` | Bir önceki sayfanın `next_cursor`'ı |
-| `tag` | Sadece bu etiketi taşıyanları getir |
-| `search` | İsim/telefon/email içinde ara |
-| `opted_out` | `0`=aktif, `1`=opt-out olanlar |
-| `created_after` | ISO 8601 datetime |
+| `q` | İsim/telefon/email içinde arama |
 
-## Kişi Güncelleme
-
-```bash
-curl -X PATCH https://api.verimerkezi.app/wa/contacts/42 \
- -H "Authorization: Bearer vmk_live_..." \
- -H "Content-Type: application/json" \
- -d '{
- "tags": ["vip", "loyal-customer"],
- "custom_attrs": { "order_count": 15 }
- }'
-```
-
-## Kişi Silme
-
-```bash
-curl -X DELETE https://api.verimerkezi.app/wa/contacts/42 \
- -H "Authorization: Bearer vmk_live_..."
-```
-
-## Etiket Ekleme / Çıkarma
-
-```bash
-# Ekle
-curl -X POST https://api.verimerkezi.app/wa/contacts/42/tags \
- -d '{ "tag": "kampanya-haziran" }'
-
-# Çıkar
-curl -X DELETE https://api.verimerkezi.app/wa/contacts/42/tags/kampanya-haziran
-```
-
-## Opt-Out Yönetimi
-
-Müşteri "stop" / "iptal" / "rahatsız etme" gibi anahtar kelimelerle yanıt verdiğinde **otomatik opt-out** olur. Manuel de yapabilirsiniz:
-
-```bash
-curl -X POST https://api.verimerkezi.app/wa/contacts/42/opt-out \
- -H "Authorization: Bearer vmk_live_..." \
- -d '{ "reason": "Müşteri talebi" }'
-```
-
-> DIKKAT: Opt-out olmuş kişilere **şablon mesaj** gönderemezsiniz. SDK'lar otomatik filter uygular.
-
-## Toplu İşlemler
-
-```bash
-# Birden fazla kişiye etiket ekle
-curl -X POST https://api.verimerkezi.app/wa/contacts/bulk-action \
- -H "Authorization: Bearer vmk_live_..." \
- -d '{
- "action": "add_tag",
- "contact_ids": [42, 43, 44, 45],
- "tag": "mayis-kampanya"
- }'
-
-# Toplu opt-out
-curl -X POST https://api.verimerkezi.app/wa/contacts/bulk-action \
- -d '{
- "action": "opt_out",
- "contact_ids": [42, 43]
- }'
-```
+> **Not:** Kişi listesinde yalnızca `q` (arama), `cursor` ve `limit` parametreleri desteklenir. Etiket / opt-out / tarih bazlı sunucu tarafı filtre bulunmamaktadır.
 
 ## Veri Modeli
 
@@ -158,7 +97,7 @@ interface Contact {
 
 Veri Merkezi kişi verisini sizin adınıza saklar. KVKK gerekleri:
 - Müşterilerin **rıza beyanı** ile rehbere eklenmesi gerekir (örn. site kayıt formunda checkbox)
-- Müşteri **silinme talebi** geldiğinde DELETE endpoint'i ile kaydı silin
+- Müşteri **silinme talebi** geldiğinde ilgili kaydı panel üzerinden silin
 - **Veri yönetim politikanız**'da Veri Merkezi'nin alt-veri işleyen olduğunu belirtin
 
 > Detay: [verimerkezi.app/yasal/kvkk-aydinlatma](https://verimerkezi.app/yasal/kvkk-aydinlatma)

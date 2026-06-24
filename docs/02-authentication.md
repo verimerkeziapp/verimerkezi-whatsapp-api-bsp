@@ -21,17 +21,15 @@ Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsin
 
 | Scope | İzin verir |
 |---|---|
-| `messages:read` | Konuşma + mesaj geçmişi okuma |
-| `messages:write` | Mesaj gönderme (text, media, template) |
+| `messages:send` | Mesaj gönderme (text, media, template) |
 | `templates:read` | Şablon listesi |
-| `templates:write` | Şablon oluşturma + silme |
 | `contacts:read` | Kişi rehberi okuma |
-| `contacts:write` | Kişi ekleme/silme/güncelleme |
-| `webhooks:write` | Webhook abonelik yönetimi |
+| `contacts:write` | Kişi ekleme (tekil + toplu) |
+| `profile:read` | İşletme profili okuma |
+| `profile:write` | İşletme profili güncelleme |
 | `reports:read` | Raporlar, analitik |
-| `admin` | Tüm yetkiler |
 
-> **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:write` + `templates:read` yeterlidir.
+> **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:send` + `templates:read` yeterlidir.
 
 ## Anahtar Yönetimi
 

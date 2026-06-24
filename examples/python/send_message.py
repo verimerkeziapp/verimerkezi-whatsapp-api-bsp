@@ -21,21 +21,9 @@ vm = VeriMerkeziClient(api_key)
 # ───── Düz Metin ─────
 try:
  r = vm.send_text(phone_number_id, recipient, 'Merhaba! Bu test mesajıdır.')
- print(f"Metin: {r['messages'][0]['id']}")
+ print(f"Metin: {r['wamid']}")
 except Exception as e:
  print(f"Metin hatası: {e}")
-
-# ───── Görsel ─────
-try:
- r = vm.send_image(
- phone_number_id,
- recipient,
- 'https://picsum.photos/800/600.jpg',
- caption='Test görseli'
- )
- print(f"Görsel: {r['messages'][0]['id']}")
-except Exception as e:
- print(f"Görsel hatası: {e}")
 
 # ───── Şablon ─────
 try:
@@ -51,6 +39,6 @@ try:
  }
  ]
  )
- print(f"Şablon: {r['messages'][0]['id']}")
+ print(f"Şablon: {r['wamid']}")
 except Exception as e:
  print(f"Şablon hatası: {e}")

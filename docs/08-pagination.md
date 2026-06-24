@@ -121,27 +121,20 @@ v base64 decode v
 | Endpoint | Sıralama |
 |---|---|
 | `GET /wa/contacts` | `id desc` |
-| `GET /wa/messages` | `id desc` |
-| `GET /wa/conversations/{phone}` | `id desc` |
-| `GET /wa/templates` | `id desc` |
-| `GET /wa/campaigns` | `id desc` |
-| `GET /wa/webhooks/deliveries` | `id desc` |
+| `GET /wa/credit/transactions` | `id desc` |
 
 ## Limit Sınırları
 
 | Endpoint | Default | Max |
 |---|---|---|
-| Genel | 20 | 100 |
-| `/wa/messages` | 20 | 100 |
-| `/wa/conversations` | 50 | 200 |
-| `/wa/contacts` | 50 | 500 |
+| `/wa/contacts` | 50 | 100 |
 
 ## Cursor + Filter
 
 Cursor ve filtreleri birlikte kullanabilirsiniz:
 
 ```bash
-curl "https://api.verimerkezi.app/wa/contacts?tag=vip&limit=20&cursor=..."
+curl "https://api.verimerkezi.app/wa/contacts?q=ayse&limit=20&cursor=..."
 ```
 
 Filtre değişmeden cursor takip ettiğiniz sürece tutarlı sayfalama elde edersiniz.
