@@ -48,6 +48,11 @@ console.log('wamid:', response.wamid);
 | `numbers()` | `Promise<NumberList>` |
 | `sendText(phoneId, to, body)` | `Promise<MessageResponse>` |
 | `sendTemplate(phoneId, to, name, lang, components?)` | `Promise<MessageResponse>` |
+| `sendImage(phoneId, to, link, caption?)` | `Promise<MessageResponse>` |
+| `sendVideo(phoneId, to, link, caption?)` | `Promise<MessageResponse>` |
+| `sendAudio(phoneId, to, link)` | `Promise<MessageResponse>` |
+| `sendDocument(phoneId, to, link, filename?, caption?)` | `Promise<MessageResponse>` |
+| `markRead(phoneId, messageId, typing?)` | `Promise<MessageResponse>` |
 | `listContacts({ cursor?, limit?, search? })` | `Promise<ContactList>` |
 | `createContact(phone, name, extra?)` | `Promise<Contact>` |
 | `bulkContacts(contacts, skipDuplicates?)` | `Promise<BulkResult>` |
@@ -62,6 +67,37 @@ console.log('wamid:', response.wamid);
 const r = await vm.sendText('1234567890', '905551234567', 'Merhaba!');
 console.log(r.wamid, r.status, r.credits_used, r.balance);
 // { ok, id, wamid, to, type, status, mode, simulated, credits_used, balance }
+```
+
+## Medya Gönderme
+
+Medya **link tabanlıdır** — public bir `https` URL gerekir (image ≤5MB jpeg/png, video ≤16MB
+mp4, audio ≤16MB, document ≤100MB). Serbest medya yalnızca **24 saatlik müşteri hizmet
+penceresi** içinde gönderilebilir; pencere kapalıysa Meta `131047` döner ve onaylı bir şablon
+kullanmanız gerekir. Her medya mesajı **1 kredi**dir.
+
+```js
+await vm.sendVideo(
+  '1234567890',
+  '905551234567',
+  'https://verimerkezi.app/uploads/tanitim.mp4',
+  'Yeni ürünümüzü izleyin 🎬' // caption opsiyonel
+);
+
+// Diğerleri:
+// await vm.sendImage(phoneId, to, 'https://.../afis.jpg', 'Kampanya');
+// await vm.sendAudio(phoneId, to, 'https://.../ses.mp3');           // caption yok
+// await vm.sendDocument(phoneId, to, 'https://.../katalog.pdf', 'katalog.pdf', 'Fiyat listesi');
+```
+
+## Okundu Bilgisi + Yazıyor Göstergesi
+
+Gelen bir mesajı okundu işaretler (mavi tik). `typing: true` ile ~25 saniye boyunca müşteriye
+"yazıyor…" göstergesi gösterilir. **Kredi harcamaz.**
+
+```js
+// Gelen mesajın id'sini okundu işaretle ve "yazıyor…" göster
+await vm.markRead('1234567890', 'wamid.HBgM...', true);
 ```
 
 > Webhook'lar SDK ile değil, panel üzerinden yapılandırılır:
