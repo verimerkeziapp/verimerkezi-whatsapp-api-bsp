@@ -45,6 +45,38 @@ class VeriMerkeziClient:
     def send_text(self, phone_number_id, to, text) -> dict:
         return self._post('/messages', {'phone_number_id': phone_number_id, 'to': to, 'text': text})
 
+    def send_image(self, phone_number_id, to, link, caption=None) -> dict:
+        image = {'link': link}
+        if caption is not None: image['caption'] = caption
+        return self._post('/messages', {
+            'phone_number_id': phone_number_id, 'to': to, 'type': 'image', 'image': image,
+        })
+
+    def send_video(self, phone_number_id, to, link, caption=None) -> dict:
+        video = {'link': link}
+        if caption is not None: video['caption'] = caption
+        return self._post('/messages', {
+            'phone_number_id': phone_number_id, 'to': to, 'type': 'video', 'video': video,
+        })
+
+    def send_audio(self, phone_number_id, to, link) -> dict:
+        return self._post('/messages', {
+            'phone_number_id': phone_number_id, 'to': to, 'type': 'audio', 'audio': {'link': link},
+        })
+
+    def send_document(self, phone_number_id, to, link, filename=None, caption=None) -> dict:
+        document = {'link': link}
+        if filename is not None: document['filename'] = filename
+        if caption is not None: document['caption'] = caption
+        return self._post('/messages', {
+            'phone_number_id': phone_number_id, 'to': to, 'type': 'document', 'document': document,
+        })
+
+    def mark_read(self, phone_number_id, message_id, typing=False) -> dict:
+        return self._post('/messages/read', {
+            'phone_number_id': phone_number_id, 'message_id': message_id, 'typing': typing,
+        })
+
     def list_contacts(self, cursor=None, limit=50, search=None) -> dict:
         params = {'limit': limit}
         if cursor: params['cursor'] = cursor

@@ -2,6 +2,13 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.4.0] — 2026-06-25
+
+### Eklenenler — Free-form medya + okundu/yazıyor göstergesi
+- **`POST /messages`** artık 24 saatlik müşteri hizmet penceresi içinde **şablonsuz (free-form) medya** gönderir: `image` / `video` / `audio` / `document` — kaynak `link` (herkese açık `https://` URL) **veya** `id` (Meta media id). `caption` image/video/document için, `filename` document için geçerli; audio ikisini de almaz. Her gönderim 1 kredi tüketir. Pencere kapalıyken Meta **131047** döner (bunun yerine şablon kullanın). Meta limitleri: image ≤5MB, video ≤16MB, audio ≤16MB, document ≤100MB.
+- **`POST /messages/read`** (yeni) — gelen mesajı okundu işaretler (mavi tik) ve `typing: true` ile ~25 sn "yazıyor…" göstergesi yayar; kredi tüketmez. Yanıt: `{ "ok": true, "marked_read": true, "typing": true }`.
+- **Dokümantasyon:** `docs/03-messages.md`'e "Medya Mesajları" ve "Okundu + Yazıyor (typing)" bölümleri eklendi; README özellik tablosu güncellendi.
+
 ## [1.3.0] — 2026-06-24
 
 ### Değişti — Dokümantasyon ve SDK canlı API ile hizalandı

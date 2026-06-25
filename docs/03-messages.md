@@ -177,6 +177,74 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 }
 ```
 
+## Medya Mesajları
+
+`POST /wa/messages` ile **şablonsuz (free-form)** medya gönderebilirsiniz: görsel, video, ses ve doküman. Bu mesajlar serbest biçimlidir ve **yalnızca 24 saatlik müşteri hizmet penceresi (service window) içinde** teslim edilir — pencere kapalıyken Meta **131047** hatası döner; bu durumda onaylı bir **şablon** kullanın. Her başarılı gönderim **1 kredi** tüketir.
+
+### Örnek (video, link ile)
+
+```bash
+curl -X POST https://api.verimerkezi.app/wa/messages \
+ -H "Authorization: Bearer vmk_live_..." \
+ -H "Content-Type: application/json" \
+ -d '{
+ "phone_number_id": "1234567890",
+ "to": "905551112233",
+ "type": "video",
+ "video": {
+ "link": "https://cdn.firmaniz.com/demo.mp4",
+ "caption": "Ürün tanıtım videosu"
+ }
+ }'
+```
+
+### Medya nesnesi alanları
+
+- `type` ∈ `image` · `video` · `audio` · `document`
+- Medya nesnesi (`image` / `video` / `audio` / `document`) içinde kaynak **ya** `link` (herkese açık `https://` URL) **ya da** `id` (önceden yüklenmiş Meta media id) bulunur — biri zorunludur.
+- `caption` — yalnızca `image`, `video` ve `document` için geçerlidir (görünen açıklama metni).
+- `filename` — yalnızca `document` için; alıcıda görünen dosya adı.
+- `audio` — ne `caption` ne `filename` alır (yalnızca `link`/`id`).
+
+### Meta boyut ve format limitleri
+
+| Tip | Maks. boyut | Format |
+|---|---|---|
+| `image` | 5 MB | JPEG, PNG |
+| `video` | 16 MB | MP4, 3GPP |
+| `audio` | 16 MB | AAC, MP4, MPEG, AMR, OGG |
+| `document` | 100 MB | PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX |
+
+> 201 yanıtı diğer mesaj tipleriyle **aynı düz (flat) yapıdadır**; `type` alanı gönderilen medya tipini (`image`/`video`/`audio`/`document`) taşır.
+
+## Okundu + Yazıyor (typing)
+
+Gelen bir mesajı **okundu** olarak işaretlemek (mavi tik) ve isteğe bağlı olarak "yazıyor…" göstergesi yaymak için `POST /wa/messages/read` kullanın. Bu uç nokta **kredi tüketmez**.
+
+```bash
+curl -X POST https://api.verimerkezi.app/wa/messages/read \
+ -H "Authorization: Bearer vmk_live_..." \
+ -H "Content-Type: application/json" \
+ -d '{
+ "phone_number_id": "1234567890",
+ "message_id": "wamid.HBgL...",
+ "typing": true
+ }'
+```
+
+- `message_id` — okundu işaretlenecek **gelen** mesajın `wamid`'i (webhook ile aldığınız mesaj id'si).
+- `typing: true` — alıcıda ~25 saniye süren bir **"yazıyor…"** göstergesi gösterir. Bot'unuz cevabı göndermeden hemen önce çağırın; insan hissi verir.
+
+### Yanıt
+
+```json
+{
+ "ok": true,
+ "marked_read": true,
+ "typing": true
+}
+```
+
 ## Başarılı Yanıt
 
 ```json

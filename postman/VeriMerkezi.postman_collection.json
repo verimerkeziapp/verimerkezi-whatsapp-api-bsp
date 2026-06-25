@@ -68,6 +68,35 @@
             },
             "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
           }
+        },
+        {
+          "name": "POST /messages — Video (medya) gönder",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"video\",\n  \"video\": {\n    \"link\": \"https://example.com/video.mp4\",\n    \"caption\": \"Tanıtım videosu\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "POST /messages/read — Okundu + yazıyor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"message_id\": \"<wamid>\",\n  \"typing\": true\n}"
+            },
+            "url": { "raw": "{{base_url}}/messages/read", "host": ["{{base_url}}"], "path": ["messages", "read"] }
+          }
         }
       ]
     },
