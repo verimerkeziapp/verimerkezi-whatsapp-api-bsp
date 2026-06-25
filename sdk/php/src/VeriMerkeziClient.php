@@ -62,6 +62,68 @@ class VeriMerkeziClient
  ]);
  }
 
+ // ── Medya mesajları ────────────────────────────────────────────────────
+ // Serbest-format medya yalnızca 24 saatlik müşteri hizmet penceresi içinde
+ // çalışır (aksi halde Meta 131047 — bunun yerine şablon kullanın). Medya
+ // herkese açık bir https link ile gönderilir. 1 kredi.
+ // Limitler: resim ≤5MB jpeg/png, video ≤16MB mp4, ses ≤16MB, belge ≤100MB pdf/doc.
+
+ public function sendImage(string $phoneNumberId, string $to, string $link, ?string $caption = null): array
+ {
+ return $this->post('/messages', [
+ 'phone_number_id' => $phoneNumberId,
+ 'to' => $to,
+ 'type' => 'image',
+ 'image' => $caption !== null ? ['link' => $link, 'caption' => $caption] : ['link' => $link],
+ ]);
+ }
+
+ public function sendVideo(string $phoneNumberId, string $to, string $link, ?string $caption = null): array
+ {
+ return $this->post('/messages', [
+ 'phone_number_id' => $phoneNumberId,
+ 'to' => $to,
+ 'type' => 'video',
+ 'video' => $caption !== null ? ['link' => $link, 'caption' => $caption] : ['link' => $link],
+ ]);
+ }
+
+ public function sendAudio(string $phoneNumberId, string $to, string $link): array
+ {
+ return $this->post('/messages', [
+ 'phone_number_id' => $phoneNumberId,
+ 'to' => $to,
+ 'type' => 'audio',
+ 'audio' => ['link' => $link],
+ ]);
+ }
+
+ public function sendDocument(string $phoneNumberId, string $to, string $link, ?string $filename = null, ?string $caption = null): array
+ {
+ $document = ['link' => $link];
+ if ($filename !== null) $document['filename'] = $filename;
+ if ($caption !== null) $document['caption'] = $caption;
+ return $this->post('/messages', [
+ 'phone_number_id' => $phoneNumberId,
+ 'to' => $to,
+ 'type' => 'document',
+ 'document' => $document,
+ ]);
+ }
+
+ // ── Okundu bilgisi + yazıyor ───────────────────────────────────────────
+ // Gelen bir mesajı okundu işaretler (mavi tik). typing:true ~25sn "yazıyor…"
+ // göstergesi gösterir. Kredi harcamaz.
+
+ public function markRead(string $phoneNumberId, string $messageId, bool $typing = false): array
+ {
+ return $this->post('/messages/read', [
+ 'phone_number_id' => $phoneNumberId,
+ 'message_id' => $messageId,
+ 'typing' => $typing,
+ ]);
+ }
+
  public function listContacts(?string $cursor = null, int $limit = 50, ?string $search = null): array
  {
  $query = ['limit' => $limit];

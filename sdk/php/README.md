@@ -45,6 +45,11 @@ Tüm metotlar:
 |---|---|
 | `sendText($phoneId, $to, $body)` | Düz metin (24h service window içinde) |
 | `sendTemplate($phoneId, $to, $name, $lang, $components = [])` | Şablon mesajı |
+| `sendImage($phoneId, $to, $link, $caption = null)` | Resim (link, 24h pencere · ≤5MB jpeg/png · 1 kredi) |
+| `sendVideo($phoneId, $to, $link, $caption = null)` | Video (link, 24h pencere · ≤16MB mp4 · 1 kredi) |
+| `sendAudio($phoneId, $to, $link)` | Ses (link, 24h pencere · ≤16MB · 1 kredi) |
+| `sendDocument($phoneId, $to, $link, $filename = null, $caption = null)` | Belge (link, 24h pencere · ≤100MB pdf/doc · 1 kredi) |
+| `markRead($phoneId, $messageId, $typing = false)` | Gelen mesajı okundu işaretle (mavi tik); `typing:true` → ~25sn "yazıyor…" (kredisiz) |
 | `me()` | Hesap bilgisi |
 | `numbers()` | WhatsApp numaraları |
 | `listContacts($cursor = null, $limit = 50, $search = null)` | Kişi listesi |
@@ -60,6 +65,40 @@ Tüm metotlar:
 ```php
 ['ok' => true, 'id' => ..., 'wamid' => ..., 'to' => ..., 'type' => ...,
  'status' => ..., 'mode' => ..., 'simulated' => ..., 'credits_used' => ..., 'balance' => ...]
+```
+
+## Medya gönderme
+
+Medya, herkese açık bir **https** link ile gönderilir ve yalnızca **24 saatlik
+müşteri hizmet penceresi** içinde çalışır (müşteri size son 24 saatte yazmış
+olmalı). Pencere dışında Meta `131047` döner — bu durumda şablon kullanın.
+Her medya mesajı 1 kredi harcar.
+
+```php
+// Video (link + opsiyonel açıklama)
+$vm->sendVideo(
+    '1234567890',
+    '905551234567',
+    'https://verimerkezi.app/uploads/tanitim.mp4',
+    'Yeni ürün tanıtımımız 🎬'
+);
+
+// Resim / ses / belge de aynı şekilde:
+$vm->sendImage('1234567890', '905551234567', 'https://.../afis.jpg', 'Kampanya');
+$vm->sendAudio('1234567890', '905551234567', 'https://.../sesli-mesaj.mp3');
+$vm->sendDocument('1234567890', '905551234567', 'https://.../fatura.pdf', 'fatura.pdf');
+```
+
+Limitler: resim ≤5MB (jpeg/png), video ≤16MB (mp4), ses ≤16MB, belge ≤100MB (pdf/doc).
+
+## Okundu + yazıyor
+
+Gelen bir mesajı okundu işaretler (mavi tik). `typing: true` verirseniz, müşteriye
+~25 saniye boyunca "yazıyor…" göstergesi gösterilir. Kredi harcamaz.
+
+```php
+// Gelen mesajı okundu işaretle + "yazıyor…" göster
+$vm->markRead('1234567890', 'wamid.HBgM...', typing: true);
 ```
 
 ## Hata Yönetimi

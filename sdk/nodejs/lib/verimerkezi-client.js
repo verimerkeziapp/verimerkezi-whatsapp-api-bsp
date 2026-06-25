@@ -50,6 +50,40 @@ class VeriMerkeziClient {
  return this._post('/messages', { phone_number_id: phoneNumberId, to, text });
  }
 
+ // ── Medya (link tabanlı) ───────────────────────────────────────────────
+ // Serbest medya yalnızca 24 saatlik müşteri hizmet penceresi içinde gönderilebilir
+ // (aksi halde Meta 131047 — şablon kullanın). Public https link gerekir. 1 kredi.
+ // Limitler: image ≤5MB jpeg/png · video ≤16MB mp4 · audio ≤16MB · document ≤100MB.
+ sendImage(phoneNumberId, to, link, caption = null) {
+ const image = { link };
+ if (caption != null) image.caption = caption;
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'image', image });
+ }
+
+ sendVideo(phoneNumberId, to, link, caption = null) {
+ const video = { link };
+ if (caption != null) video.caption = caption;
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'video', video });
+ }
+
+ sendAudio(phoneNumberId, to, link) {
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'audio', audio: { link } });
+ }
+
+ sendDocument(phoneNumberId, to, link, filename = null, caption = null) {
+ const document = { link };
+ if (filename != null) document.filename = filename;
+ if (caption != null) document.caption = caption;
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'document', document });
+ }
+
+ // ── Okundu bilgisi + yazıyor göstergesi ────────────────────────────────
+ // Gelen bir mesajı okundu işaretler (mavi tik). typing:true ~25sn "yazıyor…"
+ // göstergesi gösterir. Kredi harcamaz.
+ markRead(phoneNumberId, messageId, typing = false) {
+ return this._post('/messages/read', { phone_number_id: phoneNumberId, message_id: messageId, typing });
+ }
+
  listContacts({ cursor = null, limit = 50, search = null } = {}) {
  const params = new URLSearchParams();
  params.set('limit', limit);

@@ -128,7 +128,9 @@ paths:
   /messages:
     post:
       summary: Send a template or text message
-      description: Live mode consumes 1 credit. Test mode is free.
+      description: |
+        Live mode consumes 1 credit. Test mode is free.
+        Media (image/video/audio/document) is free-form and only deliverable within the 24h customer service window; otherwise use a template. 1 credit. Provide media by public https `link` (or Meta media `id`). Limits: image ≤5MB, video ≤16MB, audio ≤16MB, document ≤100MB.
       tags: [Messages]
       security: [{ BearerAuth: [messages:send] }]
       parameters:
@@ -143,6 +145,10 @@ paths:
               properties:
                 phone_number_id: { type: string }
                 to: { type: string, example: "905551234567" }
+                type:
+                  type: string
+                  enum: [image, video, audio, document]
+                  description: "Media type. Set when sending a free-form media message."
                 template:
                   type: object
                   properties:
@@ -150,6 +156,30 @@ paths:
                     language: { type: string, example: tr }
                     components: { type: array, items: { type: object } }
                 text: { type: string, description: "Plain text body. Only within the 24h customer service window." }
+                image:
+                  type: object
+                  description: "Image media. Provide a public https link (or Meta media id)."
+                  properties:
+                    link: { type: string, format: uri, example: "https://example.com/photo.jpg" }
+                    caption: { type: string }
+                video:
+                  type: object
+                  description: "Video media. Provide a public https link (or Meta media id)."
+                  properties:
+                    link: { type: string, format: uri, example: "https://example.com/video.mp4" }
+                    caption: { type: string }
+                audio:
+                  type: object
+                  description: "Audio media. Provide a public https link (or Meta media id)."
+                  properties:
+                    link: { type: string, format: uri, example: "https://example.com/audio.mp3" }
+                document:
+                  type: object
+                  description: "Document media. Provide a public https link (or Meta media id)."
+                  properties:
+                    link: { type: string, format: uri, example: "https://example.com/file.pdf" }
+                    caption: { type: string }
+                    filename: { type: string, example: "fatura.pdf" }
       responses:
         '201':
           description: Created
@@ -162,7 +192,7 @@ paths:
                   id: { type: integer }
                   wamid: { type: string }
                   to: { type: string }
-                  type: { type: string, enum: [template, text] }
+                  type: { type: string, enum: [template, text, image, video, audio, document] }
                   status: { type: string, example: sent }
                   mode: { type: string, enum: [live, test] }
                   simulated: { type: boolean }
@@ -183,6 +213,35 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+
+  /messages/read:
+    post:
+      summary: Mark an incoming message as read + optional typing indicator
+      description: "Marks the incoming message as read (blue tick). typing:true shows a ~25s 'typing…' indicator. No credit."
+      tags: [Messages]
+      security: [{ BearerAuth: [messages:send] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number_id, message_id]
+              properties:
+                phone_number_id: { type: string }
+                message_id: { type: string }
+                typing: { type: boolean, default: false }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  marked_read: { type: boolean }
+                  typing: { type: boolean }
 
   /contacts:
     get:
