@@ -104,6 +104,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Free-form medya** (image / video / audio / document — link veya Meta media id, 24h pencere içinde) | Evet — `POST /messages` |
 | **Okundu + yazıyor göstergesi** (mavi tik + "yazıyor…", kredisiz) | Evet — `POST /messages/read` |
 | **Şablon listeleme** (`GET /templates`) | Evet (oluşturma/silme/submit panelden) |
+| **Dinamik URL butonu** (şablon butonunda `{{1}}` → her alıcıya özel link) | Evet — `POST /messages` `button` bileşeni |
 | **Kişi rehberi** (ekle / toplu ekle / listele) | Evet — `POST /contacts`, `/contacts/bulk`, `GET /contacts` |
 | **Hesap & numaralar** (`GET /me`, `GET /numbers`) | Evet |
 | **Raporlar** (`GET /reports/summary`) | Evet |

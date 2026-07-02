@@ -177,6 +177,42 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 }
 ```
 
+## Dinamik URL Butonu
+
+Onaylı şablonunuzda **değişken (dinamik) URL butonu** varsa — yani butonun adresi son kısmında `{{1}}` içeriyorsa (örn. `https://site.com/git?id={{1}}`) — o değişkeni **her gönderimde** `button` bileşeniyle doldurabilirsiniz. Böylece her alıcıya **kişiye özel bir link** gider (sepet kurtarma, kişisel takip sayfası, kupon linki vb.).
+
+> **Ön koşul — şablonu panelden oluşturun:** Panel → WhatsApp → Şablonlar → Yeni Şablon → *URL* tipi buton ekleyin, adresin **sonuna** `{{1}}` koyun ve "örnek adres" alanına tam bir örnek girin. Meta onayından sonra API ile gönderebilirsiniz. Ayrıntı: [04-templates.md](04-templates.md#dinamik-url-butonu).
+
+```json
+{
+ "phone_number_id": "1234567890",
+ "to": "905551112233",
+ "type": "template",
+ "template": {
+ "name": "sepet_kurtarma",
+ "language": { "code": "tr" },
+ "components": [
+ {
+ "type": "body",
+ "parameters": [{ "type": "text", "text": "Ahmet" }]
+ },
+ {
+ "type": "button",
+ "sub_type": "url",
+ "index": 0,
+ "parameters": [{ "type": "text", "text": "d32eec6c,5cbd62f6" }]
+ }
+ ]
+ }
+}
+```
+
+- `type: "button"` + `sub_type: "url"` — dinamik URL butonunu hedefler.
+- `index` — butonun sıfır tabanlı sırası (ilk/tek buton için `0`).
+- `parameters[0].text` — `{{1}}`'in yerine geçen değer. Yalnızca **adresin sonuna eklenecek** kısım gönderilir; sabit taban şablonda tanımlıdır. Örnek sonuç: `https://taksicialik.com/checkout?code=SEPET5&restore_products=d32eec6c,5cbd62f6`.
+
+> **Kurallar:** Meta gereği bir URL butonunda **tek** değişken (`{{1}}`) olur ve **adresin sonunda** yer alır. Şablonda body değişkenleri de varsa `body` bileşenini de ekleyin. Dinamik URL butonlu şablonlar **yalnızca API ile** gönderilir (panel toplu kampanya ekranından değil).
+
 ## Medya Mesajları
 
 `POST /wa/messages` ile **şablonsuz (free-form)** medya gönderebilirsiniz: görsel, video, ses ve doküman. Bu mesajlar serbest biçimlidir ve **yalnızca 24 saatlik müşteri hizmet penceresi (service window) içinde** teslim edilir — pencere kapalıyken Meta **131047** hatası döner; bu durumda onaylı bir **şablon** kullanın. Her başarılı gönderim **1 kredi** tüketir.

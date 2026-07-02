@@ -21,6 +21,17 @@ Panel -> **WhatsApp -> Şablonlar -> "Yeni Şablon"**:
 - Parametreler için örnek değer girin
 - **Meta'ya Gönder** -> Meta inceler (genelde 5-30 dk)
 
+## Dinamik URL Butonu
+
+Bir URL butonunun adresini **her gönderimde değiştirmek** istiyorsanız (örn. her müşteriye kişiye özel sepet / takip linki), butonu **dinamik** tanımlayın:
+
+- Panelde şablon oluştururken *URL* tipi buton ekleyin.
+- Adresin **sonuna** tek bir `{{1}}` değişkeni koyun: `https://taksicialik.com/checkout?code=SEPET5&restore_products={{1}}`
+- "Örnek adres" alanına, `{{1}}` yerine gerçekçi bir değer içeren **tam örnek** girin (Meta onayı bunu ister): `https://taksicialik.com/checkout?code=SEPET5&restore_products=d32eec6c,5cbd62f6`
+- Meta onayından sonra, gönderimde değişken kısım `button` bileşeniyle geçirilir — bkz. [03-messages.md](03-messages.md#dinamik-url-butonu).
+
+> **Meta kuralları:** URL butonunda **tek** değişken olur ve **yalnız adresin sonunda** yer alır. Dinamik URL butonlu şablonlar **yalnızca API** (`POST /wa/messages`, `button` parametresi) ile gönderilir — panel toplu kampanya / otomasyon ekranından gönderilemez.
+
 ## Şablon Durumları
 
 | Durum | Açıklama |
