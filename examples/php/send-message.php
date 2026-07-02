@@ -47,3 +47,36 @@ try {
 } catch (Exception $e) {
  echo "Hata: " . $e->getMessage() . "\n";
 }
+
+// ────────────────────────────────────────────────────────────────
+// ÖRNEK 3 — Dinamik URL Butonlu Şablon (her alıcıya özel link)
+// Şablon panelde, URL butonunun sonu {{1}} olacak şekilde oluşturulur.
+// Gönderimde button bileşeniyle değişken kısım doldurulur.
+// ────────────────────────────────────────────────────────────────
+try {
+ $response = $vm->sendTemplate(
+ $phoneNumberId,
+ $recipient,
+ 'sepet_kurtarma',
+ 'tr',
+ [
+ [
+ 'type' => 'body',
+ 'parameters' => [
+ ['type' => 'text', 'text' => 'Ahmet'],
+ ],
+ ],
+ [
+ 'type' => 'button',
+ 'sub_type' => 'url',
+ 'index' => 0,
+ 'parameters' => [
+ ['type' => 'text', 'text' => 'd32eec6c,5cbd62f6'],
+ ],
+ ],
+ ]
+ );
+ echo "Dinamik URL butonlu şablon gönderildi: " . $response['wamid'] . "\n";
+} catch (Exception $e) {
+ echo "Hata: " . $e->getMessage() . "\n";
+}

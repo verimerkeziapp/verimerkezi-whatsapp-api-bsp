@@ -42,3 +42,25 @@ try:
  print(f"Şablon: {r['wamid']}")
 except Exception as e:
  print(f"Şablon hatası: {e}")
+
+# ───── Dinamik URL Butonlu Şablon (her alıcıya özel link) ─────
+# Şablon panelde, URL butonunun sonu {{1}} olacak şekilde oluşturulur.
+try:
+ r = vm.send_template(
+ phone_number_id,
+ recipient,
+ 'sepet_kurtarma',
+ 'tr',
+ components=[
+ {'type': 'body', 'parameters': [{'type': 'text', 'text': 'Ahmet'}]},
+ {
+ 'type': 'button',
+ 'sub_type': 'url',
+ 'index': 0,
+ 'parameters': [{'type': 'text', 'text': 'd32eec6c,5cbd62f6'}],
+ },
+ ]
+ )
+ print(f"Dinamik URL butonlu şablon: {r['wamid']}")
+except Exception as e:
+ print(f"Dinamik URL butonu hatası: {e}")

@@ -154,7 +154,15 @@ paths:
                   properties:
                     name: { type: string }
                     language: { type: string, example: tr }
-                    components: { type: array, items: { type: object } }
+                    components:
+                      type: array
+                      description: >-
+                        Meta template component objects. Add a `body` component for body variables and,
+                        for a dynamic URL button, a `button` component:
+                        `{ "type": "button", "sub_type": "url", "index": 0, "parameters": [{ "type": "text", "text": "..." }] }`
+                        — its parameters[0].text fills the trailing `{{1}}` of the template URL button
+                        (one variable, at the end of the URL; API send only).
+                      items: { type: object }
                 text: { type: string, description: "Plain text body. Only within the 24h customer service window." }
                 image:
                   type: object
