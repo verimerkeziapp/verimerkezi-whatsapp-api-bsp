@@ -2,6 +2,14 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.5.0] — 2026-07-02
+
+### Eklenenler — Dinamik (değişken) URL butonu
+- Şablon **URL butonları artık dinamik** olabilir: buton adresinin sonuna `{{1}}` koyarak her gönderimde **kişiye özel link** üretebilirsiniz (sepet kurtarma, kişisel takip sayfası, kupon linki vb.). Şablon **panelden** oluşturulur (URL sonunda tek `{{1}}` + zorunlu örnek adres), Meta onayından sonra API ile gönderilir.
+- **Gönderim:** `POST /wa/messages` template `components` dizisine `{ "type": "button", "sub_type": "url", "index": 0, "parameters": [{ "type": "text", "text": "..." }] }` bileşeni eklenir — değişken kısım her alıcı için ayrı geçirilir.
+- **Kısıt:** Meta gereği URL butonunda tek değişken olur ve adresin sonunda yer alır. Dinamik URL butonlu şablonlar **yalnızca API** ile gönderilir (panel toplu kampanya / otomasyon değil).
+- **Dokümantasyon:** `docs/03-messages.md` ("Dinamik URL Butonu" gönderim bölümü) ve `docs/04-templates.md` (oluşturma) güncellendi; OpenAPI `components` şeması `button` bileşeni açıklamasıyla zenginleştirildi; README özellik tablosuna satır eklendi; PHP/Node/Python örneklerine 3. örnek eklendi.
+
 ## [1.4.0] — 2026-06-25
 
 ### Eklenenler — Free-form medya + okundu/yazıyor göstergesi

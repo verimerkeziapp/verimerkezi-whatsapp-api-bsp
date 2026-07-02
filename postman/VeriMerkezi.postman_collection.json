@@ -70,6 +70,21 @@
           }
         },
         {
+          "name": "POST /messages — Dinamik URL Butonu",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"template\": {\n    \"name\": \"sepet_kurtarma\",\n    \"language\": { \"code\": \"tr\" },\n    \"components\": [\n      { \"type\": \"body\", \"parameters\": [{ \"type\": \"text\", \"text\": \"Ahmet\" }] },\n      { \"type\": \"button\", \"sub_type\": \"url\", \"index\": 0, \"parameters\": [{ \"type\": \"text\", \"text\": \"d32eec6c,5cbd62f6\" }] }\n    ]\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+          }
+        },
+        {
           "name": "POST /messages — Video (medya) gönder",
           "request": {
             "method": "POST",
