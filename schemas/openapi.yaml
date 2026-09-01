@@ -154,6 +154,13 @@ paths:
                   properties:
                     name: { type: string }
                     language: { type: string, example: tr }
+                    otp:
+                      type: string
+                      example: "482913"
+                      description: >-
+                        Convenience field for AUTHENTICATION (OTP) templates. When set, the body and the
+                        copy-code OTP button components are built automatically per Meta's rules
+                        (ignored if `components` is provided).
                     components:
                       type: array
                       description: >-
