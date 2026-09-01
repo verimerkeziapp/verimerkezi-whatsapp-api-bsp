@@ -46,6 +46,15 @@ class VeriMerkeziClient {
  });
  }
 
+ // AUTHENTICATION (OTP) şablonuyla doğrulama kodu gönderir — gövde+buton otomatik kurulur.
+ sendOtp(phoneNumberId, to, templateName, code, language = 'tr') {
+ return this._post('/messages', {
+ phone_number_id: phoneNumberId,
+ to,
+ template: { name: templateName, language, otp: code },
+ });
+ }
+
  sendText(phoneNumberId, to, text) {
  return this._post('/messages', { phone_number_id: phoneNumberId, to, text });
  }

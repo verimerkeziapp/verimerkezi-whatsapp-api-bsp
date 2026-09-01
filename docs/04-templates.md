@@ -32,6 +32,43 @@ Bir URL butonunun adresini **her gönderimde değiştirmek** istiyorsanız (örn
 
 > **Meta kuralları:** URL butonunda **tek** değişken olur ve **yalnız adresin sonunda** yer alır. Dinamik URL butonlu şablonlar **yalnızca API** (`POST /wa/messages`, `button` parametresi) ile gönderilir — panel toplu kampanya / otomasyon ekranından gönderilemez.
 
+## OTP / Kimlik Doğrulama Şablonu (AUTHENTICATION)
+
+WhatsApp üzerinden **OTP / tek kullanımlık doğrulama kodu** göndermek için `AUTHENTICATION` kategorisinde şablon oluşturun. Bu kategoride **gövde metni Meta tarafından sabittir ve düzenlenemez** — Meta gövdeyi ("`<kod>` doğrulama kodunuzdur") ve **Kodu Kopyala** butonunu otomatik üretir. Siz yalnızca aşağıdakileri belirlersiniz.
+
+Panel -> **WhatsApp -> Şablonlar -> "Yeni Şablon" -> Kategori: Doğrulama (AUTHENTICATION)**:
+- **Güvenlik önerisi** (aç/kapa) — "Bu kodu kimseyle paylaşmayın" satırı.
+- **Kod geçerlilik süresi** (0–90 dk) — footer'da gösterilir (0 = gösterme).
+- **Buton tipi:**
+  - `COPY_CODE` (varsayılan) — kodu panoya kopyalar; **her cihazda** çalışır.
+  - `ONE_TAP` — kodu **sizin Android uygulamanıza** otomatik doldurur; `autofill_text` + `package_name` + `signature_hash` (uygulamanızın imza hash'i, 11 karakter) gerektirir.
+
+Meta'ya giden bileşen yapısı (panel otomatik kurar):
+
+```json
+{
+  "name": "otp_dogrulama",
+  "language": "tr",
+  "category": "AUTHENTICATION",
+  "components": [
+    { "type": "BODY", "add_security_recommendation": true },
+    { "type": "FOOTER", "code_expiration_minutes": 5 },
+    { "type": "BUTTONS", "buttons": [
+      { "type": "OTP", "otp_type": "COPY_CODE", "text": "Kodu Kopyala" }
+    ] }
+  ]
+}
+```
+
+ONE_TAP butonu için `buttons` bileşeni:
+
+```json
+{ "type": "OTP", "otp_type": "ONE_TAP", "text": "Kodu Kopyala",
+  "autofill_text": "Otomatik Doldur", "package_name": "com.sirket.uygulama", "signature_hash": "Xy9AbC12DeF" }
+```
+
+Onaydan sonra kodu göndermek için bkz. [03-messages.md](03-messages.md#otp--doğrulama-kodu-gönderme).
+
 ## Şablon Durumları
 
 | Durum | Açıklama |

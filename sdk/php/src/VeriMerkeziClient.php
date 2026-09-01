@@ -53,6 +53,16 @@ class VeriMerkeziClient
  ]);
  }
 
+ /** AUTHENTICATION (OTP) şablonuyla doğrulama kodu gönderir — gövde+buton otomatik kurulur. */
+ public function sendOtp(string $phoneNumberId, string $to, string $templateName, string $code, string $language = 'tr'): array
+ {
+ return $this->post('/messages', [
+ 'phone_number_id' => $phoneNumberId,
+ 'to' => $to,
+ 'template' => ['name' => $templateName, 'language' => $language, 'otp' => $code],
+ ]);
+ }
+
  public function sendText(string $phoneNumberId, string $to, string $text): array
  {
  return $this->post('/messages', [

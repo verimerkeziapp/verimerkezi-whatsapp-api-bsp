@@ -42,6 +42,13 @@ class VeriMerkeziClient:
             'template': {'name': template_name, 'language': language, 'components': components or []},
         })
 
+    def send_otp(self, phone_number_id, to, template_name, code, language='tr') -> dict:
+        """AUTHENTICATION (OTP) şablonuyla doğrulama kodu gönderir — gövde+buton otomatik kurulur."""
+        return self._post('/messages', {
+            'phone_number_id': phone_number_id, 'to': to,
+            'template': {'name': template_name, 'language': language, 'otp': code},
+        })
+
     def send_text(self, phone_number_id, to, text) -> dict:
         return self._post('/messages', {'phone_number_id': phone_number_id, 'to': to, 'text': text})
 
