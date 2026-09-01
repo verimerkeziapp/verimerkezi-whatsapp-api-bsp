@@ -177,6 +177,37 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 }
 ```
 
+## OTP / Doğrulama Kodu Gönderme
+
+Onaylı bir `AUTHENTICATION` şablonu ile OTP göndermek için **en kolay yol**: `template.otp` alanına kodu verin — gövde ve "Kodu Kopyala" butonu Meta kuralına uygun **otomatik** doldurulur:
+
+```json
+{
+  "phone_number_id": "1234567890",
+  "to": "905551112233",
+  "template": { "name": "otp_dogrulama", "language": "tr", "otp": "482913" }
+}
+```
+
+**Alternatif (tam kontrol):** bileşenleri açıkça verin. Gövde parametresi ile `sub_type: "url"` / `index: 0` olan buton parametresi **aynı kodu** taşımalıdır (Meta kuralı):
+
+```json
+{
+  "phone_number_id": "1234567890",
+  "to": "905551112233",
+  "template": {
+    "name": "otp_dogrulama",
+    "language": "tr",
+    "components": [
+      { "type": "body",   "parameters": [{ "type": "text", "text": "482913" }] },
+      { "type": "button", "sub_type": "url", "index": 0, "parameters": [{ "type": "text", "text": "482913" }] }
+    ]
+  }
+}
+```
+
+> Kodu siz üretir ve son kullanıcıya siz doğrulatırsınız; VeriMerkezi yalnızca kodu WhatsApp ile iletir. OTP şablonu oluşturma: [04-templates.md](04-templates.md#otp--kimlik-doğrulama-şablonu-authentication).
+
 ## Dinamik URL Butonu
 
 Onaylı şablonunuzda **değişken (dinamik) URL butonu** varsa — yani butonun adresi son kısmında `{{1}}` içeriyorsa (örn. `https://site.com/git?id={{1}}`) — o değişkeni **her gönderimde** `button` bileşeniyle doldurabilirsiniz. Böylece her alıcıya **kişiye özel bir link** gider (sepet kurtarma, kişisel takip sayfası, kupon linki vb.).

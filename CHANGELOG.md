@@ -2,6 +2,13 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.6.0] — 2026-09
+
+### Eklenenler — OTP / Kimlik Doğrulama (AUTHENTICATION) şablonları
+- **OTP / doğrulama kodu** desteği: panelden `AUTHENTICATION` kategorisinde şablon oluşturma. Meta gövdeyi ve "Kodu Kopyala" butonunu **standart/otomatik** üretir (gövde metni düzenlenemez); kullanıcı yalnızca güvenlik önerisi, kod geçerlilik süresi ve buton tipini (`COPY_CODE` / `ONE_TAP`) belirler. **ONE_TAP** (Android otomatik doldurma) `autofill_text` + `package_name` + `signature_hash` ile desteklenir.
+- **Gönderim:** `POST /wa/messages` — `template.otp` alanına kodu verin; gövde + OTP buton bileşenleri otomatik kurulur. Alternatif olarak `components` ile `body` ve `sub_type:"url"` buton parametresi (aynı kod) açıkça verilebilir.
+- **Dokümantasyon:** `docs/03-messages.md` (OTP gönderme) ve `docs/04-templates.md` (OTP oluşturma + ONE_TAP) güncellendi; OpenAPI `template.otp` alanıyla zenginleştirildi; PHP/Node/Python SDK'lara `sendOtp()` yardımcısı eklendi.
+
 ## [1.5.0] — 2026-07-02
 
 ### Eklenenler — Dinamik (değişken) URL butonu
