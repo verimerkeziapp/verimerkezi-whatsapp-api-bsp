@@ -101,6 +101,52 @@ class VeriMerkeziClient:
     def update_profile(self, phone_number_id, fields) -> dict: return self._patch('/profile/' + quote(phone_number_id), fields)
     def reports_summary(self, period='30d') -> dict: return self._get('/reports/summary?period=' + quote(period))
 
+    # ── Medya ─────────────────────────────────────────────────────────
+    # Webhook'taki data.media.media_id degerini dogrudan kullanin.
+    # Depodaki dosya yollarina dogrudan HTTP erisimi KAPALIDIR.
+
+    def list_media(self, source=None, kind=None, cursor=None, limit=50) -> dict:
+        """Medya kayitlarini listeler (yeniden eskiye)."""
+        q = ['limit=' + str(int(limit))]
+        if source: q.append('source=' + quote(str(source)))
+        if kind:   q.append('kind=' + quote(str(kind)))
+        if cursor: q.append('cursor=' + str(int(cursor)))
+        return self._get('/media?' + '&'.join(q))
+
+    def media_info(self, media_id) -> dict:
+        """Dosyayi indirmeden ustveri (boyut, tur, sha256) doner."""
+        return self._get('/media/' + str(int(media_id)) + '?meta=1')
+
+    def download_media(self, media_id, dest_path=None, chunk_size=262144):
+        """
+        Medya dosyasini indirir.
+        dest_path verilirse diske yazar ve yolu doner; verilmezse bytes doner.
+        Buyuk dosyalar parca parca akitilir — bellege tamami yuklenmez.
+        """
+        url = self.base_url + '/media/' + str(int(media_id))
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'User-Agent': 'VeriMerkezi-Python-SDK/1.0',
+        }
+        resp = requests.get(url, headers=headers, timeout=self.timeout, stream=True)
+        if resp.status_code != 200:
+            kod, mesaj = 'http_error', f'HTTP {resp.status_code}'
+            try:
+                hata = resp.json().get('error', {})
+                kod, mesaj = hata.get('code', kod), hata.get('message', mesaj)
+            except Exception:
+                pass
+            raise VeriMerkeziException(mesaj, resp.status_code, kod)
+
+        if dest_path is None:
+            return resp.content
+
+        with open(dest_path, 'wb') as f:
+            for parca in resp.iter_content(chunk_size=chunk_size):
+                if parca:
+                    f.write(parca)
+        return dest_path
+
     # Not: Webhook'lar API üzerinden değil, panelden yapılandırılır
     # (https://verimerkezi.app paneli). Gelen olayları doğrulamak için
     # statik verify_webhook_signature yardımcısını kullanın.

@@ -13,7 +13,8 @@
     { "key": "base_url", "value": "https://api.verimerkezi.app/wa" },
     { "key": "api_key", "value": "vmk_live_REPLACE_ME" },
     { "key": "phone_number_id", "value": "1234567890" },
-    { "key": "test_recipient", "value": "905551112233" }
+    { "key": "test_recipient", "value": "905551112233" },
+    { "key": "media_id", "value": "12345" }
   ],
   "item": [
     {
@@ -212,6 +213,56 @@
                 { "key": "source", "value": "", "disabled": true }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Medya",
+      "description": "Gelen medyayı indirme. Webhook'taki data.media.media_id değerini {{media_id}} değişkenine yazın. Gerekli scope: messages:read (panelde \"Mesaj Okuma\") veya Tam Yetki.",
+      "item": [
+        {
+          "name": "GET /media — Kayıtları listele",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/media?limit=50&source=inbound",
+              "host": ["{{base_url}}"],
+              "path": ["media"],
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "source", "value": "inbound" },
+                { "key": "kind", "value": "", "disabled": true },
+                { "key": "cursor", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /media/{media_id}?meta=1 — Üstveri",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/media/{{media_id}}?meta=1",
+              "host": ["{{base_url}}"],
+              "path": ["media", "{{media_id}}"],
+              "query": [{ "key": "meta", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "GET /media/{media_id} — Dosyayı indir",
+          "request": {
+            "method": "GET",
+            "description": "Yanıt dosyanın kendisidir; Postman'de \"Send and Download\" ile kaydedin. Büyük dosyalarda Range başlığı kullanılabilir.",
+            "url": { "raw": "{{base_url}}/media/{{media_id}}", "host": ["{{base_url}}"], "path": ["media", "{{media_id}}"] }
+          }
+        },
+        {
+          "name": "HEAD /media/{media_id} — Başlıklar",
+          "request": {
+            "method": "HEAD",
+            "url": { "raw": "{{base_url}}/media/{{media_id}}", "host": ["{{base_url}}"], "path": ["media", "{{media_id}}"] }
           }
         }
       ]

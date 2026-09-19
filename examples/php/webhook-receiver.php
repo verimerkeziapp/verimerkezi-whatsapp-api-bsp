@@ -60,6 +60,11 @@ try {
  handleIncomingMessage($event['data']);
  break;
 
+ case 'message.echo':
+ // CoExistence: işletme telefondaki WhatsApp uygulamasından müşteriye yazdı
+ echo_log('İşletme yanıtladı -> ' . ($event['data']['to'] ?? '') . ': ' . ($event['data']['text'] ?? ''));
+ break;
+
  case 'message.status.sent':
  case 'message.status.delivered':
  case 'message.status.read':
@@ -75,7 +80,9 @@ try {
  break;
 
  case 'template.rejected':
- handleTemplateRejected($event['data']);
+ case 'template.flagged':
+ case 'template.paused':
+ handleTemplateRejected($event['data'], $event['event']);
  break;
 
  case 'quality.changed':
@@ -108,13 +115,27 @@ try {
 
 function handleIncomingMessage(array $data): void
 {
- $from = $data['from'] ?? '';
- $text = $data['text']['body'] ?? '';
- $contactName = $data['contact']['profile_name'] ?? 'Müşteri';
+ // data.text düz metindir (medyada açıklama; açıklama yoksa boş).
+ // Telefonu gizli kullanıcılarda data.from null gelir; kimlik data.user_id (BSUID) olur.
+ $from = $data['from'] ?? ($data['user_id'] ?? '');
+ $text = (string) ($data['text'] ?? '');
+ $type = $data['type'] ?? 'text';
+ $contactName = $data['name'] ?? ($data['contact']['profile_name'] ?? 'Müşteri');
+ $media = is_array($data['media'] ?? null) ? $data['media'] : [];
 
  // ÖRNEK: Basit echo bot
  // Production'da burada AI / NLP / iş kuralı işletirsiniz
+ if (!empty($media['media_id'])) {
+ echo_log("Medya geldi · $contactName ($from) · $type · media_id={$media['media_id']}" . ($text !== '' ? " · $text" : ''));
+ // Dosyayı indirmek için (bkz. docs/10-media.md):
+ // $vm = new VeriMerkeziClient(getenv('VM_API_KEY'));
+ // $vm->downloadMedia((int) $media['media_id'], __DIR__ . '/medya/' . (int) $media['media_id']);
+ } elseif (!empty($media['error'])) {
+ // Nadiren dosya Meta'dan alınamaz; bu durumda indirilebilir dosya yoktur.
+ echo_log("Medya alınamadı · $contactName ($from) · $type · {$media['error']}");
+ } else {
  echo_log("Mesaj geldi · $contactName ($from): $text");
+ }
 
  // İsterseniz hemen yanıt verin (Veri Merkezi API üzerinden):
  // $vm = new VeriMerkeziClient(getenv('VM_API_KEY'));
@@ -131,9 +152,12 @@ function handleStatusUpdate(array $data, string $event): void
 function handleFailedMessage(array $data): void
 {
  $wamid = $data['wamid'] ?? '';
- $error = $data['error']['message'] ?? 'bilinmiyor';
- $metaCode = $data['error']['meta_code'] ?? null;
- echo_log("Mesaj başarısız · wamid=$wamid · code=$metaCode · $error");
+ $recipient = $data['recipient'] ?? '';
+ // errors: Meta'nın hata listesi — [{ code, title, message, error_data: { details }, href }]
+ $hata = $data['errors'][0] ?? [];
+ $metaCode = $hata['code'] ?? '-';
+ $error = $hata['message'] ?? ($hata['title'] ?? 'bilinmiyor');
+ echo_log("Mesaj başarısız · wamid=$wamid · alıcı=$recipient · code=$metaCode · $error");
 }
 
 function handleTemplateApproved(array $data): void
@@ -142,17 +166,19 @@ function handleTemplateApproved(array $data): void
  echo_log("Şablon onaylandı: $name");
 }
 
-function handleTemplateRejected(array $data): void
+function handleTemplateRejected(array $data, string $event): void
 {
  $name = $data['template_name'] ?? '';
- $reason = $data['rejected_reason'] ?? '';
- echo_log("Şablon reddedildi: $name · $reason");
+ $language = $data['language'] ?? '';
+ $reason = $data['reason'] ?? '';
+ $durum = ['template.rejected' => 'reddedildi', 'template.flagged' => 'işaretlendi', 'template.paused' => 'durduruldu'][$event] ?? $event;
+ echo_log("Şablon $durum: $name ($language)" . ($reason !== '' ? " · $reason" : ''));
 }
 
 function handleQualityChange(array $data): void
 {
- $phone = $data['display_phone_number'] ?? '';
- $quality = $data['quality_rating'] ?? '';
+ $phone = $data['phone'] ?? '';
+ $quality = $data['quality'] ?? ''; // GREEN | YELLOW | RED
  echo_log("Kalite değişti · $phone -> $quality");
 
  if ($quality === 'RED') {
@@ -162,13 +188,16 @@ function handleQualityChange(array $data): void
 
 function handleAccountAlert(array $data): void
 {
- $msg = $data['message'] ?? '';
- echo_log("HESAP UYARISI: $msg");
+ // field: account_update | account_alerts — event: Meta'nın olay adı (örn. DISABLED_UPDATE, PARTNER_REMOVED)
+ $field = $data['field'] ?? '';
+ $event = $data['event'] ?? '';
+ echo_log("HESAP UYARISI: $field · $event");
 }
 
 // ── Idempotency helper (örn. dosya tabanlı; production'da Redis/DB) ──
 function isEventAlreadyProcessed(string $eventId): bool
 {
+ if ($eventId === '') return false;
  $cacheFile = sys_get_temp_dir() . '/vm_webhook_events.txt';
  if (!is_file($cacheFile)) return false;
  return strpos(@file_get_contents($cacheFile), $eventId) !== false;

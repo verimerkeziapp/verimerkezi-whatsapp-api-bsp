@@ -114,6 +114,52 @@ class VeriMerkeziClient {
  updateProfile(phoneNumberId, fields) { return this._patch('/profile/' + encodeURIComponent(phoneNumberId), fields); }
  reportsSummary(period = '30d') { return this._get('/reports/summary?period=' + encodeURIComponent(period)); }
 
+ // ── Medya ───────────────────────────────────────────────────────────
+ // Webhook'taki data.media.media_id degerini dogrudan kullanin.
+ // Depodaki dosya yollarina dogrudan HTTP erisimi KAPALIDIR.
+
+ async listMedia({ source, kind, cursor, limit = 50 } = {}) {
+ const q = new URLSearchParams({ limit: String(limit) });
+ if (source) q.set('source', source);
+ if (kind) q.set('kind', kind);
+ if (cursor) q.set('cursor', String(cursor));
+ return this._get('/media?' + q.toString());
+ }
+
+ async mediaInfo(mediaId) { return this._get('/media/' + parseInt(mediaId, 10) + '?meta=1'); }
+
+ /**
+  * Medya dosyasini indirir. Buffer doner.
+  * Buyuk dosyalarda bellek yerine akis icin ikinci parametreye
+  * yazilabilir bir stream verin (or. fs.createWriteStream('dosya.mp4')).
+  */
+ async downloadMedia(mediaId, writableStream = null) {
+ const url = this.baseUrl + '/media/' + parseInt(mediaId, 10);
+ const res = await fetch(url, {
+ headers: {
+ 'Authorization': 'Bearer ' + this.apiKey,
+ 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.0',
+ },
+ });
+ if (!res.ok) {
+ let kod = 'http_error';
+ let mesaj = 'HTTP ' + res.status;
+ try {
+ const j = await res.json();
+ if (j && j.error) { kod = j.error.code || kod; mesaj = j.error.message || mesaj; }
+ } catch (_) { /* ikili govde */ }
+ throw new VeriMerkeziException(mesaj, res.status, kod);
+ }
+ if (writableStream) {
+ const { Readable } = require('stream');
+ await new Promise((resolve, reject) => {
+ Readable.fromWeb(res.body).pipe(writableStream).on('finish', resolve).on('error', reject);
+ });
+ return writableStream;
+ }
+ return Buffer.from(await res.arrayBuffer());
+ }
+
  // ── Webhooks ───────────────────────────────────────────────────────────
  // Webhook'lar programatik API ile değil, panel üzerinden yapılandırılır:
  // https://verimerkezi.app/panel/wa (Webhook ayarları)

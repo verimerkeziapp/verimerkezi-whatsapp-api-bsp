@@ -50,7 +50,7 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**:
 ```json
 {
   "event": "message.echo",
-  "event_id": "evt_f813nXuoBeugOqcXq4QTg7Ux",
+  "event_id": "019eb6fa-1030-7685-95eb-0f165953746b",
   "event_type": "message.echo",
   "occurred_at": "2026-06-11T16:58:22+03:00",
   "created_at": "2026-06-11 16:58:22",
@@ -60,7 +60,7 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**:
     "to": "905326060924",
     "type": "text",
     "text": "Teşekkürler, en kısa sürede dönüyorum.",
-    "timestamp": "1781305966",
+    "timestamp": "1781186302",
     "source": "coexistence_app",
     "phone_number_id": "314055571788368"
   }
@@ -83,28 +83,119 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 ```json
 {
  "event": "message.received",
- "event_id": "evt_RbbtD3PpGtPnKkhlKJUAXphq",
+ "event_id": "019e787c-b7e0-74d8-9077-fb9ee8ad83d5",
  "event_type": "message.received",
  "occurred_at": "2026-05-30T13:45:00+03:00",
  "created_at": "2026-05-30 13:45:00",
  "data": {
  "wamid": "wamid.HBgL...",
  "from": "905551112233",
+ "user_id": null,
+ "username": null,
  "name": "Ayşe Müşteri",
  "type": "text",
  "text": "Merhaba, sipariş durumunu öğrenebilir miyim?",
  "media": null,
- "timestamp": "1781297896",
+ "timestamp": "1780137900",
  "phone_number_id": "1234567890",
  "contact": {
  "wa_id": "905551112233",
+ "user_id": null,
+ "username": null,
  "profile_name": "Ayşe Müşteri"
  }
  }
 }
 ```
 
-> **Not:** `data.text` düz **string**'dir (Meta'daki gibi `{ "body": ... }` nesnesi değil). Medya mesajlarında (`type: image/video/document/audio`) içerik `data.media` alanında gelir.
+> **Not:** `data.text` düz **string**'dir (Meta'daki gibi `{ "body": ... }` nesnesi değil). Medya mesajlarında açıklama (caption) buraya gelir; açıklama yoksa boş string'dir. Dosyanın kendisi `data.media` alanıyla gelir (aşağıya bakın).
+
+### Zarf alanları
+
+| Alan | Açıklama |
+|---|---|
+| `event` | Olay adı (ör. `message.received`) |
+| `event_id` | Olayın benzersiz kimliği (UUIDv7, zaman sıralı). Tekrar denemelerde aynı kalır; `X-VeriMerkezi-Event-Id` header'ı ile aynıdır — idempotency için bunu saklayın |
+| `event_type` | `event` ile aynı (geriye dönük uyumluluk) |
+| `occurred_at` | Olay zamanı, ISO 8601 (`+03:00`) |
+| `created_at` | Aynı zaman, `YYYY-MM-DD HH:MM:SS` biçiminde (geriye dönük uyumluluk) |
+| `data` | Olaya özgü içerik — aşağıdaki tablolara bakın |
+
+### `message.received` — `data` alanları
+
+| Alan | Açıklama |
+|---|---|
+| `wamid` | WhatsApp mesaj kimliği |
+| `from` | Gönderenin telefonu (E.164, `+` olmadan). Telefonu gizli kullanıcılarda `null` |
+| `user_id` | WhatsApp kullanıcı kimliği (BSUID). `from` `null` ise gönderen kimliği budur |
+| `username` | WhatsApp kullanıcı adı (varsa) |
+| `name` | Kişinin WhatsApp profil adı |
+| `type` | `text` · `image` · `video` · `audio` · `document` · `sticker` · `button` · `interactive` … |
+| `text` | Mesaj metni; medyada açıklama (caption), açıklama yoksa boş |
+| `media` | Medyalı mesajlarda dolu, diğerlerinde `null` — aşağıya bakın |
+| `timestamp` | Meta'nın mesaj zamanı (Unix saniye, string) |
+| `phone_number_id` | Mesajın geldiği numaranızın Meta kimliği |
+| `contact` | `wa_id`, `user_id`, `username`, `profile_name` |
+
+### Medyalı mesaj
+
+Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dolu gelir. Dosyayı `GET /wa/media/{media_id}` ile indirin — ayrıntılar: [10-media.md](10-media.md).
+
+```json
+{
+  "event": "message.received",
+  "event_id": "01a0c7ee-d040-7730-8111-65b0c70acc26",
+  "event_type": "message.received",
+  "occurred_at": "2026-09-22T10:05:12+03:00",
+  "created_at": "2026-09-22 10:05:12",
+  "data": {
+    "wamid": "wamid.HBgM...",
+    "from": "905551112233",
+    "user_id": null,
+    "username": null,
+    "name": "Ayşe Müşteri",
+    "type": "image",
+    "text": "Poliçe fotoğrafı",
+    "media": {
+      "media_id": 13109,
+      "path": "wa-media/inbound/2026/09/kgI9iKVlvNw3yFpXrzNVL8w2T023kEaznP3z5NHD.jpeg"
+    },
+    "timestamp": "1790060712",
+    "phone_number_id": "1234567890",
+    "contact": { "wa_id": "905551112233", "user_id": null, "username": null, "profile_name": "Ayşe Müşteri" }
+  }
+}
+```
+
+- `media.media_id` — indirmede kullanacağınız kimlik.
+- `media.path` — depoya ait iç yol; **doğrudan istenemez**, yalnızca bilgi amaçlıdır.
+- Nadiren dosya Meta'dan alınamazsa `media` şu şekilde gelir; bu durumda indirilebilir dosya yoktur:
+
+```json
+"media": { "error": "media_download_failed", "meta_media_id": "1075907555339682" }
+```
+
+### Diğer olayların `data` alanları
+
+| Olay | `data` alanları |
+|---|---|
+| `message.echo` | `wamid`, `from` (işletme), `to` (müşteri), `type`, `text`, `timestamp`, `source` (`coexistence_app`), `phone_number_id` |
+| `message.status.sent` · `.delivered` · `.read` · `.failed` | `wamid`, `recipient` (alıcının telefonu), `timestamp`, `errors` |
+| `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_name`, `language`, `reason` (Meta'nın bildirdiği sebep; onayda anlamsızdır) |
+| `quality.changed` | `phone` (numaranız), `quality` (`GREEN` / `YELLOW` / `RED`) |
+| `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
+
+`errors` başarılı durumlarda `null`, `message.status.failed`'da Meta'nın hata listesidir:
+
+```json
+"errors": [{
+  "code": 131047,
+  "title": "Re-engagement message",
+  "message": "Re-engagement message",
+  "error_data": { "details": "Message failed to send because more than 24 hours have passed since the customer last replied to this number." },
+  "href": "https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes/"
+}]
+```
 
 ## 4) Header'lar (Doğrulama için)
 
@@ -112,7 +203,7 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 Content-Type: application/json
 X-VeriMerkezi-Signature-256: sha256=abc123...
 X-VeriMerkezi-Timestamp: 1717068300
-X-VeriMerkezi-Event-Id: 01963a2b-7c1d-7f4e-9b21-...
+X-VeriMerkezi-Event-Id: 019e787c-b7e0-74d8-9077-fb9ee8ad83d5
 X-VeriMerkezi-Event-Type: message.received
 X-VeriMerkezi-Delivery-Attempt: 1
 User-Agent: VeriMerkezi-Webhook/1.0

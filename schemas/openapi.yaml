@@ -30,6 +30,19 @@ components:
       description: API key - create one at panel/api.
 
   schemas:
+    MediaRecord:
+      type: object
+      properties:
+        media_id:      { type: integer, example: 13115 }
+        client_id:     { type: integer, nullable: true }
+        kind:          { type: string, enum: [image, video, document, audio, sticker] }
+        source:        { type: string, enum: [inbound, outbound] }
+        mime:          { type: string, example: image/jpeg }
+        size:          { type: integer, example: 108919 }
+        sha256:        { type: string, nullable: true }
+        original_name: { type: string, nullable: true }
+        created_at:    { type: string, example: "2026-09-19 20:14:58" }
+        download_url:  { type: string, example: "https://api.verimerkezi.app/wa/media/13115" }
     Error:
       type: object
       properties:
@@ -525,3 +538,98 @@ paths:
                     items: { type: object }
                   next_cursor: { type: string, nullable: true }
                   has_more: { type: boolean }
+  /media:
+    get:
+      summary: List your media records (inbound and outbound)
+      description: |
+        Returns media belonging to the authenticated account, newest first.
+        Only your own records are visible.
+      tags: [Media]
+      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      parameters:
+        - { name: limit,  in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: cursor, in: query, schema: { type: integer }, description: Return records with id lower than this }
+        - { name: source, in: query, schema: { type: string, enum: [inbound, outbound] } }
+        - { name: kind,   in: query, schema: { type: string, enum: [image, video, document, audio, sticker] } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  media:
+                    type: array
+                    items: { $ref: "#/components/schemas/MediaRecord" }
+                  paging:
+                    type: object
+                    properties:
+                      limit:       { type: integer }
+                      has_more:    { type: boolean }
+                      next_cursor: { type: integer, nullable: true }
+        '403': { description: insufficient_scope }
+
+  /media/{media_id}:
+    get:
+      summary: Download a media file
+      description: |
+        Streams the binary file. Use the `media_id` delivered in the
+        `data.media.media_id` field of the `message.received` webhook.
+
+        Add `?meta=1` to receive JSON metadata instead of the file.
+
+        Supports `Range` (206 Partial Content) and `ETag` / `If-None-Match` (304).
+        Direct HTTP access to the storage path is disabled; this endpoint is the
+        only way to read inbound media.
+
+        Rate limit: 60 requests per minute (separate bucket from other endpoints).
+      tags: [Media]
+      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      parameters:
+        - { name: media_id, in: path,  required: true, schema: { type: integer } }
+        - { name: meta,     in: query, schema: { type: integer, enum: [0, 1] }, description: "1 returns JSON metadata" }
+        - name: Range
+          in: header
+          schema: { type: string }
+          example: bytes=0-1048575
+        - name: If-None-Match
+          in: header
+          schema: { type: string }
+      responses:
+        '200':
+          description: The file
+          headers:
+            Content-Type:            { schema: { type: string } }
+            Content-Length:          { schema: { type: integer } }
+            Content-Disposition:     { schema: { type: string } }
+            ETag:                    { schema: { type: string } }
+            Accept-Ranges:           { schema: { type: string } }
+            X-Content-Type-Options:  { schema: { type: string } }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+            application/json:
+              schema:
+                type: object
+                description: Returned only when meta=1
+                properties:
+                  ok:    { type: boolean }
+                  media: { $ref: "#/components/schemas/MediaRecord" }
+        '206': { description: Partial content (Range) }
+        '304': { description: Not modified (ETag matched) }
+        '400': { description: invalid_media_id }
+        '403': { description: insufficient_scope }
+        '404': { description: media_not_found or media_file_missing (also returned for another account's media) }
+        '416': { description: range_not_satisfiable }
+    head:
+      summary: Media headers without the body
+      description: Returns Content-Length and Content-Type without transferring the file.
+      tags: [Media]
+      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      parameters:
+        - { name: media_id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Headers only }
+        '404': { description: Not found }
