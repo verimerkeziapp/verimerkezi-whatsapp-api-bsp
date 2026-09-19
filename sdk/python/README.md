@@ -62,6 +62,7 @@ vm.mark_read('1234567890', 'wamid.HBgM...', typing=True)
 |---|---|
 | `send_text(phone_id, to, body)` | Düz metin gönder |
 | `send_template(phone_id, to, name, language, components=None)` | Şablon gönder |
+| `send_otp(phone_id, to, template_name, code, language='tr')` | OTP / doğrulama kodu gönder (AUTHENTICATION şablonu) |
 | `send_image(phone_id, to, link, caption=None)` | Görsel gönder (link, ≤5MB jpeg/png) |
 | `send_video(phone_id, to, link, caption=None)` | Video gönder (link, ≤16MB mp4) |
 | `send_audio(phone_id, to, link)` | Ses gönder (link, ≤16MB, başlıksız) |
@@ -76,10 +77,26 @@ vm.mark_read('1234567890', 'wamid.HBgM...', typing=True)
 | `create_contact(phone, name, **extra)` | Kişi oluştur |
 | `bulk_contacts(contacts, skip_duplicates=True)` | Toplu kişi ekle |
 | `reports_summary(period='30d')` | Rapor özeti |
+| `list_media(source=None, kind=None, cursor=None, limit=50)` | Medya kayıtları |
+| `media_info(media_id)` | Medya üstverisi (boyut, tür, sha256) |
+| `download_media(media_id, dest_path=None)` | Gelen medyayı indir — yol verilirse diske parça parça yazar ve yolu döner, verilmezse `bytes` döner |
 
 > Gönderim yanıtı düz bir nesnedir: `{ok, id, wamid, to, type, status, mode, simulated, credits_used, balance}`. Gönderilen mesajın WhatsApp ID'si `r['wamid']` içindedir (`messages[]` dizisi YOKTUR).
 
 > Webhook'lar API üzerinden değil, [verimerkezi.app](https://verimerkezi.app) panelinden yapılandırılır. Gelen olayları doğrulamak için `examples/python/webhook_receiver.py` örneğine ve `VeriMerkeziClient.verify_webhook_signature(...)` yardımcısına bakın.
+
+## Gelen Medyayı İndirme
+
+Webhook'taki `data.media.media_id` ile dosyayı indirin (anahtarda `messages:read` ya da Tam Yetki gerekir):
+
+```python
+vm.download_media(13109, 'gelen.jpeg')          # diske yazar, yolu döner (önerilen)
+icerik = vm.download_media(13109)               # bytes
+bilgi = vm.media_info(13109)                    # boyut, tür, sha256
+liste = vm.list_media(source='inbound', limit=50)
+```
+
+Ayrıntılar: [docs/10-media.md](../../docs/10-media.md)
 
 ## Hata Yönetimi
 

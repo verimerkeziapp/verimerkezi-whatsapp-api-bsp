@@ -48,6 +48,7 @@ console.log('wamid:', response.wamid);
 | `numbers()` | `Promise<NumberList>` |
 | `sendText(phoneId, to, body)` | `Promise<MessageResponse>` |
 | `sendTemplate(phoneId, to, name, lang, components?)` | `Promise<MessageResponse>` |
+| `sendOtp(phoneId, to, templateName, code, lang?)` | `Promise<MessageResponse>` |
 | `sendImage(phoneId, to, link, caption?)` | `Promise<MessageResponse>` |
 | `sendVideo(phoneId, to, link, caption?)` | `Promise<MessageResponse>` |
 | `sendAudio(phoneId, to, link)` | `Promise<MessageResponse>` |
@@ -60,6 +61,9 @@ console.log('wamid:', response.wamid);
 | `getProfile(phoneId)` | `Promise<Profile>` |
 | `updateProfile(phoneId, fields)` | `Promise<Profile>` |
 | `reportsSummary(period?)` | `Promise<ReportSummary>` |
+| `listMedia({ source?, kind?, cursor?, limit? })` | `Promise<MediaList>` |
+| `mediaInfo(mediaId)` | `Promise<MediaInfo>` |
+| `downloadMedia(mediaId, writableStream?)` | `Promise<Buffer \| Writable>` |
 
 `POST /messages` düz (flat) bir yanıt döner — `messages[]` dizisi **yoktur**:
 
@@ -104,6 +108,21 @@ await vm.markRead('1234567890', 'wamid.HBgM...', true);
 > https://verimerkezi.app/panel/wa — Gelen olayların imzasını doğrulamak için
 > `VeriMerkeziClient.verifyWebhookSignature(secret, body, signature, timestamp)`
 > statik metodunu ve `examples/nodejs/webhook-receiver.js` örneğini kullanın.
+
+## Gelen Medyayı İndirme
+
+Webhook'taki `data.media.media_id` ile dosyayı indirin (anahtarda `messages:read` ya da Tam Yetki gerekir):
+
+```js
+const fs = require('fs');
+
+const buf = await vm.downloadMedia(13109);                               // küçük dosya → Buffer
+await vm.downloadMedia(13109, fs.createWriteStream('gelen.jpeg'));      // büyük dosya → akış
+const info = await vm.mediaInfo(13109);                                  // boyut, tür, sha256
+const liste = await vm.listMedia({ source: 'inbound', limit: 50 });
+```
+
+Ayrıntılar: [docs/10-media.md](../../docs/10-media.md)
 
 ## Hata Yönetimi
 

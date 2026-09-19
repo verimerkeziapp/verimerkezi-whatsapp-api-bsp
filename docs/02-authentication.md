@@ -21,7 +21,10 @@ Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsin
 
 | Scope | İzin verir |
 |---|---|
-| `messages:send` | Mesaj gönderme (text, media, template) |
+| `*` | Tam yetki — tüm scope'ları kapsar (panelde **Tam Yetki (Admin)**, varsayılan seçili) |
+| `messages:send` | Mesaj gönderme (text, media, template) + okundu / yazıyor göstergesi |
+| `messages:read` | Gelen medyayı indirme ve listeleme (`/media`) — panelde **Mesaj Okuma** |
+| `inbox:read` | `/media` için `messages:read` ile eşdeğer kabul edilir |
 | `templates:read` | Şablon listesi |
 | `contacts:read` | Kişi rehberi okuma |
 | `contacts:write` | Kişi ekleme (tekil + toplu) |
@@ -29,7 +32,7 @@ Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsin
 | `profile:write` | İşletme profili güncelleme |
 | `reports:read` | Raporlar, analitik |
 
-> **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:send` + `templates:read` yeterlidir.
+> **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:send` + `templates:read`, gelen medyayı indiren bir entegrasyon için `messages:read` yeterlidir.
 
 ## Anahtar Yönetimi
 

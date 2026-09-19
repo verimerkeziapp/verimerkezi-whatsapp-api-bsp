@@ -157,6 +157,62 @@ class VeriMerkeziClient
  public function updateProfile(string $phoneNumberId, array $fields): array { return $this->patch('/profile/' . urlencode($phoneNumberId), $fields); }
  public function reportsSummary(string $period = '30d'): array { return $this->get('/reports/summary?period=' . urlencode($period)); }
 
+ // ── Medya ────────────────────────────────────────────────────────
+ // Webhook'taki data.media.media_id degerini dogrudan kullanin.
+ // Depodaki dosya yollarina dogrudan HTTP erisimi KAPALIDIR.
+
+ /** Medya kayitlarini listeler (yeniden eskiye). */
+ public function listMedia(array $filtre = []): array
+ {
+ $q = ['limit' => (int) ($filtre['limit'] ?? 50)];
+ foreach (['source', 'kind'] as $k) {
+ if (!empty($filtre[$k])) { $q[$k] = (string) $filtre[$k]; }
+ }
+ if (!empty($filtre['cursor'])) { $q['cursor'] = (int) $filtre['cursor']; }
+
+ return $this->get('/media?' . http_build_query($q));
+ }
+
+ /** Dosyayi indirmeden ustveri doner. */
+ public function mediaInfo(int $mediaId): array { return $this->get('/media/' . $mediaId . '?meta=1'); }
+
+ /**
+  * Medya dosyasini indirir.
+  * $hedefYol verilirse diske yazar ve yolu doner; verilmezse ikili icerik doner.
+  */
+ public function downloadMedia(int $mediaId, ?string $hedefYol = null)
+ {
+ $ch = curl_init($this->baseUrl . '/media/' . $mediaId);
+ $fp = null;
+ if ($hedefYol !== null) {
+ $fp = fopen($hedefYol, 'wb');
+ if ($fp === false) {
+ throw new VeriMerkeziException('Hedef dosya acilamadi: ' . $hedefYol, 0);
+ }
+ curl_setopt($ch, CURLOPT_FILE, $fp);
+ } else {
+ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+ }
+ curl_setopt_array($ch, [
+ CURLOPT_HTTPHEADER => [
+ 'Authorization: Bearer ' . $this->apiKey,
+ 'User-Agent: VeriMerkezi-PHP-SDK/1.0',
+ ],
+ CURLOPT_TIMEOUT => 300,
+ ]);
+ $govde = curl_exec($ch);
+ $kod = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+ curl_close($ch);
+ if ($fp !== null) { fclose($fp); }
+
+ if ($kod !== 200) {
+ if ($hedefYol !== null) { @unlink($hedefYol); }
+ throw new VeriMerkeziException('Medya indirilemedi (HTTP ' . $kod . ')', $kod);
+ }
+
+ return $hedefYol ?? $govde;
+ }
+
  // ── Webhooks ───────────────────────────────────────────────────────────
  // Webhook'lar panelden yapılandırılır (panel/api/webhooks) — programatik
  // webhook API'si yoktur. SDK yalnızca alıcı + imza doğrulaması sağlar:

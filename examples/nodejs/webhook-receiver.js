@@ -61,6 +61,10 @@ app.post('/wa-webhook', (req, res) => {
  case 'message.received':
  handleIncomingMessage(event.data);
  break;
+ case 'message.echo':
+ // CoExistence: işletme telefondaki WhatsApp uygulamasından müşteriye yazdı
+ console.log(`İşletme yanıtladı -> ${event.data.to}: ${event.data.text || '[' + event.data.type + ']'}`);
+ break;
  case 'message.status.sent':
  case 'message.status.delivered':
  case 'message.status.read':
@@ -73,10 +77,18 @@ app.post('/wa-webhook', (req, res) => {
  console.log('Şablon onaylandı:', event.data.template_name);
  break;
  case 'template.rejected':
- console.log('Şablon reddedildi:', event.data.template_name, event.data.rejected_reason);
+ case 'template.flagged':
+ case 'template.paused': {
+ const durum = { 'template.rejected': 'reddedildi', 'template.flagged': 'işaretlendi', 'template.paused': 'durduruldu' }[event.event];
+ console.log(`Şablon ${durum}: ${event.data.template_name} (${event.data.language})${event.data.reason ? ' · ' + event.data.reason : ''}`);
  break;
+ }
  case 'quality.changed':
- console.log(`Kalite: ${event.data.display_phone_number} -> ${event.data.quality_rating}`);
+ console.log(`Kalite: ${event.data.phone} -> ${event.data.quality}`);
+ break;
+ case 'account.alert':
+ // field: account_update | account_alerts — event: Meta'nın olay adı (örn. DISABLED_UPDATE)
+ console.warn(`Hesap uyarısı: ${event.data.field} · ${event.data.event}`);
  break;
  default:
  console.log('Bilinmeyen event:', event.event);
@@ -95,9 +107,24 @@ app.post('/wa-webhook', (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 
 function handleIncomingMessage(data) {
- const { from, text, contact, phone_number_id } = data;
- const name = contact?.profile_name || 'Müşteri';
- console.log(` ${name} (${from}): ${text?.body || '[medya]'}`);
+ // data.text düz metindir (medyada açıklama; açıklama yoksa boş).
+ // Telefonu gizli kullanıcılarda data.from null gelir; kimlik data.user_id (BSUID) olur.
+ const { from, user_id, name, type, text, media, phone_number_id } = data;
+ const kimden = from || user_id || 'bilinmiyor';
+ const ad = name || 'Müşteri';
+
+ if (media && media.media_id) {
+ console.log(`${ad} (${kimden}) ${type} gönderdi · media_id=${media.media_id}${text ? ' · ' + text : ''}`);
+ // Dosyayı indirmek için (bkz. docs/10-media.md):
+ // const { VeriMerkeziClient } = require('@verimerkezi/whatsapp-sdk');
+ // const vm = new VeriMerkeziClient(process.env.VM_API_KEY);
+ // vm.downloadMedia(media.media_id, require('fs').createWriteStream(`medya-${media.media_id}`)).catch(console.error);
+ } else if (media && media.error) {
+ // Nadiren dosya Meta'dan alınamaz; bu durumda indirilebilir dosya yoktur.
+ console.warn(`${ad} (${kimden}) ${type} gönderdi, dosya alınamadı: ${media.error}`);
+ } else {
+ console.log(`${ad} (${kimden}): ${text}`);
+ }
 
  // Otomatik yanıt göndermek için:
  // const { VeriMerkeziClient } = require('@verimerkezi/whatsapp-sdk');
@@ -111,7 +138,9 @@ function handleStatusUpdate(data, eventName) {
 }
 
 function handleFailedMessage(data) {
- console.error(`Hayir ${data.wamid} · ${data.error?.message || 'unknown'}`);
+ // errors: Meta'nın hata listesi — [{ code, title, message, error_data: { details }, href }]
+ const hata = (data.errors && data.errors[0]) || {};
+ console.error(`Gönderim başarısız · ${data.wamid} · alıcı=${data.recipient} · kod=${hata.code ?? '-'} · ${hata.message || hata.title || 'bilinmiyor'}`);
 }
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

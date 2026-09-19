@@ -45,6 +45,7 @@ Tüm metotlar:
 |---|---|
 | `sendText($phoneId, $to, $body)` | Düz metin (24h service window içinde) |
 | `sendTemplate($phoneId, $to, $name, $lang, $components = [])` | Şablon mesajı |
+| `sendOtp($phoneId, $to, $templateName, $code, $lang = 'tr')` | OTP / doğrulama kodu (AUTHENTICATION şablonu) |
 | `sendImage($phoneId, $to, $link, $caption = null)` | Resim (link, 24h pencere · ≤5MB jpeg/png · 1 kredi) |
 | `sendVideo($phoneId, $to, $link, $caption = null)` | Video (link, 24h pencere · ≤16MB mp4 · 1 kredi) |
 | `sendAudio($phoneId, $to, $link)` | Ses (link, 24h pencere · ≤16MB · 1 kredi) |
@@ -59,6 +60,9 @@ Tüm metotlar:
 | `getProfile($phoneId)` | Numara profili |
 | `updateProfile($phoneId, $fields)` | Profil güncelle |
 | `reportsSummary($period = '30d')` | Rapor özeti |
+| `listMedia($filtre = [])` | Medya kayıtları (`source`, `kind`, `cursor`, `limit`) |
+| `mediaInfo($mediaId)` | Medya üstverisi (boyut, tür, sha256) |
+| `downloadMedia($mediaId, $hedefYol = null)` | Gelen medyayı indir — yol verilirse diske yazar ve yolu döner, verilmezse içeriği döner |
 
 `POST /messages` yanıtı düz bir nesnedir (`messages[]` dizisi yoktur):
 
@@ -100,6 +104,19 @@ Gelen bir mesajı okundu işaretler (mavi tik). `typing: true` verirseniz, müş
 // Gelen mesajı okundu işaretle + "yazıyor…" göster
 $vm->markRead('1234567890', 'wamid.HBgM...', typing: true);
 ```
+
+## Gelen Medyayı İndirme
+
+Webhook'taki `data.media.media_id` ile dosyayı indirin (anahtarda `messages:read` ya da Tam Yetki gerekir):
+
+```php
+$vm->downloadMedia(13109, __DIR__ . '/gelen.jpeg');   // diske yazar, yolu döner (önerilen)
+$icerik = $vm->downloadMedia(13109);                  // ikili içerik döner
+$bilgi  = $vm->mediaInfo(13109);                      // boyut, tür, sha256
+$liste  = $vm->listMedia(['source' => 'inbound', 'limit' => 50]);
+```
+
+Ayrıntılar: [docs/10-media.md](../../docs/10-media.md)
 
 ## Hata Yönetimi
 

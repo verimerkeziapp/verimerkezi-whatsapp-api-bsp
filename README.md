@@ -52,7 +52,8 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 │ ├── 06-webhooks.md # Webhook alıcı + HMAC doğrulama
 │ ├── 07-rate-limits.md # Rate limit + Idempotency-Key
 │ ├── 08-pagination.md # Cursor pagination
-│ └── 09-errors.md # Hata kodları + Meta kod referansı
+│ ├── 09-errors.md # Hata kodları + Meta kod referansı
+│ └── 10-media.md # Gelen medyayı indirme (media_id → dosya)
 ├── examples/
 │ ├── php/ # Örnek kullanımlar
 │ ├── nodejs/
@@ -103,6 +104,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Mesaj gönderimi** (text / image / document / video / audio / location / contact / sticker / reaction) | Evet — `POST /messages` |
 | **Free-form medya** (image / video / audio / document — link veya Meta media id, 24h pencere içinde) | Evet — `POST /messages` |
 | **Okundu + yazıyor göstergesi** (mavi tik + "yazıyor…", kredisiz) | Evet — `POST /messages/read` |
+| **Gelen medyayı indirme** (webhook'taki `media_id` ile; `Range`, `ETag`, `HEAD`, üstveri, listeleme) | Evet — `GET /media/{media_id}`, `GET /media` |
 | **Şablon listeleme** (`GET /templates`) | Evet (oluşturma/silme/submit panelden) |
 | **Dinamik URL butonu** (şablon butonunda `{{1}}` → her alıcıya özel link) | Evet — `POST /messages` `button` bileşeni |
 | **Kişi rehberi** (ekle / toplu ekle / listele) | Evet — `POST /contacts`, `/contacts/bulk`, `GET /contacts` |
@@ -111,10 +113,10 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Kredi** (`GET /credit/balance\|packages\|usage\|transactions`) | Evet |
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet (abonelik **panelden** — programatik API yok) |
-| **11 webhook event tipi** (message.received, status.*, template.*, quality.changed) | Evet |
+| **12 webhook event tipi** (message.received, message.echo, status.*, template.*, quality.changed, account.alert) | Evet |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
-| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk |
-| **Cursor pagination** (opaque, stateless) | Evet — `/contacts`, `/credit/transactions` |
+| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (medya indirme ayrı sayaç: 60/dk) |
+| **Cursor pagination** (opaque, stateless) | Evet — `/contacts`, `/credit/transactions`, `/media` |
 | **Tier auto-sync** (TIER_50 -> 250 -> 1K -> 10K -> 100K -> UNLIMITED) | Evet |
 | **Multi-tenant izolasyon** (her API key tek müşteri) | Evet |
 
@@ -127,6 +129,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 - **Webhook imzası:** `X-VeriMerkezi-Signature-256: sha256=<hmac>` header'ı
 - **Replay koruması:** `X-VeriMerkezi-Timestamp` (5 dakikadan eski payload reddedilmeli)
 - **HMAC formülü:** `hash_hmac('sha256', timestamp + '.' + raw_body, webhook_secret)`
+- **Medya erişimi:** gelen medya yalnızca API anahtarıyla ve yalnızca kendi hesabınızdan indirilir; depodaki dosya yollarına doğrudan erişim kapalıdır
 
 Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bölümüne bakın.
 
@@ -145,6 +148,7 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 | [07-rate-limits.md](docs/07-rate-limits.md) | Rate limit politikası + Idempotency-Key |
 | [08-pagination.md](docs/08-pagination.md) | Cursor pagination kullanımı |
 | [09-errors.md](docs/09-errors.md) | HTTP + Meta hata kodları |
+| [10-media.md](docs/10-media.md) | Gelen medyayı indirme (webhook `media_id` → dosya) |
 
 ---
 

@@ -2,6 +2,31 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.7.0] — 2026-09-22
+
+### Eklenenler — Gelen medyayı indirme
+- Webhook'taki `data.media.media_id` değeri artık doğrudan indirilebiliyor (API tarafı 19 Eylül 2026'da canlıya alındı):
+  - `GET /wa/media/{media_id}` — dosyanın kendisi (`Range` ve `ETag` destekli)
+  - `GET /wa/media/{media_id}?meta=1` — üstveri (boyut, tür, sha256)
+  - `HEAD /wa/media/{media_id}` — gövdesiz başlıklar
+  - `GET /wa/media` — medya kayıtlarını listeleme (sayfalı, `source` / `kind` filtreli)
+- **Yetki:** `messages:read` (panelde "Mesaj Okuma") veya `inbox:read`; "Tam Yetki" (`*`) anahtarları da erişir. 1.3.0'da o gün hiçbir uç nokta kullanmadığı için listeden çıkarılan `messages:read` artık bu uçlar için geçerlidir.
+- **SDK:** PHP ve Node.js'e `listMedia` · `mediaInfo` · `downloadMedia`, Python'a `list_media` · `media_info` · `download_media`.
+- **Dokümantasyon:** `docs/10-media.md` (yeni); `02-authentication` (scope), `06-webhooks` (medyalı payload), `07-rate-limits` (medya sayacı), `09-errors` (medya hata kodları), README ve SDK README'leri güncellendi; Postman koleksiyonuna "6. Medya" klasörü eklendi.
+
+### Güvenlik
+- Depodaki gelen medya yollarına **doğrudan HTTP erişimi kapatıldı.** Dosyalara yalnızca kimlik doğrulamalı uç noktadan erişilir ve yalnızca kendi hesabınızın medyası görünür; başka hesabın `media_id`'si `404` döner.
+- Medya indirme için ayrı hız sınırı sayacı: **60 istek/dakika**.
+
+### Düzeltildi — Webhook dokümanı ve örnek alıcılar
+- **Örnek alıcılar** (`examples/php`, `examples/nodejs`, `examples/python`): `data.text` artık düz metin olarak okunuyor. Önceden `text.body` okunuyordu; Python örneği her `message.received` olayında hata verip `500` dönüyordu (bu yüzden olay tekrar tekrar deneniyordu), Node örneği metin mesajlarını `[medya]`, PHP örneği boş gösteriyordu. Medyalı mesaj (`media_id`), telefonsuz kullanıcı (`user_id`), `message.echo`, `template.flagged` / `template.paused` ve `account.alert` işleme eklendi; `message.status.failed` için `errors[]`, şablon olaylarında `reason`, `quality.changed` için `phone` / `quality`, `account.alert` için `field` / `event` alanları düzeltildi. Üç örnek de 12 olay tipiyle uçtan uca test edildi.
+- **Webhook zarfı:** `event_id` biçimi UUIDv7 olarak düzeltildi (Haziran 2026 sonundan beri canlıda bu biçim üretiliyor; eski `evt_...` biçimi artık kullanılmıyor). `message.received` örneğine `user_id`, `username`, `contact.user_id`, `contact.username` eklendi; zarf alanları ve tüm olayların `data` alanları tablolarla belgelendi.
+- **Scope:** `02-authentication.md`, panelde seçilebilen `*` (Tam Yetki) ve `messages:read` ile tamamlandı.
+- **README:** webhook olay sayısı **12** olarak düzeltildi (`message.echo` ve `account.alert` dahil); SDK README'lerine eksik `sendOtp` / `send_otp` satırı eklendi.
+
+### Notlar
+- Medya dosyaları **süresiz** saklanır; otomatik silme yoktur.
+
 ## [1.6.0] — 2026-09
 
 ### Eklenenler — OTP / Kimlik Doğrulama (AUTHENTICATION) şablonları

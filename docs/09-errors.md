@@ -6,11 +6,14 @@
 |---|---|
 | `200 OK` | Başarılı |
 | `201 Created` | Yeni kaynak oluşturuldu (kişi) |
+| `206 Partial Content` | `Range` isteğine kısmi yanıt (medya indirme) |
+| `304 Not Modified` | `If-None-Match` ile istenen dosya değişmemiş (medya indirme) |
 | `400 Bad Request` | İstek formatı hatalı (JSON parse, eksik alan) |
 | `401 Unauthorized` | API key eksik veya geçersiz |
 | `403 Forbidden` | Yetkisiz (yanlış scope, IP whitelist dışı, host kısıtı) |
 | `404 Not Found` | Kaynak bulunamadı |
 | `409 Conflict` | Çakışma (örn. aynı şablon adı) |
+| `416 Range Not Satisfiable` | İstenen bayt aralığı geçersiz (medya indirme) |
 | `422 Unprocessable Entity` | Validasyon hatası (örn. geçersiz telefon) |
 | `429 Too Many Requests` | Rate limit aşıldı (`Retry-After` header'ına bakın) |
 | `500 Internal Server Error` | Beklenmeyen sunucu hatası |
@@ -58,6 +61,10 @@ Tüm hatalar şu yapıyı izler:
 | `quota_exceeded` | 429 | Günlük tier limiti aşıldı |
 | `media_too_large` | 422 | Medya dosyası limit aşımı |
 | `media_invalid_format` | 422 | Desteklenmeyen MIME |
+| `invalid_media_id` | 400 | `media_id` yalnızca rakamlardan oluşmalı |
+| `media_not_found` | 404 | Medya kaydı yok ya da sizin hesabınıza ait değil |
+| `media_file_missing` | 404 | Kayıt var, dosya depoda bulunamadı |
+| `range_not_satisfiable` | 416 | İstenen bayt aralığı geçersiz |
 | `payment_required` | 402 | Hesabınızda ödeme yöntemi yok |
 | `account_suspended` | 403 | Meta hesabınızı askıya aldı |
 

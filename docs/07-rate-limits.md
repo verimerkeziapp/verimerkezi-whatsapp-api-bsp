@@ -2,7 +2,7 @@
 
 ## Rate Limit
 
-API, **dakikalık fixed-window** limit uygular. Her API anahtarı için **dakika başına 120 istek** geçerlidir. Mesaj gönderimi (`POST /wa/messages`) ayrı bir sayaçta tutulur — GET istekleriniz mesaj gönderim hakkınızı tüketmez; her sayaç bağımsız olarak 120/dakika ile sınırlıdır.
+API, **dakikalık fixed-window** limit uygular. Her API anahtarı için **dakika başına 120 istek** geçerlidir. Mesaj gönderimi (`POST /wa/messages`) ayrı bir sayaçta tutulur — GET istekleriniz mesaj gönderim hakkınızı tüketmez. Gelen medya indirme (`/wa/media`) de kendi sayacındadır. Genel ve mesaj sayaçları **120/dakika**, medya sayacı **60/dakika** ile sınırlıdır.
 
 ### Varsayılan Limitler
 
@@ -10,6 +10,7 @@ API, **dakikalık fixed-window** limit uygular. Her API anahtarı için **dakika
 |---|---|
 | Genel istekler (GET/POST/PATCH/DELETE) | 120 / dakika |
 | Mesaj gönderim (POST /wa/messages) | 120 / dakika (ayrı sayaç) |
+| Medya indirme (GET / HEAD /wa/media…) | 60 / dakika (ayrı sayaç) |
 
 > Yüksek hacimli kullanım için anahtar bazında limit artırımı: bilgi@verimerkezi.app
 
@@ -26,6 +27,8 @@ X-RateLimit-Reset: 1717068360
 - `Limit`: Mevcut pencere içindeki üst sınır
 - `Remaining`: Bu pencerede kalan hakkınız
 - `Reset`: Pencerenin sıfırlanacağı Unix timestamp
+
+Medya uçlarında `X-RateLimit-Limit` değeri `60`'tır.
 
 ### 429 Yanıtı
 
