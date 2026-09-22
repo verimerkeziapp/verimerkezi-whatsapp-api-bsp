@@ -1,5 +1,7 @@
 # 10 · Gelen Medyayı İndirme
 
+> **Giden gönderim için dosya yüklemek** (Meta `media_id` üretmek) ayrı bir uçtur: [`POST /wa/media`](11-gelismis.md#dosya-yükleme--post-wamedia). Bu bölüm **gelen** medyayı indirmeyi anlatır.
+
 Müşteriniz WhatsApp'tan fotoğraf, belge, video veya ses gönderdiğinde webhook'un
 `data.media` alanında iki değer gelir:
 

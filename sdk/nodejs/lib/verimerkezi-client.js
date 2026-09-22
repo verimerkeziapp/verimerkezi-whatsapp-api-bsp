@@ -160,6 +160,47 @@ class VeriMerkeziClient {
  return Buffer.from(await res.arrayBuffer());
  }
 
+ // ── Alıntılı cevap + tepki (2026-09-22) ────────────────────────────────
+ sendReply(phoneNumberId, to, text, replyToWamid) {
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, text, context: { message_id: replyToWamid } });
+ }
+ // emoji '' → önceki tepkiyi kaldırır
+ reactToMessage(phoneNumberId, to, messageId, emoji) {
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'reaction', reaction: { message_id: messageId, emoji } });
+ }
+
+ // ── Dosya yükleme → Meta media_id (multipart) ──────────────────────────
+ async uploadMedia(phoneNumberId, fileInput, filename, contentType) {
+ const fs = require('fs');
+ const buf = Buffer.isBuffer(fileInput) ? fileInput : fs.readFileSync(fileInput);
+ const name = filename || (typeof fileInput === 'string' ? require('path').basename(fileInput) : 'file');
+ const fd = new FormData();
+ fd.set('phone_number_id', String(phoneNumberId));
+ fd.set('file', new Blob([buf], contentType ? { type: contentType } : undefined), name);
+ const res = await fetch(this.baseUrl + '/media', {
+ method: 'POST',
+ headers: { 'Authorization': 'Bearer ' + this.apiKey, 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.0' },
+ body: fd,
+ });
+ const txt = await res.text();
+ let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = {}; }
+ if (!res.ok) throw new VeriMerkeziException(j?.error?.message || ('HTTP ' + res.status), res.status, j?.error?.code || null);
+ return j;
+ }
+
+ // ── Uzlaştırma, geçmiş, ayarlar, sağlık ────────────────────────────────
+ listMessages({ phoneNumberId, since, cursor, limit = 50 } = {}) {
+ const q = new URLSearchParams({ phone_number_id: String(phoneNumberId), limit: String(limit) });
+ if (since) q.set('since', since);
+ if (cursor) q.set('cursor', String(cursor));
+ return this._get('/messages?' + q.toString());
+ }
+ redeliverWebhooks(since) { return this._post('/webhooks/redeliver', { since }); }
+ historyImportStatus(phoneNumberId) { return this._get('/numbers/' + encodeURIComponent(phoneNumberId) + '/history-import'); }
+ startHistoryImport(phoneNumberId) { return this._post('/numbers/' + encodeURIComponent(phoneNumberId) + '/history-import', {}); }
+ numberSettings(phoneNumberId, settings) { return this._patch('/numbers/' + encodeURIComponent(phoneNumberId) + '/settings', settings); }
+ health() { return this._get('/health'); }
+
  // ── Webhooks ───────────────────────────────────────────────────────────
  // Webhook'lar programatik API ile değil, panel üzerinden yapılandırılır:
  // https://verimerkezi.app/panel/wa (Webhook ayarları)

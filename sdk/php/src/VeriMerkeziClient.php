@@ -213,6 +213,49 @@ class VeriMerkeziClient
  return $hedefYol ?? $govde;
  }
 
+ // ── Alıntılı cevap + tepki (2026-09-22) ────────────────────────────────
+ public function sendReply(string $phoneNumberId, string $to, string $text, string $replyToWamid): array
+ {
+ return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'text' => $text, 'context' => ['message_id' => $replyToWamid]]);
+ }
+ /** emoji '' → önceki tepkiyi kaldırır. */
+ public function reactToMessage(string $phoneNumberId, string $to, string $messageId, string $emoji): array
+ {
+ return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'type' => 'reaction', 'reaction' => ['message_id' => $messageId, 'emoji' => $emoji]]);
+ }
+
+ /** Dosyayı Meta'ya yükler → media_id (30 gün geçerli). */
+ public function uploadMedia(string $phoneNumberId, string $filePath, ?string $mimeType = null): array
+ {
+ if (!is_file($filePath)) { throw new VeriMerkeziException('Dosya bulunamadı: ' . $filePath, 0); }
+ $mime = $mimeType ?: ((new \finfo(FILEINFO_MIME_TYPE))->file($filePath) ?: 'application/octet-stream');
+ $ch = curl_init($this->baseUrl . '/media');
+ curl_setopt_array($ch, [
+ CURLOPT_RETURNTRANSFER => true,
+ CURLOPT_POST => true,
+ CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $this->apiKey, 'User-Agent: VeriMerkezi-PHP-SDK/1.0'],
+ CURLOPT_POSTFIELDS => ['phone_number_id' => $phoneNumberId, 'file' => new \CURLFile($filePath, $mime, basename($filePath))],
+ CURLOPT_TIMEOUT => 300,
+ ]);
+ $raw = curl_exec($ch); $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+ $j = json_decode((string) $raw, true) ?: [];
+ if ($status < 200 || $status >= 300) { throw new VeriMerkeziException($j['error']['message'] ?? ('HTTP ' . $status), $status, $j['error']['code'] ?? null); }
+ return $j;
+ }
+
+ /** Uzlaştırma: mesaj kayıtları (okuma — kredi düşmez). */
+ public function listMessages(array $filtre): array
+ {
+ $q = ['phone_number_id' => (string) ($filtre['phone_number_id'] ?? ''), 'limit' => (int) ($filtre['limit'] ?? 50)];
+ foreach (['since', 'cursor'] as $k) { if (!empty($filtre[$k])) { $q[$k] = (string) $filtre[$k]; } }
+ return $this->get('/messages?' . http_build_query($q));
+ }
+ public function redeliverWebhooks(string $since): array { return $this->post('/webhooks/redeliver', ['since' => $since]); }
+ public function historyImportStatus(string $phoneNumberId): array { return $this->get('/numbers/' . rawurlencode($phoneNumberId) . '/history-import'); }
+ public function startHistoryImport(string $phoneNumberId): array { return $this->post('/numbers/' . rawurlencode($phoneNumberId) . '/history-import', []); }
+ public function numberSettings(string $phoneNumberId, array $settings): array { return $this->patch('/numbers/' . rawurlencode($phoneNumberId) . '/settings', $settings); }
+ public function health(): array { return $this->get('/health'); }
+
  // ── Webhooks ───────────────────────────────────────────────────────────
  // Webhook'lar panelden yapılandırılır (panel/api/webhooks) — programatik
  // webhook API'si yoktur. SDK yalnızca alıcı + imza doğrulaması sağlar:

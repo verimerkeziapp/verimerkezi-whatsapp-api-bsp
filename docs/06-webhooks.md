@@ -43,7 +43,14 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**:
 | `template.paused` | Şablon geçici durduruldu |
 | `quality.changed` | Numaranızın kalite puanı değişti (GREEN/YELLOW/RED) |
 | `account.alert` | Hesap düzeyinde önemli uyarı |
-| `*` | Tüm event'ler (wildcard) |
+| `message.revoked` ⁿ | Müşteri ya da personel bir mesajı sildi |
+| `message.edited` ⁿ | Müşteri ya da personel bir mesajı düzenledi |
+| `message.sent` ⁿ | API dışı giden mesaj (panel / otomasyon / kampanya / opt-out) — `data.source` kaynağı belirtir |
+| `message.history` ⁿ | Coexistence geçmiş aktarımı mesajı (bkz. [11-gelismis.md](11-gelismis.md)) |
+| `number.status_changed` ⁿ | Numara bağlandı / koptu / işaretlendi / kısıtlandı |
+| `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
+
+> **ⁿ = yeni olay (22 Eylül 2026).** Bu olaylar `*` aboneliğine **dahil DEĞİLDİR** — mevcut `*` aboneleri beklemedikleri trafik almaz. Yeni bir olayı almak için panelden **ayrıca** işaretleyin.
 
 ### `message.echo` payload örneği
 
@@ -136,6 +143,11 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 | `timestamp` | Meta'nın mesaj zamanı (Unix saniye, string) |
 | `phone_number_id` | Mesajın geldiği numaranızın Meta kimliği |
 | `contact` | `wa_id`, `user_id`, `username`, `profile_name` |
+| `context` | Alıntılı cevapta dolu: `{ message_id, from, forwarded, frequently_forwarded }`; yoksa `null` |
+| `reaction` | Tepki mesajında (`type: reaction`): `{ message_id, emoji }`; tepki kaldırıldıysa `emoji` boş string |
+| `location` | Konum mesajında: `{ latitude, longitude, name, address, url }`; yoksa `null` |
+| `contacts` | Kişi kartı paylaşıldıysa Meta'nın kişi dizisi; yoksa `null` |
+| `original_message_id` | `revoke` / `edit` türünde hedef mesajın `wamid`'i; diğerlerinde `null` |
 
 ### Medyalı mesaj
 
@@ -179,7 +191,11 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 
 | Olay | `data` alanları |
 |---|---|
-| `message.echo` | `wamid`, `from` (işletme), `to` (müşteri), `type`, `text`, `timestamp`, `source` (`coexistence_app`), `phone_number_id` |
+| `message.echo` | `wamid`, `from` (işletme), `to` (müşteri), `user_id` (müşteri BSUID), `type`, `text`, `media` (medya indirildiyse), `timestamp`, `source` (`coexistence_app`), `phone_number_id` + `context`/`reaction`/`location`/`contacts` |
+| `message.revoked` · `message.edited` | `wamid`, `original_message_id`, `direction` (`inbound`/`echo`), `revoked_by`/`edited_by` (`customer`/`business`), `from`, `user_id`, `phone_number_id`, `timestamp`; `edited` ayrıca `type` + `text` |
+| `message.sent` | `wamid`, `source` (`vm_panel`/`automation`/`campaign`/`opt_out`/`system`), `from`, `to`, `user_id`, `type`, `text`, `media`, `template_name`, `campaign_id`, `phone_number_id`, `timestamp` |
+| `number.status_changed` | `phone_number_id`, `display_phone_number`, `status` (`connected`/`disconnected`/`flagged`/`restricted`/`pending`), `event`, `reason`, `initiated_by`, `occurred_at` |
+| `message.history` | Normal mesaj alanları + `history: true`, `thread_id`, `phase`, `chunk_order`, `progress` ([11-gelismis.md](11-gelismis.md)) |
 | `message.status.sent` · `.delivered` · `.read` · `.failed` | `wamid`, `recipient` (alıcının telefonu), `timestamp`, `errors` |
 | `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_name`, `language`, `reason` (Meta'nın bildirdiği sebep; onayda anlamsızdır) |
 | `quality.changed` | `phone` (numaranız), `quality` (`GREEN` / `YELLOW` / `RED`) |

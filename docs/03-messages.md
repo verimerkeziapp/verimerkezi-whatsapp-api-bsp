@@ -18,6 +18,7 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 | `phone_number_id` | string | Hangi WhatsApp numaranızdan gönderileceği |
 | `to` | string | Alıcı E.164 formatında (örn. `905551234567`, başında + olmaz) |
 | `type` | string | `text`, `image`, `document`, `video`, `audio`, `sticker`, `location`, `contacts`, `template`, `reaction` |
+| `context` | object | (opsiyonel) Alıntılı cevap: `{ "message_id": "wamid..." }` — bkz. [11-gelismis.md](11-gelismis.md) |
 
 ## Mesaj Tipleri
 
@@ -156,6 +157,8 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 
 ### 8) Reaction (Emoji tepki)
 
+`emoji` boş string (`""`) gönderilirse önceki tepki kaldırılır. Tepki mesajı alıntılı cevap (`context`) ile birlikte gönderilemez.
+
 ```json
 {
  "phone_number_id": "1234567890",
@@ -245,6 +248,8 @@ Onaylı şablonunuzda **değişken (dinamik) URL butonu** varsa — yani butonun
 > **Kurallar:** Meta gereği bir URL butonunda **tek** değişken (`{{1}}`) olur ve **adresin sonunda** yer alır. Şablonda body değişkenleri de varsa `body` bileşenini de ekleyin. Dinamik URL butonlu şablonlar **yalnızca API ile** gönderilir (panel toplu kampanya ekranından değil).
 
 ## Medya Mesajları
+
+> **Dosyayı Meta'ya yükleyip `media_id` almak** için (herkese açık URL gerekmeden) [`POST /wa/media`](11-gelismis.md#dosya-yükleme--post-wamedia) ucunu kullanın; dönen kimliği `{type}.id` olarak gönderin.
 
 `POST /wa/messages` ile **şablonsuz (free-form)** medya gönderebilirsiniz: görsel, video, ses ve doküman. Bu mesajlar serbest biçimlidir ve **yalnızca 24 saatlik müşteri hizmet penceresi (service window) içinde** teslim edilir — pencere kapalıyken Meta **131047** hatası döner; bu durumda onaylı bir **şablon** kullanın. Her başarılı gönderim **1 kredi** tüketir.
 
