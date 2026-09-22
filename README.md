@@ -113,18 +113,19 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Coexistence geçmiş aktarımı** (180 güne kadar) | Evet — `GET`/`POST /numbers/{id}/history-import`, webhook `message.history` |
 | **Numara ayarları** (otomasyon / opt-out yanıtı aç-kapa) | Evet — `PATCH /numbers/{id}/settings` |
 | **Sağlık / izleme** (kuyruk, teslim gecikmesi p95) | Evet — `GET /health` |
-| **Şablon listeleme** (`GET /templates`) | Evet (oluşturma/silme/submit panelden) |
+| **Şablon yönetimi** (oluştur / doğrula / ayrıntı / düzenle / sil, süzgeç + sayfalama) | Evet — `POST` / `GET` / `PATCH` / `DELETE /templates`, `POST /templates/validate` |
 | **Dinamik URL butonu** (şablon butonunda `{{1}}` → her alıcıya özel link) | Evet — `POST /messages` `button` bileşeni |
 | **Kişi rehberi** (ekle / toplu ekle / listele) | Evet — `POST /contacts`, `/contacts/bulk`, `GET /contacts` |
 | **Hesap & numaralar** (`GET /me`, `GET /numbers`) | Evet |
 | **Raporlar** (`GET /reports/summary`) | Evet |
 | **Kredi** (`GET /credit/balance\|packages\|usage\|transactions`) | Evet |
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
-| **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet (abonelik **panelden** — programatik API yok) |
-| **17 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`) | Evet |
+| **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
+| **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
+| **19 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`) | Evet |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
 | **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (medya indirme ayrı sayaç: 60/dk) |
-| **Cursor pagination** (opaque, stateless) | Evet — `/contacts`, `/credit/transactions`, `/media` |
+| **Cursor pagination** (opaque, stateless) | Evet — `/contacts`, `/credit/transactions`, `/media`, `/templates` |
 | **Tier auto-sync** (TIER_50 -> 250 -> 1K -> 10K -> 100K -> UNLIMITED) | Evet |
 | **Multi-tenant izolasyon** (her API key tek müşteri) | Evet |
 

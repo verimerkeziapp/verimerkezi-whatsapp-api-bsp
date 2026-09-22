@@ -12,14 +12,78 @@ Müşterilerinize 24 saat dışında ulaşmak için **Meta onaylı şablonlar** 
 
 ## Şablon Oluşturma
 
-> **Şablonlar panel üzerinden yönetilir.** Şablon oluşturma, header medyası yükleme ve Meta'ya gönderim (submit) işlemleri **panelden** yapılır — bu işlemler için API endpoint'i bulunmamaktadır. API üzerinden yalnızca onaylı şablonlarınızı **listeleyebilir** (`GET /wa/templates`) ve `POST /wa/messages` ile **kullanabilirsiniz**.
+> **v1.9.0 (2026-09-23):** Şablon oluşturma, düzenleme, silme ve ön doğrulama artık **API üzerinden** yapılabilir. Panelden çıkmadan şablon oluşturup Meta'ya gönderebilirsiniz. (Panel arayüzü de çalışmaya devam eder — bkz. bölüm sonu.)
 
-Panel -> **WhatsApp -> Şablonlar -> "Yeni Şablon"**:
-- Kategori seçin (`UTILITY` / `MARKETING` / `AUTHENTICATION`)
-- HEADER / BODY / FOOTER / BUTTONS bileşenlerini ekleyin
-- Header'da görsel / video / PDF kullanacaksanız medyayı panelden yükleyin (Meta'ya `header_handle` olarak otomatik gönderilir)
-- Parametreler için örnek değer girin
-- **Meta'ya Gönder** -> Meta inceler (genelde 5-30 dk)
+### `POST /wa/templates` — oluştur ve Meta'ya gönder
+
+Hedef WABA'yı `waba_id` **veya** `phone_number_id` ile belirtin (numaradan WABA'yı biz çözeriz). Header'da görsel/video/PDF kullanacaksanız **herkese açık bir https adresini** `header_media_url` ile geçin; medyayı indirip Meta'ya `header_handle` olarak biz yükleriz (ayrı bir yükleme adımı gerekmez).
+
+```bash
+curl -X POST https://api.verimerkezi.app/wa/templates \
+ -H "Authorization: Bearer vmk_live_..." \
+ -H "Content-Type: application/json" \
+ -d '{
+   "waba_id": "1029384756",
+   "name": "police_yenileme_hatirlatma",
+   "language": "tr",
+   "category": "UTILITY",
+   "allow_category_change": true,
+   "header_media_url": "https://cdn.example.com/logo.jpg",
+   "components": [
+     { "type": "HEADER", "format": "IMAGE" },
+     { "type": "BODY",
+       "text": "Sayın {{1}}, {{2}} plakalı aracınızın poliçesi {{3}} tarihinde sona eriyor.",
+       "example": { "body_text": [["Ahmet Yılmaz", "34 ABC 123", "12.10.2026"]] } },
+     { "type": "FOOTER", "text": "Mim Gökmen Sigorta" },
+     { "type": "BUTTONS", "buttons": [ { "type": "QUICK_REPLY", "text": "Teklif istiyorum" } ] }
+   ]
+ }'
+```
+
+Yanıt (`202 Accepted`):
+
+```json
+{
+  "id": 512,
+  "meta_template_id": "1249033812345678",
+  "name": "police_yenileme_hatirlatma",
+  "language": "tr",
+  "category": "UTILITY",
+  "status": "PENDING",
+  "waba_id": "1029384756",
+  "phone_number_id": "1275179085670729"
+}
+```
+
+**Doğrulama Meta'dan önce çalışır.** Sıralama/örnek/uzunluk gibi kural ihlalleri Meta'ya gönderilmeden **alan bazında** döner:
+
+```http
+HTTP/1.1 422 Unprocessable Entity
+```
+```json
+{ "error": { "code": "template_invalid", "message": "Her parametre için örnek değer gerekir.", "field": "components.1.example" } }
+```
+
+Meta tarafında reddedilirse: `422 { "error": { "code": "template_rejected", "message": "..." } }`.
+
+### `POST /wa/templates/validate` — göndermeden doğrula
+
+Gövdeyi Meta'ya **göndermeden** aynı kurallarla denetler; kullanıcı "gönder"e basmadan hatasını görür.
+
+```bash
+curl -X POST https://api.verimerkezi.app/wa/templates/validate \
+ -H "Authorization: Bearer vmk_live_..." -H "Content-Type: application/json" \
+ -d '{ "phone_number_id": "1275179085670729", "name": "deneme", "language": "tr",
+       "category": "UTILITY", "components": [ { "type": "BODY", "text": "Merhaba {{1}}",
+       "example": { "body_text": [["Ahmet"]] } } ] }'
+```
+```json
+{ "ok": true, "valid": true, "message": "Şablon Meta kurallarına uygun görünüyor." }
+```
+
+### Alternatif: panelden
+
+API yerine panelden de yönetebilirsiniz — Panel -> **WhatsApp -> Şablonlar -> "Yeni Şablon"**: kategori seçin, HEADER / BODY / FOOTER / BUTTONS bileşenlerini ekleyin, header medyasını yükleyin, örnek değerleri girin, **Meta'ya Gönder**.
 
 ## Dinamik URL Butonu
 
@@ -80,35 +144,84 @@ Onaydan sonra kodu göndermek için bkz. [03-messages.md](03-messages.md#otp--do
 | `PAUSED` | Geçici durduruldu (kalite/spam) |
 | `DISABLED` | Tamamen devre dışı |
 
-## Şablon Listesi
+## Şablon Listesi — `GET /wa/templates`
+
+Süzgeçler (hepsi opsiyonel): `status`, `category`, `language`, `q` (ad içinde arama), `limit` (varsayılan 50), `cursor` (imleç sayfalama — bkz. [08-pagination.md](08-pagination.md)).
 
 ```bash
-curl https://api.verimerkezi.app/wa/templates \
+curl "https://api.verimerkezi.app/wa/templates?status=APPROVED&category=UTILITY&language=tr&limit=50" \
  -H "Authorization: Bearer vmk_live_..."
 ```
 
 ```json
 {
- "ok": true,
- "data": [
- {
- "id": 1,
- "name": "siparis_onayi",
- "language": "tr",
- "category": "UTILITY",
- "status": "APPROVED",
- "components": [...],
- "quality_score": "GREEN"
- }
- ]
+  "templates": [
+    {
+      "id": 512,
+      "meta_template_id": "1249033812345678",
+      "name": "siparis_onayi",
+      "language": "tr",
+      "category": "UTILITY",
+      "status": "APPROVED",
+      "rejected_reason": null,
+      "waba_id": "1029384756",
+      "phone_number_id": "1275179085670729",
+      "created_at": "2026-09-20T10:12:00+03:00"
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
 }
 ```
 
-## Şablon Silme
+> **WABA ayrımı:** Şablonlar Meta'da **numaraya değil WABA'ya** bağlıdır — aynı WABA'daki tüm numaralar aynı onaylı şablonu kullanabilir. Her şablonda `waba_id`, her numarada (`GET /wa/numbers`) `waba_id` döndüğü için "bu şablon şu numaralarda kullanılabilir" eşleştirmesini doğru kurabilirsiniz.
 
-Şablon silme işlemi **panelden** yapılır: Panel -> WhatsApp -> Şablonlar -> ilgili şablon -> **Sil**.
+## Şablon Ayrıntısı — `GET /wa/templates/{id}`
 
-> DIKKAT: Şablon silinince **gerçek geçmiş mesajlar etkilenmez** ama bir daha o isimle kullanılamaz.
+Listeye ek olarak `quality_score`, `status_updated_at`, `submitted_at`, tam `components` ve `display_phone_number` döner. Reddedilen bir şablonun **sebebini** (`rejected_reason`) buradan gösterebilirsiniz.
+
+```json
+{
+  "id": 512,
+  "meta_template_id": "1249033812345678",
+  "name": "police_yenileme_hatirlatma",
+  "language": "tr",
+  "category": "UTILITY",
+  "status": "REJECTED",
+  "rejected_reason": "INVALID_FORMAT",
+  "quality_score": null,
+  "waba_id": "1029384756",
+  "phone_number_id": "1275179085670729",
+  "created_at": "2026-09-22T09:00:00+03:00",
+  "submitted_at": "2026-09-22T09:00:03+03:00",
+  "status_updated_at": "2026-09-22T09:05:41+03:00",
+  "components": [ ... ],
+  "display_phone_number": "+90 555 000 00 00"
+}
+```
+
+## Şablon Düzenleme — `PATCH /wa/templates/{id}`
+
+Meta, onaylı/reddedilmiş şablonların düzenlenmesine (sınırlı sayıda) izin verir. Yeni bileşenleri gönderin; şablon yeniden **PENDING** durumuna geçer.
+
+```bash
+curl -X PATCH https://api.verimerkezi.app/wa/templates/512 \
+ -H "Authorization: Bearer vmk_live_..." -H "Content-Type: application/json" \
+ -d '{ "components": [ { "type": "BODY", "text": "Sayın {{1}}, poliçeniz {{2}} tarihinde bitiyor.",
+       "example": { "body_text": [["Ahmet", "12.10.2026"]] } } ] }'
+```
+
+## Şablon Silme — `DELETE /wa/templates/{id}`
+
+```bash
+curl -X DELETE https://api.verimerkezi.app/wa/templates/512 \
+ -H "Authorization: Bearer vmk_live_..."
+```
+```json
+{ "ok": true, "deleted": true, "id": 512 }
+```
+
+> DIKKAT: Şablon silinince **gerçek geçmiş mesajlar etkilenmez** ama bir daha o isimle kullanılamaz. Silme panelden de yapılabilir.
 
 ## Şablon Kuralları (Meta)
 

@@ -11,7 +11,7 @@ except FileNotFoundError:
 
 setup(
  name="verimerkezi",
- version="1.0.0",
+ version="1.9.0",
  author="Veri Merkezi",
  author_email="bilgi@verimerkezi.app",
  description="Veri Merkezi WhatsApp Business API — Resmî Python SDK",

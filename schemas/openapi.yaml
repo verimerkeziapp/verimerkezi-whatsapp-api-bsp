@@ -6,7 +6,7 @@ info:
     managing contacts, templates, and business profiles.
 
     Per-message credit model. Test mode keys (`vmk_test_...`) are free.
-  version: "2.0.0"
+  version: "2.1.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -78,6 +78,26 @@ components:
         status: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED] }
         components: { type: array, items: { type: object } }
         rejected_reason: { type: string, nullable: true }
+        quality_score: { type: string, nullable: true }
+        waba_id: { type: string, nullable: true }
+        phone_number_id: { type: string, nullable: true }
+        created_at: { type: string, nullable: true }
+        submitted_at: { type: string, nullable: true }
+        status_updated_at: { type: string, nullable: true }
+
+    WebhookSubscription:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string, nullable: true }
+        url: { type: string, format: uri }
+        events: { type: array, items: { type: string } }
+        active: { type: boolean }
+        secret_prefix: { type: string, nullable: true }
+        last_success_at: { type: string, nullable: true }
+        last_failure_at: { type: string, nullable: true }
+        failure_count: { type: integer }
+        created_at: { type: string, nullable: true }
 
     Number:
       type: object
@@ -385,9 +405,17 @@ paths:
 
   /templates:
     get:
-      summary: List approved templates
+      summary: List templates (filterable, cursor-paginated)
       tags: [Templates]
+      operationId: listTemplates
       security: [{ BearerAuth: [templates:read] }]
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED] } }
+        - { name: category, in: query, required: false, schema: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] } }
+        - { name: language, in: query, required: false, schema: { type: string } }
+        - { name: q, in: query, required: false, schema: { type: string }, description: "Search in template name" }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, default: 50 } }
       responses:
         '200':
           description: OK
@@ -399,6 +427,134 @@ paths:
                   templates:
                     type: array
                     items: { $ref: "#/components/schemas/Template" }
+                  has_more: { type: boolean }
+                  next_cursor: { type: string, nullable: true }
+    post:
+      summary: Create a template and submit it to Meta
+      tags: [Templates]
+      operationId: createTemplate
+      security: [{ BearerAuth: [templates:write] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, language, category, components]
+              properties:
+                waba_id: { type: string, description: "Target WABA (waba_id or phone_number_id required)" }
+                phone_number_id: { type: string, description: "Alternative to waba_id; WABA resolved from the number" }
+                name: { type: string }
+                language: { type: string, example: tr }
+                category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+                allow_category_change: { type: boolean }
+                header_media_url: { type: string, format: uri, description: "Public https URL for an IMAGE/VIDEO/DOCUMENT header; downloaded and uploaded to Meta as header_handle" }
+                components: { type: array, items: { type: object } }
+      responses:
+        '202':
+          description: Accepted (status PENDING)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        '404': { description: number_or_waba_not_found }
+        '422':
+          description: template_invalid (pre-Meta validation) or template_rejected (Meta)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /templates/validate:
+    post:
+      summary: Validate template components without sending to Meta
+      tags: [Templates]
+      operationId: validateTemplate
+      security: [{ BearerAuth: [templates:read] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [components]
+              properties:
+                waba_id: { type: string }
+                phone_number_id: { type: string }
+                name: { type: string }
+                language: { type: string }
+                category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+                components: { type: array, items: { type: object } }
+      responses:
+        '200':
+          description: valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  valid: { type: boolean }
+                  message: { type: string }
+        '422': { description: template_invalid }
+
+  /templates/{id}:
+    get:
+      summary: Template detail
+      tags: [Templates]
+      operationId: getTemplate
+      security: [{ BearerAuth: [templates:read] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        '404': { description: template_not_found }
+    patch:
+      summary: Edit a template (re-submits, status PENDING)
+      tags: [Templates]
+      operationId: updateTemplate
+      security: [{ BearerAuth: [templates:write] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [components]
+              properties:
+                components: { type: array, items: { type: object } }
+                category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        '404': { description: template_not_found }
+        '422': { description: template_edit_failed }
+    delete:
+      summary: Delete a template
+      tags: [Templates]
+      operationId: deleteTemplate
+      security: [{ BearerAuth: [templates:write] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  deleted: { type: boolean }
+                  id: { type: integer }
+        '404': { description: template_not_found }
 
   /profile/{phone_number_id}:
     get:
@@ -703,6 +859,123 @@ paths:
       responses:
         '202': { description: Requeued }
         '422': { description: invalid_since }
+
+  /webhooks:
+    get:
+      summary: List webhook subscriptions
+      tags: [Webhooks]
+      operationId: listWebhooks
+      security: [{ BearerAuth: [webhooks:read] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: array
+                    items: { $ref: "#/components/schemas/WebhookSubscription" }
+    post:
+      summary: Create a webhook subscription (secret returned once)
+      tags: [Webhooks]
+      operationId: createWebhook
+      security: [{ BearerAuth: [webhooks:write] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, description: "Public https endpoint" }
+                events: { type: array, items: { type: string }, description: "Defaults to ['*']" }
+                description: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  url: { type: string }
+                  events: { type: array, items: { type: string } }
+                  active: { type: boolean }
+                  secret: { type: string, description: "Returned ONCE at creation" }
+                  secret_prefix: { type: string }
+                  note: { type: string, description: "Present when '*' selected; lists new events not covered by '*'" }
+        '422': { description: invalid_request or invalid_webhook (bad/private URL) }
+
+  /webhooks/{id}:
+    patch:
+      summary: Update a webhook subscription
+      tags: [Webhooks]
+      operationId: updateWebhook
+      security: [{ BearerAuth: [webhooks:write] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string, format: uri }
+                events: { type: array, items: { type: string } }
+                active: { type: boolean }
+                description: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookSubscription" }
+        '404': { description: webhook_not_found }
+        '422': { description: invalid_webhook }
+    delete:
+      summary: Delete a webhook subscription
+      tags: [Webhooks]
+      operationId: deleteWebhook
+      security: [{ BearerAuth: [webhooks:write] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  deleted: { type: boolean }
+                  id: { type: integer }
+        '404': { description: webhook_not_found }
+
+  /webhooks/{id}/test:
+    post:
+      summary: Send a test.ping delivery to a subscription
+      tags: [Webhooks]
+      operationId: testWebhook
+      security: [{ BearerAuth: [webhooks:write] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  result: { type: string, example: delivered }
+        '404': { description: webhook_not_found }
 
   /numbers/{phone_number_id}/history-import:
     get:

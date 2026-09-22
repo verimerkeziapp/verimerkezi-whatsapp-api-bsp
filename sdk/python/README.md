@@ -70,7 +70,17 @@ vm.mark_read('1234567890', 'wamid.HBgM...', typing=True)
 | `mark_read(phone_id, message_id, typing=False)` | Okundu işaretle (mavi tik) + `typing=True` "yazıyor…" (kredisiz) |
 | `me()` | Hesap bilgisi |
 | `numbers()` | Telefon numaraları |
-| `list_templates()` | Şablon listesi |
+| `list_templates(status=None, category=None, language=None, q=None, cursor=None, limit=None)` | Şablon listesi (tüm filtreler opsiyonel) |
+| `create_template(data)` | Şablon oluştur (Meta'ya gönderilir, durum PENDING) |
+| `validate_template(data)` | Şablonu Meta'ya göndermeden doğrula |
+| `get_template(template_id)` | Tek şablon ayrıntısı (components dahil) |
+| `update_template(template_id, components, category=None)` | Şablonu düzenle (durum yeniden PENDING) |
+| `delete_template(template_id)` | Şablonu sil |
+| `create_webhook(url, events=None, description=None)` | Webhook aboneliği oluştur (events boşsa `["*"]`) |
+| `list_webhooks()` | Webhook aboneliklerini listele |
+| `update_webhook(webhook_id, fields)` | Webhook aboneliğini güncelle |
+| `delete_webhook(webhook_id)` | Webhook aboneliğini sil |
+| `test_webhook(webhook_id)` | Aboneliğe `test.ping` gönder |
 | `get_profile(phone_id)` | Profil bilgisi |
 | `update_profile(phone_id, fields)` | Profil güncelle |
 | `list_contacts(cursor=None, limit=50, search=None)` | Kişi listesi |
@@ -83,7 +93,69 @@ vm.mark_read('1234567890', 'wamid.HBgM...', typing=True)
 
 > Gönderim yanıtı düz bir nesnedir: `{ok, id, wamid, to, type, status, mode, simulated, credits_used, balance}`. Gönderilen mesajın WhatsApp ID'si `r['wamid']` içindedir (`messages[]` dizisi YOKTUR).
 
-> Webhook'lar API üzerinden değil, [verimerkezi.app](https://verimerkezi.app) panelinden yapılandırılır. Gelen olayları doğrulamak için `examples/python/webhook_receiver.py` örneğine ve `VeriMerkeziClient.verify_webhook_signature(...)` yardımcısına bakın.
+> Webhook abonelikleri artık API üzerinden yönetilebilir (bkz. aşağıdaki "Webhook Yönetimi"); [verimerkezi.app](https://verimerkezi.app) panelinden de yapılandırılabilir. Gelen olayları doğrulamak için `examples/python/webhook_receiver.py` örneğine ve `VeriMerkeziClient.verify_webhook_signature(...)` yardımcısına bakın.
+
+## Şablon Yönetimi
+
+Şablon oluşturma, doğrulama, listeleme, düzenleme ve silme:
+
+```python
+# Meta'ya göndermeden önce doğrula
+vm.validate_template({
+ 'phone_number_id': '1275179085670729',
+ 'name': 'police_yenileme',
+ 'language': 'tr',
+ 'category': 'UTILITY',
+ 'components': [
+ {'type': 'BODY', 'text': 'Sayın {{1}}, poliçeniz {{2}} tarihinde yenilenecek.',
+ 'example': {'body_text': [['Ahmet', '12.10.2026']]}},
+ {'type': 'FOOTER', 'text': 'Mim Gökmen Sigorta'},
+ ],
+})
+
+# Oluştur (durum PENDING döner)
+t = vm.create_template({
+ 'waba_id': '1029384756',
+ 'name': 'police_yenileme',
+ 'language': 'tr',
+ 'category': 'UTILITY',
+ 'components': [
+ {'type': 'BODY', 'text': 'Sayın {{1}}, poliçeniz {{2}} tarihinde yenilenecek.',
+ 'example': {'body_text': [['Ahmet', '12.10.2026']]}},
+ ],
+})
+print(t['id'], t['status'])
+
+# Filtreli liste (tüm filtreler opsiyonel)
+vm.list_templates(status='APPROVED', category='UTILITY', language='tr', limit=20)
+
+# Tek şablon, düzenleme, silme
+detay = vm.get_template(t['id'])
+vm.update_template(t['id'], components=detay['components'], category='UTILITY')
+vm.delete_template(t['id'])
+```
+
+## Webhook Yönetimi
+
+Webhook aboneliklerini API üzerinden yönetin. Oluştururken `events` boş bırakılırsa
+`["*"]` (joker) kullanılır; joker, `message.revoked` / `credit.low` gibi joker-DIŞI yeni
+olayları KAPSAMAZ — bunları açıkça listeye ekleyin.
+
+```python
+# Oluştur — secret YALNIZCA burada bir kez döner, saklayın
+w = vm.create_webhook(
+ 'https://ornek.com/wa/webhook',
+ events=['message.received', 'template.approved', 'credit.low'],
+ description='Üretim aboneliği',
+)
+secret = w['secret'] # whsec_...
+
+# Listele (secret dönmez), güncelle, test et, sil
+vm.list_webhooks()
+vm.update_webhook(w['id'], {'active': False})
+vm.test_webhook(w['id']) # {'ok': True, 'result': 'delivered'}
+vm.delete_webhook(w['id'])
+```
 
 ## Gelen Medyayı İndirme
 

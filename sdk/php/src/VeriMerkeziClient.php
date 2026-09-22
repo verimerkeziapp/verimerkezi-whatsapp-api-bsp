@@ -10,6 +10,7 @@
  * ]);
  *
  * v1.0 — 2026-05-27
+ * v1.9.0 — 2026-09-23 — şablon yönetimi + webhook aboneliği + kredi olayları
  * https://verimerkezi.app/panel/api/dokuman
  */
 
@@ -152,7 +153,16 @@ class VeriMerkeziClient
  return $this->post('/contacts/bulk', ['contacts' => $contacts, 'skip_duplicates' => $skipDuplicates]);
  }
 
- public function listTemplates(): array { return $this->get('/templates'); }
+ /** Şablonları listeler. Filtreler (hepsi opsiyonel): status, category, language, q, cursor, limit. */
+ public function listTemplates(array $filters = []): array
+ {
+ $q = [];
+ foreach (['status', 'category', 'language', 'q', 'cursor'] as $k) {
+ if (!empty($filters[$k])) { $q[$k] = (string) $filters[$k]; }
+ }
+ if (isset($filters['limit'])) { $q['limit'] = (int) $filters['limit']; }
+ return $q ? $this->get('/templates?' . http_build_query($q)) : $this->get('/templates');
+ }
  public function getProfile(string $phoneNumberId): array { return $this->get('/profile/' . urlencode($phoneNumberId)); }
  public function updateProfile(string $phoneNumberId, array $fields): array { return $this->patch('/profile/' . urlencode($phoneNumberId), $fields); }
  public function reportsSummary(string $period = '30d'): array { return $this->get('/reports/summary?period=' . urlencode($period)); }
@@ -196,7 +206,7 @@ class VeriMerkeziClient
  curl_setopt_array($ch, [
  CURLOPT_HTTPHEADER => [
  'Authorization: Bearer ' . $this->apiKey,
- 'User-Agent: VeriMerkezi-PHP-SDK/1.0',
+ 'User-Agent: VeriMerkezi-PHP-SDK/1.9.0',
  ],
  CURLOPT_TIMEOUT => 300,
  ]);
@@ -233,7 +243,7 @@ class VeriMerkeziClient
  curl_setopt_array($ch, [
  CURLOPT_RETURNTRANSFER => true,
  CURLOPT_POST => true,
- CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $this->apiKey, 'User-Agent: VeriMerkezi-PHP-SDK/1.0'],
+ CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $this->apiKey, 'User-Agent: VeriMerkezi-PHP-SDK/1.9.0'],
  CURLOPT_POSTFIELDS => ['phone_number_id' => $phoneNumberId, 'file' => new \CURLFile($filePath, $mime, basename($filePath))],
  CURLOPT_TIMEOUT => 300,
  ]);
@@ -256,10 +266,61 @@ class VeriMerkeziClient
  public function numberSettings(string $phoneNumberId, array $settings): array { return $this->patch('/numbers/' . rawurlencode($phoneNumberId) . '/settings', $settings); }
  public function health(): array { return $this->get('/health'); }
 
+ // ── Şablon yönetimi (2026-09-23) ───────────────────────────────────────
+ // Şablonların oluşturulması, doğrulanması, güncellenmesi ve silinmesi.
+ // $data gövdesi: waba_id VEYA phone_number_id + name + language + category
+ // + components (sözleşme: docs/SDK-CONTRACT). Kategoriler: UTILITY | MARKETING
+ // | AUTHENTICATION.
+
+ /** Yeni şablon oluşturur (Meta'ya gönderilir; yanıtta status genelde PENDING). */
+ public function createTemplate(array $data): array { return $this->post('/templates', $data); }
+
+ /** Şablonu Meta'ya GÖNDERMEDEN doğrular (components + waba_id/phone_number_id zorunlu). */
+ public function validateTemplate(array $data): array { return $this->post('/templates/validate', $data); }
+
+ /** Tek bir şablonu bileşenleriyle birlikte döner. */
+ public function getTemplate(int $id): array { return $this->get('/templates/' . $id); }
+
+ /** Şablonu günceller (durum PENDING olur). $opts['category'] ile kategori değiştirilebilir. */
+ public function updateTemplate(int $id, array $components, array $opts = []): array
+ {
+ $body = ['components' => $components];
+ if (isset($opts['category'])) { $body['category'] = $opts['category']; }
+ return $this->patch('/templates/' . $id, $body);
+ }
+
+ /** Şablonu siler. */
+ public function deleteTemplate(int $id): array { return $this->delete('/templates/' . $id); }
+
  // ── Webhooks ───────────────────────────────────────────────────────────
- // Webhook'lar panelden yapılandırılır (panel/api/webhooks) — programatik
- // webhook API'si yoktur. SDK yalnızca alıcı + imza doğrulaması sağlar:
- // verifyWebhookSignature() (aşağıda) ve examples/php/webhook-receiver.php.
+ // Webhook abonelikleri artık programatik olarak yönetilebilir:
+ // createWebhook / listWebhooks / updateWebhook / deleteWebhook / testWebhook.
+ // secret YALNIZCA createWebhook yanıtında bir kez döner — güvenli saklayın.
+ // Gelen istekleri doğrulamak için SDK hâlâ verifyWebhookSignature() (aşağıda)
+ // ve examples/php/webhook-receiver.php sağlar.
+ // Not: '*' (joker), joker-dışı yeni olayları (credit.low/exhausted,
+ // message.revoked/edited/history/sent, number.status_changed) KAPSAMAZ;
+ // bunları almak için events listesine açıkça ekleyin.
+
+ /** Webhook aboneliği oluşturur. events boşsa ['*'] gönderilir. secret yalnızca burada döner. */
+ public function createWebhook(string $url, array $events = ['*'], ?string $description = null): array
+ {
+ $body = ['url' => $url, 'events' => $events];
+ if ($description !== null) { $body['description'] = $description; }
+ return $this->post('/webhooks', $body);
+ }
+
+ /** Webhook aboneliklerini listeler (secret dönmez). */
+ public function listWebhooks(): array { return $this->get('/webhooks'); }
+
+ /** Webhook aboneliğini günceller. $fields: url?, events?, active?, description? (en az bir alan). */
+ public function updateWebhook(int $id, array $fields): array { return $this->patch('/webhooks/' . $id, $fields); }
+
+ /** Webhook aboneliğini siler. */
+ public function deleteWebhook(int $id): array { return $this->delete('/webhooks/' . $id); }
+
+ /** Aboneliğe anında bir test.ping teslimatı dener. */
+ public function testWebhook(int $id): array { return $this->post('/webhooks/' . $id . '/test', []); }
 
  private function get(string $path): array { return $this->request('GET', $path); }
  private function post(string $path, array $body): array { return $this->request('POST', $path, $body); }
@@ -279,7 +340,7 @@ class VeriMerkeziClient
  'Authorization: Bearer ' . $this->apiKey,
  'Content-Type: application/json',
  'Accept: application/json',
- 'User-Agent: VeriMerkezi-PHP-SDK/1.0',
+ 'User-Agent: VeriMerkezi-PHP-SDK/1.9.0',
  ];
  if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
  $headers[] = 'Idempotency-Key: ' . $idempotencyKey;

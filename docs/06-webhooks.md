@@ -16,16 +16,81 @@ Veri Merkezi olayı kuyruğa alır, sunucunuza POST eder ve **HTTP 2xx** yanıt�
 
 ## 1) Webhook Aboneliği Kurma
 
-> **Önemli:** Webhook abonelikleri **yalnızca panelden** yönetilir (`panel/api/webhooks`). **Programatik bir webhook API'si yoktur** — webhook oluşturma / güncelleme / silme / test için REST endpoint bulunmamaktadır.
+> **v1.9.0 (2026-09-23):** Webhook abonelikleri artık hem **REST API** hem panelden yönetilir. Böylece yeni müşteri/kiracı açılışında webhook kurulumunu tek seferde otomatikleştirebilirsiniz. İmza şeması (`whsec_`, HMAC-SHA256, zaman damgalı) değişmedi. Gerekli izin: `webhooks:write` (okuma için `webhooks:read`).
 
-### Panel üzerinden
-Panel -> **API -> Webhooks -> "Yeni Webhook"**:
-- **Ad:** "Production Bot"
-- **URL:** `https://api.firmaniz.com/wa-webhook`
-- **Event'ler:** seçeceğiniz olaylar (veya tümü için `*`)
-- **Oluştur** -> ekranda **secret** (`whsec_xxxxx`) gösterilir — **bir kez** gösterilir, kaydedin
+### `POST /wa/webhooks` — abonelik oluştur
 
-> DIKKAT: Secret sadece oluşturma anında ekranda görünür. Kaybederseniz webhook'u silip yenisini oluşturmanız gerekir.
+```bash
+curl -X POST https://api.verimerkezi.app/wa/webhooks \
+ -H "Authorization: Bearer vmk_live_..." -H "Content-Type: application/json" \
+ -d '{
+   "url": "https://api.firmaniz.com/wa-webhook",
+   "events": ["message.received", "message.status.delivered", "template.approved"],
+   "description": "Production Bot"
+ }'
+```
+
+Yanıt (`201 Created`):
+
+```json
+{
+  "id": 17,
+  "url": "https://api.firmaniz.com/wa-webhook",
+  "events": ["message.received", "message.status.delivered", "template.approved"],
+  "active": true,
+  "secret": "whsec_9f3a...c21e",
+  "secret_prefix": "whsec_9f3a"
+}
+```
+
+> DIKKAT: `secret` **yalnızca oluşturma yanıtında bir kez** döner — güvenli saklayın. Sonraki listeleme/güncelleme çağrılarında yalnızca `secret_prefix` görünür. Kaybederseniz webhook'u silip yenisini oluşturun.
+>
+> URL **https** olmalı ve **genel erişime açık** bir adrese çözülmelidir (iç ağ / özel IP adresleri reddedilir — SSRF koruması).
+>
+> `events` boş bırakılırsa `["*"]` (tüm klasik olaylar) atanır. `*` seçtiğinizde, joker kapsamı dışındaki yeni olaylar için yanıtta bir `note` uyarısı döner (bkz. bölüm 2).
+
+### `GET /wa/webhooks` — abonelikleri listele
+
+```bash
+curl https://api.verimerkezi.app/wa/webhooks -H "Authorization: Bearer vmk_live_..."
+```
+```json
+{ "webhooks": [
+  { "id": 17, "name": "Production Bot", "url": "https://api.firmaniz.com/wa-webhook",
+    "events": ["message.received"], "active": true, "secret_prefix": "whsec_9f3a",
+    "last_success_at": "2026-09-23T01:00:00+03:00", "last_failure_at": null,
+    "failure_count": 0, "created_at": "2026-09-22T12:00:00+03:00" } ] }
+```
+
+### `PATCH /wa/webhooks/{id}` — güncelle
+
+`url`, `events`, `active` (pasifleştir/aktifleştir) ve `description` alanlarından en az biri gönderilir.
+
+```bash
+curl -X PATCH https://api.verimerkezi.app/wa/webhooks/17 \
+ -H "Authorization: Bearer vmk_live_..." -H "Content-Type: application/json" \
+ -d '{ "events": ["message.received", "message.status.failed"], "active": true }'
+```
+
+### `DELETE /wa/webhooks/{id}` — sil
+
+```bash
+curl -X DELETE https://api.verimerkezi.app/wa/webhooks/17 -H "Authorization: Bearer vmk_live_..."
+```
+```json
+{ "ok": true, "deleted": true, "id": 17 }
+```
+
+### `POST /wa/webhooks/{id}/test` — test bildirimi
+
+Aboneliğinize anında bir `test.ping` olayı gönderir (imzalı). Yanıt teslimatın sonucunu içerir:
+
+```json
+{ "ok": true, "result": "delivered" }
+```
+
+### Alternatif: panelden
+Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü için `*`) girip **Oluştur** — secret ekranda bir kez gösterilir.
 
 ## 2) Event Tipleri
 
@@ -48,9 +113,11 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**:
 | `message.sent` ⁿ | API dışı giden mesaj (panel / otomasyon / kampanya / opt-out) — `data.source` kaynağı belirtir |
 | `message.history` ⁿ | Coexistence geçmiş aktarımı mesajı (bkz. [11-gelismis.md](11-gelismis.md)) |
 | `number.status_changed` ⁿ | Numara bağlandı / koptu / işaretlendi / kısıtlandı |
+| `credit.low` ⁿ | Mesaj kredisi bakiyesi eşiğin altına düştü (eşik hesap ayarından — varsayılan panelde tanımlı) |
+| `credit.exhausted` ⁿ | Mesaj kredisi tükendi — gönderim engellendi |
 | `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
 
-> **ⁿ = yeni olay (22 Eylül 2026).** Bu olaylar `*` aboneliğine **dahil DEĞİLDİR** — mevcut `*` aboneleri beklemedikleri trafik almaz. Yeni bir olayı almak için panelden **ayrıca** işaretleyin.
+> **ⁿ = yeni olay (22–23 Eylül 2026).** Bu olaylar `*` aboneliğine **dahil DEĞİLDİR** — mevcut `*` aboneleri beklemedikleri trafik almaz. Yeni bir olayı almak için abonelik oluştururken/güncellerken listeye **açıkça ekleyin** (API'de `events` dizisine, panelde işaret kutusuyla). `*` seçtiğinizde `POST /wa/webhooks` yanıtındaki `note` alanı, joker kapsamı dışında kalan bu olayları size hatırlatır.
 
 ### `message.echo` payload örneği
 
@@ -197,7 +264,9 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `number.status_changed` | `phone_number_id`, `display_phone_number`, `status` (`connected`/`disconnected`/`flagged`/`restricted`/`pending`), `event`, `reason`, `initiated_by`, `occurred_at` |
 | `message.history` | Normal mesaj alanları + `history: true`, `thread_id`, `phase`, `chunk_order`, `progress` ([11-gelismis.md](11-gelismis.md)) |
 | `message.status.sent` · `.delivered` · `.read` · `.failed` | `wamid`, `recipient` (alıcının telefonu), `timestamp`, `errors` |
-| `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_name`, `language`, `reason` (Meta'nın bildirdiği sebep; onayda anlamsızdır) |
+| `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_id` (bizdeki kimlik — `GET /wa/templates/{id}` için), `meta_template_id`, `name`, `template_name` (eşanlamlı), `language`, `category`, `waba_id`, `status`, `reason` (Meta'nın bildirdiği ret sebebi; onayda `null`) |
+| `credit.low` | `balance` (kalan mesaj kredisi), `threshold` (uyarı eşiği), `unit` (`messages`), `occurred_at` |
+| `credit.exhausted` | `balance` (`0`), `unit` (`messages`), `occurred_at` |
 | `quality.changed` | `phone` (numaranız), `quality` (`GREEN` / `YELLOW` / `RED`) |
 | `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
 
@@ -212,6 +281,44 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
   "href": "https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes/"
 }]
 ```
+
+### `template.rejected` payload örneği
+
+```json
+{
+  "event": "template.rejected",
+  "event_id": "01a0c8f1-2b40-7a10-9c02-77aa10bce231",
+  "event_type": "template.rejected",
+  "occurred_at": "2026-09-23T09:05:41+03:00",
+  "created_at": "2026-09-23 09:05:41",
+  "data": {
+    "template_id": 512,
+    "meta_template_id": "1249033812345678",
+    "name": "police_yenileme_hatirlatma",
+    "template_name": "police_yenileme_hatirlatma",
+    "language": "tr",
+    "category": "UTILITY",
+    "waba_id": "1029384756",
+    "status": "REJECTED",
+    "reason": "INVALID_FORMAT"
+  }
+}
+```
+
+### `credit.low` payload örneği
+
+```json
+{
+  "event": "credit.low",
+  "event_id": "01a0c900-3c40-7bb0-8f11-90bd10ace512",
+  "event_type": "credit.low",
+  "occurred_at": "2026-09-23T10:30:00+03:00",
+  "created_at": "2026-09-23 10:30:00",
+  "data": { "balance": 42, "threshold": 100, "unit": "messages", "occurred_at": "2026-09-23T10:30:00+03:00" }
+}
+```
+
+> `credit.low` / `credit.exhausted`, kampanya ortasında bakiye tükenmesini önceden görebilmeniz içindir. Uyarı eşiği hesap ayarınızda tanımlıdır. Aynı düşük-bakiye durumu için tekrar tekrar gönderilmez (24 saatte bir; bakiye yükleyince sıfırlanır).
 
 ## 4) Header'lar (Doğrulama için)
 
@@ -369,17 +476,15 @@ Sunucunuz 2xx dışı yanıt verirse veya timeout (10sn) yaparsa Veri Merkezi ş
 
 ## 7) Test Ping
 
-Webhook'u canlıya almadan önce panelden sahte event gönderebilirsiniz:
+Webhook'u canlıya almadan önce sahte bir `test.ping` olayı gönderebilirsiniz:
 
-Panel -> Webhook detay -> **"Test Ping Gönder"** butonu.
+- **API:** `POST /wa/webhooks/{id}/test` → `{ "ok": true, "result": "delivered" }`
+- **Panel:** Webhook detay -> **"Test Ping Gönder"** butonu.
 
 ## 8) Webhook'u Silme / Pasifleştirme
 
-Webhook'lar **panelden** yönetilir — pasifleştirme ve silme işlemleri için:
-
-Panel -> **API -> Webhooks** -> ilgili webhook -> **Pasifleştir** / **Sil**.
-
-> Programatik (REST) bir webhook yönetim endpoint'i yoktur; tüm webhook işlemleri panel üzerinden yapılır.
+- **API:** `DELETE /wa/webhooks/{id}` (sil) veya `PATCH /wa/webhooks/{id}` `{ "active": false }` (pasifleştir).
+- **Panel:** Panel -> **API -> Webhooks** -> ilgili webhook -> **Pasifleştir** / **Sil**.
 
 ## Sık Sorulanlar
 

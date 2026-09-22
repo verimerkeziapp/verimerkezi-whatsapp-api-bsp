@@ -8,7 +8,7 @@
  * { type: 'body', parameters: [{ type: 'text', text: 'Ahmet' }] }
  * ]);
  *
- * v1.0 — 2026-05-27
+ * v1.9.0 — 2026-09-23
  * https://verimerkezi.app/panel/api/dokuman
  */
 
@@ -109,7 +109,39 @@ class VeriMerkeziClient {
  return this._post('/contacts/bulk', { contacts, skip_duplicates: skipDuplicates });
  }
 
- listTemplates() { return this._get('/templates'); }
+ // ── Şablon yönetimi (templates) ────────────────────────────────────────
+ // listTemplates artık opsiyonel filtre alır (status/category/language/q/cursor/limit);
+ // argümansız çağrı önceki gibi tüm şablonları döner.
+ listTemplates({ status, category, language, q, cursor, limit } = {}) {
+ const params = new URLSearchParams();
+ if (status) params.set('status', status);
+ if (category) params.set('category', category);
+ if (language) params.set('language', language);
+ if (q) params.set('q', q);
+ if (cursor) params.set('cursor', String(cursor));
+ if (limit != null) params.set('limit', String(limit));
+ const qs = params.toString();
+ return this._get('/templates' + (qs ? '?' + qs : ''));
+ }
+
+ // Yeni şablon oluşturur — Meta'ya gönderilir, durum PENDING olur.
+ // data: { waba_id | phone_number_id, name, language, category, components, ... }
+ createTemplate(data) { return this._post('/templates', data); }
+
+ // Şablonu Meta'ya GÖNDERMEDEN doğrular (aynı gövde şeması; components + waba_id/phone_number_id zorunlu).
+ validateTemplate(data) { return this._post('/templates/validate', data); }
+
+ getTemplate(id) { return this._get('/templates/' + encodeURIComponent(id)); }
+
+ // Onaylı/reddedilmiş şablonu düzenler (durum PENDING olur). opts.category opsiyonel.
+ updateTemplate(id, components, opts = {}) {
+ const body = { components };
+ if (opts.category != null) body.category = opts.category;
+ return this._patch('/templates/' + encodeURIComponent(id), body);
+ }
+
+ deleteTemplate(id) { return this._delete('/templates/' + encodeURIComponent(id)); }
+
  getProfile(phoneNumberId) { return this._get('/profile/' + encodeURIComponent(phoneNumberId)); }
  updateProfile(phoneNumberId, fields) { return this._patch('/profile/' + encodeURIComponent(phoneNumberId), fields); }
  reportsSummary(period = '30d') { return this._get('/reports/summary?period=' + encodeURIComponent(period)); }
@@ -138,7 +170,7 @@ class VeriMerkeziClient {
  const res = await fetch(url, {
  headers: {
  'Authorization': 'Bearer ' + this.apiKey,
- 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.0',
+ 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.9.0',
  },
  });
  if (!res.ok) {
@@ -179,7 +211,7 @@ class VeriMerkeziClient {
  fd.set('file', new Blob([buf], contentType ? { type: contentType } : undefined), name);
  const res = await fetch(this.baseUrl + '/media', {
  method: 'POST',
- headers: { 'Authorization': 'Bearer ' + this.apiKey, 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.0' },
+ headers: { 'Authorization': 'Bearer ' + this.apiKey, 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.9.0' },
  body: fd,
  });
  const txt = await res.text();
@@ -202,9 +234,20 @@ class VeriMerkeziClient {
  health() { return this._get('/health'); }
 
  // ── Webhooks ───────────────────────────────────────────────────────────
- // Webhook'lar programatik API ile değil, panel üzerinden yapılandırılır:
- // https://verimerkezi.app/panel/wa (Webhook ayarları)
- // Gelen olayları doğrulamak için statik verifyWebhookSignature() kullanın.
+ // Webhook abonelikleri v1.9.0 ile programatik olarak yönetilebilir (aşağıdaki metotlar).
+ // secret YALNIZCA createWebhook yanıtında bir kez döner — güvenli saklayın.
+ // Gelen olayların imzasını doğrulamak için statik verifyWebhookSignature() kullanın.
+ // events boş bırakılırsa ['*'] kullanılır; joker '*' joker-dışı yeni olayları KAPSAMAZ
+ // (message.revoked/edited/history/sent, number.status_changed, credit.low/exhausted) — açıkça ekleyin.
+ createWebhook(url, events = ['*'], description = null) {
+ const body = { url, events };
+ if (description != null) body.description = description;
+ return this._post('/webhooks', body);
+ }
+ listWebhooks() { return this._get('/webhooks'); }
+ updateWebhook(id, fields) { return this._patch('/webhooks/' + encodeURIComponent(id), fields); }
+ deleteWebhook(id) { return this._delete('/webhooks/' + encodeURIComponent(id)); }
+ testWebhook(id) { return this._post('/webhooks/' + encodeURIComponent(id) + '/test', {}); }
 
  _get(path) { return this._request('GET', path); }
  _post(path, body) { return this._request('POST', path, body); }
@@ -221,7 +264,7 @@ class VeriMerkeziClient {
  'Authorization': 'Bearer ' + this.apiKey,
  'Content-Type': 'application/json',
  'Accept': 'application/json',
- 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.0',
+ 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.9.0',
  };
  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
  headers['Idempotency-Key'] = idempotencyKey;

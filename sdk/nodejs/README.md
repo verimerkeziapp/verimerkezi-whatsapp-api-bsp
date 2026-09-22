@@ -57,13 +57,23 @@ console.log('wamid:', response.wamid);
 | `listContacts({ cursor?, limit?, search? })` | `Promise<ContactList>` |
 | `createContact(phone, name, extra?)` | `Promise<Contact>` |
 | `bulkContacts(contacts, skipDuplicates?)` | `Promise<BulkResult>` |
-| `listTemplates()` | `Promise<TemplateListResponse>` |
+| `listTemplates(filters?)` | `Promise<TemplateListResponse>` |
 | `getProfile(phoneId)` | `Promise<Profile>` |
 | `updateProfile(phoneId, fields)` | `Promise<Profile>` |
 | `reportsSummary(period?)` | `Promise<ReportSummary>` |
 | `listMedia({ source?, kind?, cursor?, limit? })` | `Promise<MediaList>` |
 | `mediaInfo(mediaId)` | `Promise<MediaInfo>` |
 | `downloadMedia(mediaId, writableStream?)` | `Promise<Buffer \| Writable>` |
+| `createTemplate(data)` | `Promise<Template>` |
+| `validateTemplate(data)` | `Promise<ValidationResult>` |
+| `getTemplate(id)` | `Promise<Template>` |
+| `updateTemplate(id, components, opts?)` | `Promise<Template>` |
+| `deleteTemplate(id)` | `Promise<DeleteResult>` |
+| `createWebhook(url, events?, description?)` | `Promise<Webhook>` |
+| `listWebhooks()` | `Promise<WebhookList>` |
+| `updateWebhook(id, fields)` | `Promise<Webhook>` |
+| `deleteWebhook(id)` | `Promise<DeleteResult>` |
+| `testWebhook(id)` | `Promise<TestResult>` |
 
 `POST /messages` düz (flat) bir yanıt döner — `messages[]` dizisi **yoktur**:
 
@@ -104,8 +114,8 @@ Gelen bir mesajı okundu işaretler (mavi tik). `typing: true` ile ~25 saniye bo
 await vm.markRead('1234567890', 'wamid.HBgM...', true);
 ```
 
-> Webhook'lar SDK ile değil, panel üzerinden yapılandırılır:
-> https://verimerkezi.app/panel/wa — Gelen olayların imzasını doğrulamak için
+> Webhook abonelikleri artık hem panelden hem de SDK ile (v1.9.0) yönetilebilir —
+> aşağıdaki **Webhook Yönetimi** bölümüne bakın. Gelen olayların imzasını doğrulamak için
 > `VeriMerkeziClient.verifyWebhookSignature(secret, body, signature, timestamp)`
 > statik metodunu ve `examples/nodejs/webhook-receiver.js` örneğini kullanın.
 
@@ -123,6 +133,70 @@ const liste = await vm.listMedia({ source: 'inbound', limit: 50 });
 ```
 
 Ayrıntılar: [docs/10-media.md](../../docs/10-media.md)
+
+## Şablon Yönetimi
+
+Şablonları listeleyin, oluşturun, doğrulayın, güncelleyin veya silin (anahtarda
+`templates:read` / `templates:write` yetkisi gerekir). Yeni şablon Meta'ya gönderilir ve
+durumu `PENDING` olur; onay/ret sonucu `template.approved` / `template.rejected` webhook'u
+ile bildirilir. Her istekte `waba_id` **veya** `phone_number_id` gerekir.
+
+```js
+// Filtreli listeleme — tüm filtreler opsiyonel, argümansız çağrı tüm şablonları döner
+const { templates } = await vm.listTemplates({ status: 'APPROVED', category: 'UTILITY', limit: 20 });
+
+// Meta'ya GÖNDERMEDEN doğrula (kredi/gönderim yok)
+await vm.validateTemplate({
+  phone_number_id: '1275179085670729',
+  name: 'police_yenileme',
+  language: 'tr',
+  category: 'UTILITY',
+  components: [
+    { type: 'BODY', text: 'Sayın {{1}}, poliçeniz yenilenmelidir.', example: { body_text: [['Ahmet']] } },
+  ],
+});
+
+// Yeni şablon oluştur → durum PENDING
+const tpl = await vm.createTemplate({
+  waba_id: '1029384756',
+  name: 'police_yenileme',
+  language: 'tr',
+  category: 'UTILITY',
+  components: [
+    { type: 'BODY', text: 'Sayın {{1}}, poliçeniz yenilenmelidir.', example: { body_text: [['Ahmet']] } },
+    { type: 'FOOTER', text: 'Mim Gökmen Sigorta' },
+  ],
+});
+
+const detay = await vm.getTemplate(tpl.id);                                 // tek şablon + components
+await vm.updateTemplate(tpl.id, detay.components, { category: 'UTILITY' }); // düzenle → tekrar PENDING (opts.category opsiyonel)
+await vm.deleteTemplate(tpl.id);                                            // sil
+```
+
+## Webhook Yönetimi
+
+Webhook aboneliklerini SDK ile yönetin (anahtarda `webhooks:read` / `webhooks:write`
+yetkisi gerekir). **`secret` yalnızca `createWebhook` yanıtında bir kez döner** — güvenli
+bir yerde saklayın; imza doğrulaması (`verifyWebhookSignature`) bu değeri kullanır.
+
+```js
+// Abonelik oluştur — events verilmezse ['*'] kullanılır
+const hook = await vm.createWebhook(
+  'https://ornek.com/wa-webhook',
+  ['message.received', 'template.approved', 'credit.low'],
+  "Üretim webhook'u"
+);
+console.log(hook.secret); // whsec_... — SADECE burada döner, saklayın
+
+const { webhooks } = await vm.listWebhooks();          // secret DÖNMEZ
+await vm.updateWebhook(hook.id, { active: false });    // url / events / active / description
+await vm.testWebhook(hook.id);                         // anında test.ping teslimatı dener
+await vm.deleteWebhook(hook.id);
+```
+
+> `*` (joker) joker-**dışı** yeni olayları kapsamaz (`message.revoked`, `message.edited`,
+> `message.history`, `message.sent`, `number.status_changed`, `credit.low`,
+> `credit.exhausted`) — bunları almak için olay listesine açıkça ekleyin.
 
 ## Hata Yönetimi
 

@@ -35,6 +35,18 @@
     {
       "key": "media_id",
       "value": "12345"
+    },
+    {
+      "key": "waba_id",
+      "value": "1029384756"
+    },
+    {
+      "key": "template_id",
+      "value": "512"
+    },
+    {
+      "key": "webhook_id",
+      "value": "17"
     }
   ],
   "item": [
@@ -311,12 +323,153 @@
           "request": {
             "method": "GET",
             "url": {
+              "raw": "{{base_url}}/templates?status=APPROVED",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "APPROVED",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "UTILITY",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "tr",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "yenileme",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /templates — Oluştur & Meta'ya gönder",
+          "request": {
+            "method": "POST",
+            "url": {
               "raw": "{{base_url}}/templates",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "templates"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"waba_id\": \"{{waba_id}}\",\n  \"name\": \"police_yenileme_hatirlatma\",\n  \"language\": \"tr\",\n  \"category\": \"UTILITY\",\n  \"allow_category_change\": true,\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Sayın {{1}}, {{2}} plakalı aracınızın poliçesi {{3}} tarihinde sona eriyor.\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Ahmet Yılmaz\",\n            \"34 ABC 123\",\n            \"12.10.2026\"\n          ]\n        ]\n      }\n    },\n    {\n      \"type\": \"FOOTER\",\n      \"text\": \"Mim Gökmen Sigorta\"\n    },\n    {\n      \"type\": \"BUTTONS\",\n      \"buttons\": [\n        {\n          \"type\": \"QUICK_REPLY\",\n          \"text\": \"Teklif istiyorum\"\n        }\n      ]\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /templates/validate — Ön doğrula",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "validate"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"name\": \"deneme\",\n  \"language\": \"tr\",\n  \"category\": \"UTILITY\",\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Merhaba {{1}}\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Ahmet\"\n          ]\n        ]\n      }\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /templates/{id} — Ayrıntı",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "{{template_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /templates/{id} — Düzenle",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "{{template_id}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Sayın {{1}}, poliçeniz {{2}} tarihinde bitiyor.\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Ahmet\",\n            \"12.10.2026\"\n          ]\n        ]\n      }\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /templates/{id} — Sil",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "{{template_id}}"
               ]
             }
           }
@@ -739,6 +892,110 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"since\": \"2026-09-22T00:00:00Z\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Webhook Yönetimi",
+      "item": [
+        {
+          "name": "POST /webhooks — Abonelik oluştur (secret 1 kez)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/webhooks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://api.firmaniz.com/wa-webhook\",\n  \"events\": [\n    \"message.received\",\n    \"message.status.delivered\",\n    \"template.approved\"\n  ],\n  \"description\": \"Production Bot\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /webhooks — Abonelikleri listele",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/webhooks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /webhooks/{id} — Güncelle",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/webhooks/{{webhook_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"events\": [\n    \"message.received\",\n    \"message.status.failed\"\n  ],\n  \"active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /webhooks/{id} — Sil",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/webhooks/{{webhook_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /webhooks/{id}/test — Test bildirimi",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/webhooks/{{webhook_id}}/test",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}",
+                "test"
+              ]
             }
           }
         }
