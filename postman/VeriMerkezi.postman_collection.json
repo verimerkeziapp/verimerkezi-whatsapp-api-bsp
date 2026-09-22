@@ -7,14 +7,35 @@
   },
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{api_key}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
-    { "key": "base_url", "value": "https://api.verimerkezi.app/wa" },
-    { "key": "api_key", "value": "vmk_live_REPLACE_ME" },
-    { "key": "phone_number_id", "value": "1234567890" },
-    { "key": "test_recipient", "value": "905551112233" },
-    { "key": "media_id", "value": "12345" }
+    {
+      "key": "base_url",
+      "value": "https://api.verimerkezi.app/wa"
+    },
+    {
+      "key": "api_key",
+      "value": "vmk_live_REPLACE_ME"
+    },
+    {
+      "key": "phone_number_id",
+      "value": "1234567890"
+    },
+    {
+      "key": "test_recipient",
+      "value": "905551112233"
+    },
+    {
+      "key": "media_id",
+      "value": "12345"
+    }
   ],
   "item": [
     {
@@ -25,14 +46,30 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/me", "host": ["{{base_url}}"], "path": ["me"] }
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
           }
         },
         {
           "name": "GET /numbers",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{base_url}}/numbers", "host": ["{{base_url}}"], "path": ["numbers"] }
+            "url": {
+              "raw": "{{base_url}}/numbers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers"
+              ]
+            }
           }
         }
       ]
@@ -45,14 +82,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"text\": \"Merhaba! Test mesajı.\"\n}"
             },
-            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            }
           }
         },
         {
@@ -60,14 +111,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"template\": {\n    \"name\": \"hosgeldin\",\n    \"language\": { \"code\": \"tr\" },\n    \"components\": [\n      {\n        \"type\": \"body\",\n        \"parameters\": [{ \"type\": \"text\", \"text\": \"Ahmet\" }]\n      }\n    ]\n  }\n}"
             },
-            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            }
           }
         },
         {
@@ -75,14 +140,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"template\": {\n    \"name\": \"sepet_kurtarma\",\n    \"language\": { \"code\": \"tr\" },\n    \"components\": [\n      { \"type\": \"body\", \"parameters\": [{ \"type\": \"text\", \"text\": \"Ahmet\" }] },\n      { \"type\": \"button\", \"sub_type\": \"url\", \"index\": 0, \"parameters\": [{ \"type\": \"text\", \"text\": \"d32eec6c,5cbd62f6\" }] }\n    ]\n  }\n}"
             },
-            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            }
           }
         },
         {
@@ -90,14 +169,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"video\",\n  \"video\": {\n    \"link\": \"https://example.com/video.mp4\",\n    \"caption\": \"Tanıtım videosu\"\n  }\n}"
             },
-            "url": { "raw": "{{base_url}}/messages", "host": ["{{base_url}}"], "path": ["messages"] }
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            }
           }
         },
         {
@@ -105,13 +198,107 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"message_id\": \"<wamid>\",\n  \"typing\": true\n}"
             },
-            "url": { "raw": "{{base_url}}/messages/read", "host": ["{{base_url}}"], "path": ["messages", "read"] }
+            "url": {
+              "raw": "{{base_url}}/messages/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Alıntılı cevap",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"text\",\n  \"text\": \"Yanıtınız için teşekkürler.\",\n  \"context\": {\n    \"message_id\": \"wamid.HBgL...\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Tepki (emoji)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "emoji \"\" gönderilirse tepki kaldırılır.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"reaction\",\n  \"reaction\": {\n    \"message_id\": \"wamid.HBgL...\",\n    \"emoji\": \"👍\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /messages — Uzlaştırma (kaçan olaylar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/messages?phone_number_id={{phone_number_id}}&since=2026-09-22T00:00:00Z&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "phone_number_id",
+                  "value": "{{phone_number_id}}"
+                },
+                {
+                  "key": "since",
+                  "value": "2026-09-22T00:00:00Z"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Okuma — kredi/kota tüketmez."
           }
         }
       ]
@@ -123,7 +310,15 @@
           "name": "GET /templates",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{base_url}}/templates", "host": ["{{base_url}}"], "path": ["templates"] }
+            "url": {
+              "raw": "{{base_url}}/templates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates"
+              ]
+            }
           }
         }
       ]
@@ -137,9 +332,18 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/contacts?limit=50",
-              "host": ["{{base_url}}"],
-              "path": ["contacts"],
-              "query": [{ "key": "limit", "value": "50" }]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
             }
           }
         },
@@ -147,24 +351,51 @@
           "name": "POST /contacts",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"905551234567\",\n  \"name\": \"Ayşe Müşteri\",\n  \"email\": \"ayse@firma.com\",\n  \"tags\": [\"vip\", \"istanbul\"]\n}"
             },
-            "url": { "raw": "{{base_url}}/contacts", "host": ["{{base_url}}"], "path": ["contacts"] }
+            "url": {
+              "raw": "{{base_url}}/contacts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
           }
         },
         {
           "name": "POST /contacts/bulk",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"contacts\": [\n    { \"phone\": \"905551234567\", \"name\": \"Ayşe Müşteri\", \"email\": \"ayse@firma.com\", \"tags\": [\"vip\"] },\n    { \"phone\": \"905559876543\", \"name\": \"Mehmet Yılmaz\", \"company\": \"Yılmaz Ltd.\" }\n  ],\n  \"skip_duplicates\": true,\n  \"country_code\": \"90\"\n}"
             },
-            "url": { "raw": "{{base_url}}/contacts/bulk", "host": ["{{base_url}}"], "path": ["contacts", "bulk"] }
+            "url": {
+              "raw": "{{base_url}}/contacts/bulk",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "bulk"
+              ]
+            }
           }
         }
       ]
@@ -176,14 +407,32 @@
           "name": "GET /credit/balance",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{base_url}}/credit/balance", "host": ["{{base_url}}"], "path": ["credit", "balance"] }
+            "url": {
+              "raw": "{{base_url}}/credit/balance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "credit",
+                "balance"
+              ]
+            }
           }
         },
         {
           "name": "GET /credit/packages",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{base_url}}/credit/packages", "host": ["{{base_url}}"], "path": ["credit", "packages"] }
+            "url": {
+              "raw": "{{base_url}}/credit/packages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "credit",
+                "packages"
+              ]
+            }
           }
         },
         {
@@ -192,9 +441,19 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/credit/usage?days=30",
-              "host": ["{{base_url}}"],
-              "path": ["credit", "usage"],
-              "query": [{ "key": "days", "value": "30" }]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "credit",
+                "usage"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
             }
           }
         },
@@ -204,13 +463,33 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/credit/transactions?limit=50",
-              "host": ["{{base_url}}"],
-              "path": ["credit", "transactions"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "credit",
+                "transactions"
+              ],
               "query": [
-                { "key": "limit", "value": "50" },
-                { "key": "cursor", "value": "", "disabled": true },
-                { "key": "type", "value": "", "disabled": true },
-                { "key": "source", "value": "", "disabled": true }
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "source",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -222,18 +501,68 @@
       "description": "Gelen medyayı indirme. Webhook'taki data.media.media_id değerini {{media_id}} değişkenine yazın. Gerekli scope: messages:read (panelde \"Mesaj Okuma\") veya Tam Yetki.",
       "item": [
         {
+          "name": "POST /media — Dosya yükle (→ media_id)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/media",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media"
+              ]
+            },
+            "description": "Dosyayı Meta'ya yükler; dönen media_id (30 gün) POST /messages'ta {type}.id olarak kullanılır.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "phone_number_id",
+                  "value": "{{phone_number_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "GET /media — Kayıtları listele",
           "request": {
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/media?limit=50&source=inbound",
-              "host": ["{{base_url}}"],
-              "path": ["media"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media"
+              ],
               "query": [
-                { "key": "limit", "value": "50" },
-                { "key": "source", "value": "inbound" },
-                { "key": "kind", "value": "", "disabled": true },
-                { "key": "cursor", "value": "", "disabled": true }
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "source",
+                  "value": "inbound"
+                },
+                {
+                  "key": "kind",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -244,9 +573,19 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/media/{{media_id}}?meta=1",
-              "host": ["{{base_url}}"],
-              "path": ["media", "{{media_id}}"],
-              "query": [{ "key": "meta", "value": "1" }]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media",
+                "{{media_id}}"
+              ],
+              "query": [
+                {
+                  "key": "meta",
+                  "value": "1"
+                }
+              ]
             }
           }
         },
@@ -255,14 +594,152 @@
           "request": {
             "method": "GET",
             "description": "Yanıt dosyanın kendisidir; Postman'de \"Send and Download\" ile kaydedin. Büyük dosyalarda Range başlığı kullanılabilir.",
-            "url": { "raw": "{{base_url}}/media/{{media_id}}", "host": ["{{base_url}}"], "path": ["media", "{{media_id}}"] }
+            "url": {
+              "raw": "{{base_url}}/media/{{media_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media",
+                "{{media_id}}"
+              ]
+            }
           }
         },
         {
           "name": "HEAD /media/{media_id} — Başlıklar",
           "request": {
             "method": "HEAD",
-            "url": { "raw": "{{base_url}}/media/{{media_id}}", "host": ["{{base_url}}"], "path": ["media", "{{media_id}}"] }
+            "url": {
+              "raw": "{{base_url}}/media/{{media_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media",
+                "{{media_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Numaralar & Sistem",
+      "description": "Geçmiş aktarımı, ayarlar, sağlık, yeniden teslim (22.09.2026).",
+      "item": [
+        {
+          "name": "GET /numbers/{id}/history-import — Durum",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/numbers/{{phone_number_id}}/history-import",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers",
+                "{{phone_number_id}}",
+                "history-import"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /numbers/{id}/history-import — Başlat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/numbers/{{phone_number_id}}/history-import",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers",
+                "{{phone_number_id}}",
+                "history-import"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "PATCH /numbers/{id}/settings — Otomasyon/opt-out",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/numbers/{{phone_number_id}}/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers",
+                "{{phone_number_id}}",
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"automation_enabled\": false,\n  \"opt_out_autoreply_enabled\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /health — Teslimat sağlığı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /webhooks/redeliver — Dead-letter yeniden teslim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/redeliver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "redeliver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"since\": \"2026-09-22T00:00:00Z\"\n}"
+            }
           }
         }
       ]

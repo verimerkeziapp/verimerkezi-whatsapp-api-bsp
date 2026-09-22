@@ -11,7 +11,7 @@ Kullanım:
 Bağımlılık: pip install requests
 """
 
-import re, time, uuid, hmac, hashlib
+import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
@@ -146,6 +146,41 @@ class VeriMerkeziClient:
                 if parca:
                     f.write(parca)
         return dest_path
+
+    # ── Alıntılı cevap + tepki (2026-09-22) ──────────────────────────
+    def send_reply(self, phone_id, to, text, reply_to_wamid) -> dict:
+        return self._post('/messages', {'phone_number_id': phone_id, 'to': to, 'text': text, 'context': {'message_id': reply_to_wamid}})
+
+    def react_to_message(self, phone_id, to, message_id, emoji) -> dict:
+        """emoji '' -> önceki tepkiyi kaldırır."""
+        return self._post('/messages', {'phone_number_id': phone_id, 'to': to, 'type': 'reaction', 'reaction': {'message_id': message_id, 'emoji': emoji}})
+
+    # ── Dosya yükleme -> Meta media_id ───────────────────────────────
+    def upload_media(self, phone_id, file_path, mime_type=None) -> dict:
+        """Dosyayı Meta'ya yükler; {'media_id': ...} döner (30 gün geçerli)."""
+        with open(file_path, 'rb') as f:
+            files = {'file': (os.path.basename(file_path), f, mime_type) if mime_type else (os.path.basename(file_path), f)}
+            resp = requests.post(self.base_url + '/media', headers={'Authorization': f'Bearer {self.api_key}',
+                                 'User-Agent': 'VeriMerkezi-Python-SDK/1.0'},
+                                 data={'phone_number_id': str(phone_id)}, files=files, timeout=self.timeout)
+        j = resp.json() if resp.content else {}
+        if resp.status_code // 100 != 2:
+            err = j.get('error', {}) if isinstance(j, dict) else {}
+            raise VeriMerkeziException(err.get('message', f'HTTP {resp.status_code}'), resp.status_code, err.get('code'))
+        return j
+
+    # ── Uzlaştırma, geçmiş, ayarlar, sağlık ──────────────────────────
+    def list_messages(self, phone_id, since=None, cursor=None, limit=50) -> dict:
+        q = ['phone_number_id=' + quote(str(phone_id)), 'limit=' + str(int(limit))]
+        if since:  q.append('since=' + quote(str(since)))
+        if cursor: q.append('cursor=' + str(int(cursor)))
+        return self._get('/messages?' + '&'.join(q))
+
+    def redeliver_webhooks(self, since) -> dict: return self._post('/webhooks/redeliver', {'since': since})
+    def history_import_status(self, phone_id) -> dict: return self._get('/numbers/' + quote(str(phone_id)) + '/history-import')
+    def start_history_import(self, phone_id) -> dict: return self._post('/numbers/' + quote(str(phone_id)) + '/history-import', {})
+    def number_settings(self, phone_id, settings) -> dict: return self._patch('/numbers/' + quote(str(phone_id)) + '/settings', settings)
+    def health(self) -> dict: return self._get('/health')
 
     # Not: Webhook'lar API üzerinden değil, panelden yapılandırılır
     # (https://verimerkezi.app paneli). Gelen olayları doğrulamak için

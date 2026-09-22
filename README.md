@@ -53,7 +53,8 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 │ ├── 07-rate-limits.md # Rate limit + Idempotency-Key
 │ ├── 08-pagination.md # Cursor pagination
 │ ├── 09-errors.md # Hata kodları + Meta kod referansı
-│ └── 10-media.md # Gelen medyayı indirme (media_id → dosya)
+│ ├── 10-media.md # Gelen medyayı indirme (media_id → dosya)
+│ └── 11-gelismis.md # Yükleme, alıntılı cevap, uzlaştırma, geçmiş, ayarlar, sağlık
 ├── examples/
 │ ├── php/ # Örnek kullanımlar
 │ ├── nodejs/
@@ -105,6 +106,13 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Free-form medya** (image / video / audio / document — link veya Meta media id, 24h pencere içinde) | Evet — `POST /messages` |
 | **Okundu + yazıyor göstergesi** (mavi tik + "yazıyor…", kredisiz) | Evet — `POST /messages/read` |
 | **Gelen medyayı indirme** (webhook'taki `media_id` ile; `Range`, `ETag`, `HEAD`, üstveri, listeleme) | Evet — `GET /media/{media_id}`, `GET /media` |
+| **Dosya yükleme** (panelden gelen dosya → Meta `media_id`, URL gerekmez) | Evet — `POST /media` |
+| **Alıntılı cevap** (belirli mesaja yanıt) | Evet — `POST /messages` `context` |
+| **Silme / düzenleme olayları** (SİLİNDİ etiketi, düzenlendi) | Evet — webhook `message.revoked` / `message.edited` |
+| **Uzlaştırma** (kaçan olayları geri alma) | Evet — `GET /messages`, `POST /webhooks/redeliver` |
+| **Coexistence geçmiş aktarımı** (180 güne kadar) | Evet — `GET`/`POST /numbers/{id}/history-import`, webhook `message.history` |
+| **Numara ayarları** (otomasyon / opt-out yanıtı aç-kapa) | Evet — `PATCH /numbers/{id}/settings` |
+| **Sağlık / izleme** (kuyruk, teslim gecikmesi p95) | Evet — `GET /health` |
 | **Şablon listeleme** (`GET /templates`) | Evet (oluşturma/silme/submit panelden) |
 | **Dinamik URL butonu** (şablon butonunda `{{1}}` → her alıcıya özel link) | Evet — `POST /messages` `button` bileşeni |
 | **Kişi rehberi** (ekle / toplu ekle / listele) | Evet — `POST /contacts`, `/contacts/bulk`, `GET /contacts` |
@@ -113,7 +121,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Kredi** (`GET /credit/balance\|packages\|usage\|transactions`) | Evet |
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet (abonelik **panelden** — programatik API yok) |
-| **12 webhook event tipi** (message.received, message.echo, status.*, template.*, quality.changed, account.alert) | Evet |
+| **17 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`) | Evet |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
 | **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (medya indirme ayrı sayaç: 60/dk) |
 | **Cursor pagination** (opaque, stateless) | Evet — `/contacts`, `/credit/transactions`, `/media` |
@@ -149,6 +157,7 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 | [08-pagination.md](docs/08-pagination.md) | Cursor pagination kullanımı |
 | [09-errors.md](docs/09-errors.md) | HTTP + Meta hata kodları |
 | [10-media.md](docs/10-media.md) | Gelen medyayı indirme (webhook `media_id` → dosya) |
+| [11-gelismis.md](docs/11-gelismis.md) | Dosya yükleme, alıntılı cevap, uzlaştırma, geçmiş aktarımı, numara ayarları, sağlık |
 
 ---
 

@@ -14,6 +14,10 @@ API, **dakikalık fixed-window** limit uygular. Her API anahtarı için **dakika
 
 > Yüksek hacimli kullanım için anahtar bazında limit artırımı: bilgi@verimerkezi.app
 
+### Anahtar bazında özel limit
+
+Bir API anahtarına plan kapsamında özel limit tanımlanabilir (genel istekler ve medya için ayrı). Tanımlıysa `X-RateLimit-Limit` başlığı o değeri gösterir; tanımsızsa varsayılanlar (120 / 60) geçerlidir. Değişiklik bilgi@verimerkezi.app üzerinden yapılır.
+
 ### Yanıt Header'ları
 
 Her başarılı yanıtla birlikte:

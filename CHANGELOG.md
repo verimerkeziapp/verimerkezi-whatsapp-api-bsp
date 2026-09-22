@@ -2,6 +2,26 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.8.0] — 2026-09-22
+
+### Eklenenler — Coexistence & gelişmiş entegrasyon
+- **Yeni webhook olayları:** `message.revoked` / `message.edited` (silme-düzenleme; "SİLİNDİ" etiketi), `message.sent` (API dışı giden mesajlar, `source` alanıyla), `message.history` (geçmiş aktarımı), `number.status_changed` (numara bağlandı/koptu/işaretlendi). **Bu olaylar `*` aboneliğine dahil değildir** — panelden ayrıca seçilir; mevcut `*` aboneleri etkilenmez.
+- **Gelen/echo mesaj alanları:** `context` (alıntılanan mesaj), `reaction`, `location`, `contacts`, `original_message_id`; `message.echo` artık personelin telefondan gönderdiği medyayı da indirir.
+- **`POST /wa/media`** — dosyayı Meta'ya yükleyip `media_id` üretir (herkese açık URL gerekmeden, KVKK dostu); 30 gün geçerli, medya hız kovasında.
+- **Alıntılı cevap:** `POST /wa/messages` `context: { message_id }`.
+- **Uzlaştırma:** `GET /wa/messages` (kaçan olayları geri al, okuma — kredi/kota tüketmez) ve `POST /wa/webhooks/redeliver` (dead-letter yeniden teslim).
+- **Coexistence geçmiş aktarımı:** bağlantıda otomatik başlar (24 saat, tek sefer); `GET`/`POST /wa/numbers/{id}/history-import` durum/başlatma.
+- **Numara ayarları:** `PATCH /wa/numbers/{id}/settings` (`automation_enabled`, `opt_out_autoreply_enabled`). `GET /wa/numbers` yanıtına `messaging_limit_tier`, `throughput`, ayar alanları eklendi.
+- **`GET /wa/health`** — webhook teslimat sağlığı (kuyruk, p95 gecikme).
+- **Anahtar bazında hız limiti** (plan kapsamında özel `rate_per_min` / `media_rate_per_min`).
+- Üç SDK'ya karşılık gelen metotlar; `docs/11-gelismis.md` (yeni); OpenAPI ve Postman güncellendi.
+
+### Güvenlik
+- **İstemci IP doğrulaması (P0):** IP artık yalnızca güvenilir kaynaktan alınır; `CF-Connecting-IP` başlığının sahtelenerek IP izin listesinin atlatılması kapatıldı.
+
+### Notlar
+- Bu sürümdeki hiçbir değişiklik mevcut olay adlarını, alanlarını veya imza düzenini değiştirmez; yalnızca yeni alan ve yeni olay eklenir. Mevcut entegrasyonların yeniden bağlanmasına gerek yoktur.
+
 ## [1.7.0] — 2026-09-22
 
 ### Eklenenler — Gelen medyayı indirme

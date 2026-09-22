@@ -13,6 +13,8 @@
 | `403 Forbidden` | Yetkisiz (yanlış scope, IP whitelist dışı, host kısıtı) |
 | `404 Not Found` | Kaynak bulunamadı |
 | `409 Conflict` | Çakışma (örn. aynı şablon adı) |
+| `413 Payload Too Large` | Yüklenen medya boyutu aşıldı (`POST /media`) |
+| `415 Unsupported Media Type` | İstek türü/dosya türü desteklenmiyor (`POST /media`) |
 | `416 Range Not Satisfiable` | İstenen bayt aralığı geçersiz (medya indirme) |
 | `422 Unprocessable Entity` | Validasyon hatası (örn. geçersiz telefon) |
 | `429 Too Many Requests` | Rate limit aşıldı (`Retry-After` header'ına bakın) |
@@ -59,7 +61,15 @@ Tüm hatalar şu yapıyı izler:
 | `template_not_approved` | 422 | Şablon henüz Meta onayında değil |
 | `template_not_found` | 404 | Şablon bulunamadı |
 | `quota_exceeded` | 429 | Günlük tier limiti aşıldı |
-| `media_too_large` | 422 | Medya dosyası limit aşımı |
+| `media_too_large` | 413 | Yüklenen medya boyutu türün Meta sınırını aşıyor (`POST /media`) |
+| `media_invalid_format` | 415 | Desteklenmeyen dosya türü (`POST /media`) |
+| `unsupported_media_type` | 415 | İstek `multipart/form-data` değil (`POST /media`) |
+| `meta_upload_failed` | 422 | Meta dosyayı kabul etmedi (`POST /media`) |
+| `invalid_context` | 422 | `context.message_id` geçerli bir wamid değil |
+| `invalid_reaction` | 422 | `reaction.message_id` / `emoji` geçersiz |
+| `invalid_since` | 422 | `since` ISO 8601 değil ya da izinli aralık dışında |
+| `history_window_expired` | 409 | Geçmiş aktarımı 24 saatlik pencere kapandı |
+| `history_not_applicable` | 422 | Numara coexistence değil (geçmiş aktarımı yok) |
 | `media_invalid_format` | 422 | Desteklenmeyen MIME |
 | `invalid_media_id` | 400 | `media_id` yalnızca rakamlardan oluşmalı |
 | `media_not_found` | 404 | Medya kaydı yok ya da sizin hesabınıza ait değil |

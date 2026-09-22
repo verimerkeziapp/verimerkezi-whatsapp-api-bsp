@@ -242,6 +242,22 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
 
+
+    get:
+      summary: Reconciliation - list message records (recover missed webhooks)
+      description: Read-only; does not consume credit or the send rate bucket. Ascending by time, cursor paginated.
+      tags: [Messages]
+      operationId: listMessages
+      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      parameters:
+        - { name: phone_number_id, in: query, required: true, schema: { type: string } }
+        - { name: since, in: query, schema: { type: string }, description: "ISO 8601, up to 90 days back" }
+        - { name: cursor, in: query, schema: { type: integer } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        '200': { description: OK }
+        '404': { description: number_not_found }
+        '422': { description: invalid_since or missing phone_number_id }
   /messages/read:
     post:
       summary: Mark an incoming message as read + optional typing indicator
@@ -571,6 +587,42 @@ paths:
                       next_cursor: { type: integer, nullable: true }
         '403': { description: insufficient_scope }
 
+
+    post:
+      summary: Upload a file to Meta and get a media_id
+      description: >
+        Multipart upload. Returns a Meta media_id (valid 30 days) to use as {type}.id in POST /messages.
+        Different from GET /media/{media_id}, which downloads inbound media from storage. Counts in the media rate bucket.
+      tags: [Media]
+      operationId: uploadMedia
+      security: [{ BearerAuth: [messages:send] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, phone_number_id]
+              properties:
+                file: { type: string, format: binary }
+                phone_number_id: { type: string }
+      responses:
+        '201':
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  media_id: { type: string }
+                  type: { type: string, enum: [image, video, audio, document, sticker] }
+                  mime_type: { type: string }
+                  file_size: { type: integer }
+                  expires_at: { type: string }
+                  mode: { type: string, enum: [live, test] }
+        '413': { description: media_too_large }
+        '415': { description: media_invalid_format or unsupported_media_type }
+        '422': { description: meta_upload_failed }
   /media/{media_id}:
     get:
       summary: Download a media file
@@ -633,3 +685,75 @@ paths:
       responses:
         '200': { description: Headers only }
         '404': { description: Not found }
+  /webhooks/redeliver:
+    post:
+      summary: Requeue dead-letter webhook deliveries
+      tags: [Webhooks]
+      operationId: redeliverWebhooks
+      security: [{ BearerAuth: [webhooks:write] }, { BearerAuth: [messages:read] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [since]
+              properties:
+                since: { type: string, description: "ISO 8601, up to 7 days back" }
+      responses:
+        '202': { description: Requeued }
+        '422': { description: invalid_since }
+
+  /numbers/{phone_number_id}/history-import:
+    get:
+      summary: Coexistence history-import status
+      tags: [Numbers]
+      operationId: historyImportStatus
+      security: [{ BearerAuth: [profile:read] }]
+      parameters:
+        - { name: phone_number_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: number_not_found }
+    post:
+      summary: Start history import manually (if auto-start was missed)
+      tags: [Numbers]
+      operationId: startHistoryImport
+      security: [{ BearerAuth: [profile:write] }]
+      parameters:
+        - { name: phone_number_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '202': { description: Requested }
+        '409': { description: history_window_expired or already started }
+        '422': { description: history_not_applicable }
+
+  /numbers/{phone_number_id}/settings:
+    patch:
+      summary: Per-number automation / opt-out auto-reply toggle
+      tags: [Numbers]
+      operationId: numberSettings
+      security: [{ BearerAuth: [profile:write] }]
+      parameters:
+        - { name: phone_number_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                automation_enabled: { type: boolean }
+                opt_out_autoreply_enabled: { type: boolean }
+      responses:
+        '200': { description: OK }
+        '404': { description: number_not_found }
+        '422': { description: invalid_request }
+
+  /health:
+    get:
+      summary: Webhook delivery health (queue depth, p95 latency)
+      tags: [Numbers]
+      operationId: health
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: OK }
