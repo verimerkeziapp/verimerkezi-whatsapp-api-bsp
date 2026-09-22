@@ -1,6 +1,6 @@
 {
  "name": "@verimerkezi/whatsapp-sdk",
- "version": "1.0.0",
+ "version": "1.9.0",
  "description": "Veri Merkezi WhatsApp Business API — Resmî Node.js SDK",
  "main": "lib/verimerkezi-client.js",
  "scripts": {

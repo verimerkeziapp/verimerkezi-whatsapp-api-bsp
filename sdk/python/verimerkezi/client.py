@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v1.0)
+VeriMerkezi WhatsApp API — Python SDK (v1.9.0)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -96,7 +96,51 @@ class VeriMerkeziClient:
     def bulk_contacts(self, contacts, skip_duplicates=True) -> dict:
         return self._post('/contacts/bulk', {'contacts': contacts, 'skip_duplicates': skip_duplicates})
 
-    def list_templates(self) -> dict: return self._get('/templates')
+    # ── Şablon yönetimi (2026-09-23) ─────────────────────────────────
+    def list_templates(self, status=None, category=None, language=None, q=None, cursor=None, limit=None) -> dict:
+        """Şablonları listeler; tüm filtreler opsiyonel (status/category/language/q/cursor/limit).
+
+        Argümansız çağrılabilir. Yanıt: {'templates': [...], 'has_more': ..., 'next_cursor': ...}.
+        """
+        params = {}
+        if status:   params['status'] = status
+        if category: params['category'] = category
+        if language: params['language'] = language
+        if q:        params['q'] = q
+        if cursor:   params['cursor'] = cursor
+        if limit:    params['limit'] = limit
+        path = '/templates'
+        if params:
+            path += '?' + urlencode(params)
+        return self._get(path)
+
+    def create_template(self, data) -> dict:
+        """Yeni şablon oluşturur (Meta'ya gönderilir; durum PENDING döner).
+
+        data: waba_id VEYA phone_number_id (biri zorunlu), name, language, category,
+        components (zorunlu); allow_category_change / header_media_url opsiyonel.
+        """
+        return self._post('/templates', data)
+
+    def validate_template(self, data) -> dict:
+        """Şablonu Meta'ya GÖNDERMEDEN doğrular. {'ok': True, 'valid': True, ...} döner."""
+        return self._post('/templates/validate', data)
+
+    def get_template(self, template_id) -> dict:
+        """Tek şablonun tüm ayrıntısını (components dahil) döner. Yoksa template_not_found."""
+        return self._get('/templates/' + str(int(template_id)))
+
+    def update_template(self, template_id, components, category=None) -> dict:
+        """Onaylı/reddedilmiş şablonu düzenler; durum yeniden PENDING olur (components zorunlu)."""
+        body = {'components': components}
+        if category is not None:
+            body['category'] = category
+        return self._patch('/templates/' + str(int(template_id)), body)
+
+    def delete_template(self, template_id) -> dict:
+        """Şablonu siler. {'ok': True, 'deleted': True, 'id': ...} döner."""
+        return self._delete('/templates/' + str(int(template_id)))
+
     def get_profile(self, phone_number_id) -> dict: return self._get('/profile/' + quote(phone_number_id))
     def update_profile(self, phone_number_id, fields) -> dict: return self._patch('/profile/' + quote(phone_number_id), fields)
     def reports_summary(self, period='30d') -> dict: return self._get('/reports/summary?period=' + quote(period))
@@ -126,7 +170,7 @@ class VeriMerkeziClient:
         url = self.base_url + '/media/' + str(int(media_id))
         headers = {
             'Authorization': f'Bearer {self.api_key}',
-            'User-Agent': 'VeriMerkezi-Python-SDK/1.0',
+            'User-Agent': 'VeriMerkezi-Python-SDK/1.9.0',
         }
         resp = requests.get(url, headers=headers, timeout=self.timeout, stream=True)
         if resp.status_code != 200:
@@ -161,7 +205,7 @@ class VeriMerkeziClient:
         with open(file_path, 'rb') as f:
             files = {'file': (os.path.basename(file_path), f, mime_type) if mime_type else (os.path.basename(file_path), f)}
             resp = requests.post(self.base_url + '/media', headers={'Authorization': f'Bearer {self.api_key}',
-                                 'User-Agent': 'VeriMerkezi-Python-SDK/1.0'},
+                                 'User-Agent': 'VeriMerkezi-Python-SDK/1.9.0'},
                                  data={'phone_number_id': str(phone_id)}, files=files, timeout=self.timeout)
         j = resp.json() if resp.content else {}
         if resp.status_code // 100 != 2:
@@ -182,9 +226,35 @@ class VeriMerkeziClient:
     def number_settings(self, phone_id, settings) -> dict: return self._patch('/numbers/' + quote(str(phone_id)) + '/settings', settings)
     def health(self) -> dict: return self._get('/health')
 
-    # Not: Webhook'lar API üzerinden değil, panelden yapılandırılır
-    # (https://verimerkezi.app paneli). Gelen olayları doğrulamak için
-    # statik verify_webhook_signature yardımcısını kullanın.
+    # ── Webhook aboneliği yönetimi (2026-09-23) ──────────────────────
+    # Webhook'lar artık API üzerinden yönetilebilir (panelden de yapılabilir).
+    # Gelen olayları doğrulamak için statik verify_webhook_signature yardımcısını kullanın.
+    def create_webhook(self, url, events=None, description=None) -> dict:
+        """Webhook aboneliği oluşturur (events boşsa ['*']).
+
+        secret YALNIZCA burada bir kez döner — saklayın. events joker ['*'] joker-DIŞI yeni
+        olayları (message.revoked, credit.low, ...) kapsamaz; onları listeye açıkça ekleyin.
+        """
+        body = {'url': url, 'events': events or ['*']}
+        if description is not None:
+            body['description'] = description
+        return self._post('/webhooks', body)
+
+    def list_webhooks(self) -> dict:
+        """Webhook aboneliklerini listeler (secret DÖNMEZ)."""
+        return self._get('/webhooks')
+
+    def update_webhook(self, webhook_id, fields) -> dict:
+        """Webhook aboneliğini günceller (url/events/active/description — en az bir alan)."""
+        return self._patch('/webhooks/' + str(int(webhook_id)), fields)
+
+    def delete_webhook(self, webhook_id) -> dict:
+        """Webhook aboneliğini siler. {'ok': True, 'deleted': True, 'id': ...} döner."""
+        return self._delete('/webhooks/' + str(int(webhook_id)))
+
+    def test_webhook(self, webhook_id) -> dict:
+        """Aboneliğe anında test.ping teslimatı dener. {'ok': True, 'result': 'delivered'} döner."""
+        return self._post('/webhooks/' + str(int(webhook_id)) + '/test', {})
 
     def _get(self, path): return self._request('GET', path)
     def _post(self, path, body): return self._request('POST', path, body)
@@ -200,7 +270,7 @@ class VeriMerkeziClient:
                 'Authorization': f'Bearer {self.api_key}',
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': 'VeriMerkezi-Python-SDK/1.0',
+                'User-Agent': 'VeriMerkezi-Python-SDK/1.9.0',
             }
             if method in ('POST', 'PUT', 'PATCH', 'DELETE'):
                 headers['Idempotency-Key'] = idempotency_key

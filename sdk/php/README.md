@@ -56,7 +56,17 @@ Tüm metotlar:
 | `listContacts($cursor = null, $limit = 50, $search = null)` | Kişi listesi |
 | `createContact($phone, $name, $extra = [])` | Kişi oluştur |
 | `bulkContacts($contacts, $skipDuplicates = true)` | Toplu kişi ekle |
-| `listTemplates()` | Şablon listesi |
+| `listTemplates($filters = [])` | Şablon listesi (`status`, `category`, `language`, `q`, `cursor`, `limit`) |
+| `createTemplate($data)` | Yeni şablon oluştur (Meta'ya gönderilir) |
+| `validateTemplate($data)` | Şablonu Meta'ya göndermeden doğrula |
+| `getTemplate($id)` | Tek şablon (bileşenleriyle) |
+| `updateTemplate($id, $components, $opts = [])` | Şablonu güncelle (`$opts['category']` opsiyonel) |
+| `deleteTemplate($id)` | Şablonu sil |
+| `createWebhook($url, $events = ['*'], $description = null)` | Webhook aboneliği oluştur (secret yalnızca burada döner) |
+| `listWebhooks()` | Webhook aboneliklerini listele |
+| `updateWebhook($id, $fields)` | Webhook aboneliğini güncelle |
+| `deleteWebhook($id)` | Webhook aboneliğini sil |
+| `testWebhook($id)` | Aboneliğe test.ping teslimatı dene |
 | `getProfile($phoneId)` | Numara profili |
 | `updateProfile($phoneId, $fields)` | Profil güncelle |
 | `reportsSummary($period = '30d')` | Rapor özeti |
@@ -117,6 +127,73 @@ $liste  = $vm->listMedia(['source' => 'inbound', 'limit' => 50]);
 ```
 
 Ayrıntılar: [docs/10-media.md](../../docs/10-media.md)
+
+## Şablon Yönetimi
+
+Şablonları programatik olarak oluşturabilir, doğrulayabilir, güncelleyebilir ve
+silebilirsiniz. `waba_id` **veya** `phone_number_id` (biri zorunlu) ile birlikte
+`name`, `language`, `category` (`UTILITY` · `MARKETING` · `AUTHENTICATION`) ve
+`components` gönderilir.
+
+```php
+// Yeni şablon oluştur (Meta'ya gönderilir; yanıtta status genelde PENDING)
+$sablon = $vm->createTemplate([
+    'waba_id'  => '1029384756',
+    'name'     => 'police_yenileme',
+    'language' => 'tr',
+    'category' => 'UTILITY',
+    'components' => [
+        ['type' => 'BODY', 'text' => 'Sayın {{1}}, poliçeniz {{2}} tarihinde yenilenecek.',
+         'example' => ['body_text' => [['Ahmet', '12.10.2026']]]],
+        ['type' => 'FOOTER', 'text' => 'Mim Gökmen Sigorta'],
+    ],
+]);
+echo $sablon['id'] . ' → ' . $sablon['status']; // 123 → PENDING
+
+// Göndermeden önce doğrula (Meta'ya gitmez)
+$vm->validateTemplate([...]);   // ['ok' => true, 'valid' => true, ...]
+
+// Filtreli liste
+$onayli = $vm->listTemplates([
+    'status'   => 'APPROVED',
+    'category' => 'UTILITY',
+    'language' => 'tr',
+    'limit'    => 50,
+]);
+
+// Tek şablon, güncelle, sil
+$tek = $vm->getTemplate(123);
+$vm->updateTemplate(123, $yeniComponents, ['category' => 'UTILITY']); // durum PENDING olur
+$vm->deleteTemplate(123);
+```
+
+## Webhook Aboneliği Yönetimi
+
+Webhook abonelikleri artık panele girmeden koddan yönetilebilir. **`secret`
+yalnızca `createWebhook` yanıtında bir kez döner** — güvenli saklayın.
+
+`*` (joker) yalnızca eski olayları kapsar; `credit.low`, `credit.exhausted`,
+`message.revoked/edited/history/sent`, `number.status_changed` gibi yeni olayları
+almak için bunları `events` listesine açıkça ekleyin.
+
+```php
+// Abonelik oluştur (secret yalnızca burada döner)
+$wh = $vm->createWebhook(
+    'https://ornek.com/wa-webhook',
+    ['message.received', 'template.approved', 'credit.low'],
+    'Üretim webhook'
+);
+$secret = $wh['secret']; // whsec_... → güvenli sakla, bir daha dönmez
+
+// Listele / güncelle / test / sil
+$vm->listWebhooks();
+$vm->updateWebhook($wh['id'], ['active' => false]);
+$vm->testWebhook($wh['id']);   // ['ok' => true, 'result' => 'delivered']
+$vm->deleteWebhook($wh['id']);
+```
+
+Gelen webhook isteklerini doğrulamak için `verifyWebhookSignature()` kullanılır
+(bkz. `examples/php/webhook-receiver.php`).
 
 ## Hata Yönetimi
 

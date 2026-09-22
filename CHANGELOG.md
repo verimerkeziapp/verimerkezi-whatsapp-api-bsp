@@ -2,6 +2,27 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [1.9.0] — 2026-09-23
+
+### Eklenenler — Şablon yönetimi API'si
+- **`POST /wa/templates`** — şablon oluşturup Meta'ya gönderir (`202 PENDING`). Hedef `waba_id` veya `phone_number_id` ile; header medyası herkese açık `header_media_url` ile geçilir (indirilip Meta'ya `header_handle` olarak yüklenir). Doğrulama **Meta'dan önce** çalışır: kural ihlalleri alan bazında `422 template_invalid` döner, yalnızca Meta reddi `422 template_rejected`.
+- **`POST /wa/templates/validate`** — göndermeden ön doğrulama.
+- **`GET /wa/templates/{id}`** — ayrıntı (`rejected_reason`, `quality_score`, `status_updated_at`, tam `components`, `waba_id`).
+- **`PATCH /wa/templates/{id}`** — düzenle (yeniden `PENDING`).
+- **`DELETE /wa/templates/{id}`** — sil.
+- **`GET /wa/templates`** artık süzgeçli ve imleç sayfalı: `status`, `category`, `language`, `q`, `cursor`, `limit`; yanıtta `has_more` + `next_cursor`. Her şablonda ve `GET /wa/numbers`'ta `waba_id` (WABA ayrımı için).
+
+### Eklenenler — Webhook aboneliği API'si (yeniden)
+- **`POST/GET/PATCH/DELETE /wa/webhooks`** + **`POST /wa/webhooks/{id}/test`** — abonelik oluştur/listele/güncelle/sil ve test bildirimi. Böylece yeni müşteri/kiracı açılışı tek seferde otomatikleşir. `secret` yalnızca oluşturma yanıtında bir kez döner; sonra `secret_prefix`. İmza şeması (`whsec_`, HMAC-SHA256, zaman damgalı) değişmedi. URL için SSRF koruması (özel/iç IP reddi). Yetki: `webhooks:read` / `webhooks:write`.
+
+### Eklenenler — Yeni webhook olayları ve zenginleştirme
+- **`credit.low` / `credit.exhausted`** — mesaj kredisi eşik altına düşünce / tükenince (kampanya ortasında sürprizi önlemek için). Eşik hesap ayarından; aynı durum için 24 saatte bir.
+- **`template.approved/rejected/flagged/paused`** olay gövdesi zenginleştirildi: artık `template_id`, `meta_template_id`, `name`, `language`, `category`, `waba_id`, `status` ve ret durumunda `reason` içerir (ekstra `GET` gerekmez).
+- Yeni olaylar (`credit.*` dahil) `*` joker aboneliğine **dahil değildir**; `POST /wa/webhooks` yanıtındaki `note` alanı `*` seçilince kapsanmayan olayları hatırlatır.
+
+### Notlar
+- Tümüyle geriye dönük uyumlu: mevcut olay adları, alanlar ve imza düzeni değişmedi; yalnızca yeni uç, yeni alan ve yeni olay eklendi. Üç SDK (PHP/Node/Python), `docs/04-templates.md`, `docs/06-webhooks.md`, OpenAPI ve Postman güncellendi.
+
 ## [1.8.0] — 2026-09-22
 
 ### Eklenenler — Coexistence & gelişmiş entegrasyon
