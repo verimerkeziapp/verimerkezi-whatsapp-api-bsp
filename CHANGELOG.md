@@ -2,6 +2,24 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.5.0] — 2026-09-25
+
+> Sürüm hattı birleştirildi: canlı API dokümanı (`api.verimerkezi.app/docs/wa`) ile bu açık kaynak repo bundan sonra **tek semver** kullanır. Tüm değişiklikler **geriye dönük uyumludur**: yeni davranışlar varsayılan-kapalı bayrak veya yeni uç olarak eklendi; mevcut alan, olay ve imza düzeni değişmedi.
+
+### Eklenenler — KVKK / gizlilik
+- **`POST /wa/privacy/erasure`** — veri sahibinin silme/unutulma hakkı. Gövde `{ "phone_number_id"?, "wa_id" | "user_id" }` → `202 Accepted` + `privacy.erasure_completed` olayı (`phone_number_id`, `wa_id`/`user_id`, `completed_at`). Kişiye ait mesaj gövdeleri anonimleştirilir; medya dosya ve kayıtları, konuşma kişisel bilgileri, giden webhook teslim gövdeleri (`payload` + `response_body`) ve idempotency yanıtları silinir. Opt-out/onay (suppression) kaydı **kalıcıdır**. İşlem **idempotenttir**. Yetki: `profile:write`.
+- **`PATCH /wa/account/retention`** — hesap düzeyinde saklama süreleri: `{ "messages_days", "media_days", "webhook_deliveries_days" }` (gün). Yetki: `profile:write`.
+
+### Eklenenler — Hesap ayarları
+- **`PATCH /wa/account/settings`** — hesap geneli ayarlar. `revoke_edit_clean: true` iken silme/düzenleme (`revoke`/`edit`) olayında **yalnızca** `message.revoked` / `message.edited` yayınlanır; `message.received` gönderilmez, 24 saatlik hizmet penceresi uzatılmaz, otomasyon ve opt-out otomatik yanıtı tetiklenmez. **Varsayılan `false` — mevcut davranış birebir korunur.** `automation_enabled` / `opt_out_autoreply_enabled` alanları da hesabın tüm numaralarına toplu uygulanır. Değerler `GET /wa/me` → `account_settings` altında görünür. Yetki: `profile:write`.
+
+### Eklenenler — Sandbox / test
+- **`POST /wa/test/inbound`** — yalnızca test anahtarıyla (`vmk_test_`). Sahte bir gelen mesaj enjekte eder (`{ "phone_number_id", "type": "text"|"revoke"|"edit", "from"?, "text"?, "original_message_id"? }`) ve imzalı `message.received` / `message.revoked` / `message.edited` olayını hesabın aktif webhook aboneliklerine gönderir. Meta'ya **hiçbir istek gitmez**; canlı akış etkilenmez. Silme/düzenleme temiz modunu (`revoke_edit_clean`) uçtan uca test etmek içindir.
+
+### Güvenlik / gizlilik
+- Giden webhook teslim kuyruğunda alıcının yanıt gövdesi (`response_body`) **artık saklanmaz** (KVKK veri minimizasyonu). Teşhis için `response_status` korunur.
+- Web kökündeki hassas dosyalara doğrudan HTTP erişimi kapatıldı (`composer.json`/`composer.lock`, `vendor/`) → `403`.
+
 ## [1.9.0] — 2026-09-23
 
 ### Eklenenler — Şablon yönetimi API'si
