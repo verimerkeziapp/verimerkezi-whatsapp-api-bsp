@@ -2,6 +2,13 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.12.0] — 2026-09-25
+
+> Başarısız kimlik doğrulama için IP başına hız sınırı. **Geçerli anahtarla çalışan istemciler etkilenmez** (yalnız 401 yolu sayılır); kalıcı yasak yoktur.
+
+### Güvenlik — Başarısız auth hız sınırı (V29)
+- Geçersiz/eksik API anahtarıyla gelen istekler IP başına 60/dk ile sınırlandı; aşılırsa `429` + `Retry-After`. Kaba kuvvet / anahtar deneme trafiğini frenler. Kalıcı ban yok — 60 sn pencere dolunca sıfırlanır. `failClosed=false`: hız-limit servisinde DB hatası olsa da istek `401`'e düşer (auth gevşemez).
+
 ## [2.11.0] — 2026-09-25
 
 > Webhook secret rotasyonu (yerinde, kesintisiz) + `/messages/read` kendi hız kovasında. İkisi de **geriye dönük uyumlu**; rotasyon yapmayan aboneler ve mevcut istemciler etkilenmez.
