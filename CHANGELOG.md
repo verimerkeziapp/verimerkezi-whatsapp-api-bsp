@@ -2,12 +2,22 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.8.0] — 2026-09-25
+
+> Güvenlik sertleştirmesi. **Geriye dönük uyumlu**: meşru genel adresli webhook'lar etkilenmez; istemci tarafında değişiklik gerekmez.
+
+### Güvenlik — Giden webhook teslimi (SSRF / DNS-rebinding)
+- Webhook teslimlerinde hedef adres artık yalnız abonelik oluşturmada değil **her teslim denemesinde** yeniden doğrulanır: host çözümlenir, çözümlenen **tüm** IP'lerin genel (public) olduğu denetlenir ve bağlantı doğrulanan IP'ye **sabitlenir** (`CURLOPT_RESOLVE`) → doğrulama ile bağlantı arasındaki DNS-rebinding (TOCTOU) boşluğu kapatıldı. Teslim yalnız `https`; iç/özel/loopback/link-local/metadata (ör. `169.254.169.254`) hedefleri reddedilir. TLS/SNI ve sertifika doğrulaması URL host'una göre yapılmaya devam eder.
+
 ## [2.7.0] — 2026-09-25
 
-> Tümü **geriye dönük uyumlu ve opsiyonel**: `biz_opaque_callback_data` göndermeyen istekler ve mevcut webhook aboneleri hiçbir değişiklik görmez; hiçbir alan, olay adı, imza ya da durum kodu anlamı değişmedi.
+> Tümü **geriye dönük uyumlu**: mevcut webhook aboneleri ve `biz_opaque_callback_data` alanını göndermeyen istekler bakımından hiçbir alan, olay adı, imza ya da durum kodu anlamı değişmedi; idempotency davranışı aynıdır.
 
 ### Eklenenler — Callback bağlama (`biz_opaque_callback_data`)
-- `POST /wa/messages` artık opsiyonel `biz_opaque_callback_data` (metin, ≤512 karakter) kabul eder. Verilirse Meta gönderim gövdesine eklenir (text / template / medya / reaction hepsinde) ve Meta bunu `message.status.*` olaylarında `data.biz_opaque_callback_data` olarak **aynen** geri yankılar. Öneri: değeri `Idempotency-Key` ile aynı yapın (uzlaştırma bunun üstünden çalışır).
+- Gönderim ↔ durum olayı eşleştirmesi. İki şekilde:
+  - **Otomatik (önerilen):** `POST /wa/messages` bir `Idempotency-Key` ile çağrıldığında sunucu `biz_opaque_callback_data`'yı Idempotency-Key ile **kendisi doldurur**. Bu değer istek **gövdesine/karmasına girmez** → gövde ve idempotency davranışı değişmez, çakışma riski yok; istemcinin hiçbir ek alan göndermesine gerek kalmadan V13-d uzlaştırması çalışır.
+  - **Açık (isteğe bağlı):** gövdede `biz_opaque_callback_data` (metin, ≤512) verilebilir (bu değer istek gövde karmasına **dahildir**). Farklı bir korelasyon anahtarı gerektiğinde kullanın.
+- Her iki durumda Meta değeri `message.status.*` olaylarında `data.biz_opaque_callback_data` olarak **aynen** geri yankılar (text / template / medya / reaction hepsinde iletilir).
 
 ### Eklenenler — Durum olayı (`message.status.*`) zenginleştirme
 - Olay gövdesine `phone_number_id`, `conversation` (Meta konuşma nesnesi; yoksa `null`), `pricing` (ücretlendirme; yoksa `null`) ve `biz_opaque_callback_data` alanları eklendi. Mevcut `wamid` / `recipient` / `timestamp` / `errors` alanları aynen korunur.
