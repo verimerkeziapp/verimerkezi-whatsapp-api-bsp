@@ -2,6 +2,30 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.6.0] — 2026-09-25
+
+> Tümü **geriye dönük uyumlu**: yeni davranışlar varsayılan-kapalı hesap ayarı ya da ek alan; mevcut alan, olay adı, imza ve durum kodu anlamları değişmedi.
+
+### Eklenenler — Çift mesaj koruması (idempotency sağlamlaştırma)
+- Aynı `Idempotency-Key` ile **eşzamanlı** istek → `409 idempotency_in_progress` + `Retry-After` (atomik "processing" kilidi).
+- Meta çağrısı **sonucu belirsiz** biterse (zaman aşımı / bağlantı yarıda kopması) → `409 meta_outcome_unknown` (`retryable:false`); aynı anahtarla tekrar denenirse Meta'ya **ikinci kez gönderilmez** (yinelenen mesaj önlenir). Süreç ortada çökerse (stale lock) da güvenli tarafa geçilir.
+- Kesin başarısızlık (Meta açık reddi / Meta'ya hiç ulaşılamadı) → `retryable:true` (aynı anahtarla güvenle tekrar denenebilir).
+- Meta başarılı olduktan sonra yerel DB yazımı başarısız olsa bile yanıt `201` kalır.
+
+### Eklenenler — Hata zarfı alanları
+- Tüm gönderim hata yanıtlarına `retryable` (bool), `meta_code`, `meta_subcode` eklendi. Durum kodları değişmedi (kalıcı hatalar `422`).
+
+### Eklenenler — Numara & olaylar
+- `GET /wa/numbers?status=all` — aktif olmayan numaralar da listelenir; her numarada `status_reason` ve `disconnected_at` (ISO, UTC `Z`). Parametresiz çağrı yalnız `active` döner (değişmedi).
+- `number.status_changed` zenginleşti: `waba_id` + `event` değer kümesi `CONNECTED_VIA_PANEL`, `TRANSFERRED`, `DISCONNECTED_VIA_PANEL`, `REAUTH_REQUIRED`, `FLAGGED`, `UNFLAGGED` (ileride ek değer gelebilir — bilinmeyen değeri tolere edin). Kopma/devir/yeniden-yetki durumlarında ilgili sahibe gider. Opt-in olay (`*` aboneleri almaz).
+
+### Eklenenler — Hesap ayarları & bağlama güvenliği
+- `PATCH /wa/account/settings`: `default_automation_enabled` / `default_opt_out_autoreply_enabled` — **yeni bağlanan** numaralara uygulanan hesap varsayılanları; `revoke_edit_clean` ile birlikte `GET /wa/me` → `account_settings` altında.
+- Numara bağlama: numara başka bir **aktif** hesaba bağlıysa artık `409 number_owned_by_other_account` (sessiz sahiplik devri kapatıldı). Aynı hesapta yeniden/çift bağlama ve serbest bırakılmış numara devri normal çalışır.
+
+### Düzeltmeler
+- `POST /wa/messages` `text` alanı artık hem `"..."` hem `{"body":"..."}` kabul eder (nesnede `body` okunur; eskiden nesnede müşteriye "Array" gidiyordu).
+
 ## [2.5.0] — 2026-09-25
 
 > Sürüm hattı birleştirildi: canlı API dokümanı (`api.verimerkezi.app/docs/wa`) ile bu açık kaynak repo bundan sonra **tek semver** kullanır. Tüm değişiklikler **geriye dönük uyumludur**: yeni davranışlar varsayılan-kapalı bayrak veya yeni uç olarak eklendi; mevcut alan, olay ve imza düzeni değişmedi.
