@@ -2,6 +2,13 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.13.0] — 2026-09-25
+
+> Dayanıklılık: webhook kapanış (deferred) işleri için kalıcı kuyruk + arka plan worker. Dahili sağlamlaştırma; istemci tarafında değişiklik yok, API sözleşmesi değişmedi.
+
+### Güvenilirlik — Deferred iş kalıcı kuyruğu (V20)
+- Webhook kapanışında çalışan işler (özellikle coexistence/echo medya indirme) `register_shutdown_function` ile inline çalışır; süreç sert ölürse (OOM/timeout) kaybolabiliyordu. Artık kalıcı `v2_wa_deferred_jobs` kuyruğuna yazılır: inline tamamlanınca kapatılır (`done`), tamamlanamazsa `wa-resume` 5dk cron'una eklenen worker (`cron/wa-deferred.php` → `DeferredJobs::dispatch`) devralıp medyayı indirir ve mesaj kaydına iliştirir. **Yeniden webhook olayı yayınlanmaz** (çift bildirim yok) — yalnız arşiv/`GET /wa/messages` bütünlüğü güçlenir. Idempotent (dedup_key=wamid; _media varsa kısa devre), kilitli, denemeler sınırlı (6). Inline hızlı-yol aynen korunur; kuyruk yazımı ingest'i asla bozmaz (tam try/catch).
+
 ## [2.12.0] — 2026-09-25
 
 > Başarısız kimlik doğrulama için IP başına hız sınırı. **Geçerli anahtarla çalışan istemciler etkilenmez** (yalnız 401 yolu sayılır); kalıcı yasak yoktur.
