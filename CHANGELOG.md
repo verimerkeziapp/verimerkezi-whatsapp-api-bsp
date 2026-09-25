@@ -2,6 +2,20 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.14.0] — 2026-09-26
+
+> Şablonlar işletme hesabı (WABA) düzeyinde: şablon oluştururken telefon gerekmez. **Geriye dönük uyumlu** — `phone_number_id`/`waba_id` eskisi gibi çalışır; mevcut entegrasyonlar etkilenmez.
+
+### Değişiklikler — Şablon = WABA düzeyi
+- `POST /wa/templates`: `phone_number_id` artık **zorunlu değil**. Verilmezse hesabın tek WABA'sı otomatik kullanılır; birden çok WABA varsa `422 waba_required` (`waba_id` istenir). `phone_number_id`/`waba_id` verilirse eskisi gibi WABA ondan türetilir. Panelde tek işletme hesaplı kullanıcıya numara sorulmaz (çok WABA'da işletme hesabına göre gruplanır).
+- `GET /wa/templates`: her kayıtta `waba_id` + **yeni** `phone_number_ids` (o WABA'daki aktif numaralar). Liste WABA'ya göre süzülür (numara koparsa şablon kaybolmaz), kullanıcı-kapsamı korunur (sızıntı yok). `phone_number_id`/`display_phone_number` korunur ama **eski** (WABA'nın ilk aktif numarası; yoksa null) — `phone_number_ids` kullanın.
+
+### Eklenenler — Hata kodu
+- `template_not_in_waba` (`422`, `retryable:false`): şablonlu gönderimde şablon gönderen numaranın WABA'sında yoksa/onaylı değilse. Meta `132001` bu koda eşlenir; gövde biçimi diğer 422'lerle aynı.
+
+### Politika
+- "Şablonlar işletme hesabı (WABA) düzeyindedir; bir işletmenin bütün numaraları aynı işletme hesabına bağlanır ve aynı şablonları kullanır."
+
 ## [2.13.0] — 2026-09-25
 
 > Dayanıklılık: webhook kapanış (deferred) işleri için kalıcı kuyruk + arka plan worker. Dahili sağlamlaştırma; istemci tarafında değişiklik yok, API sözleşmesi değişmedi.
