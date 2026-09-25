@@ -2,6 +2,16 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.9.0] — 2026-09-25
+
+> Webhook kapsam doğrulama + IPv6 SSRF sertleştirme. Mevcut abonelikler ve `*` anahtarlar **etkilenmez**; doğrulama yalnız create/update anında çalışır.
+
+### Değişiklikler — Webhook kapsam doğrulama (create/update)
+- `POST` / `PATCH /wa/webhooks`: `events` boş dizi ya da **bilinmeyen** olay adı içeriyorsa artık `422 invalid_webhook` (geçersiz olaylar yanıtta adlandırılır). Eskiden geçersiz kapsam **sessizce** `["*"]`'a düşüyordu → istemci yazım hatası farkında olmadan TÜM olaylara abone ediyordu. `"*"` hâlâ geçerlidir; `events` hiç gönderilmezse varsayılan `"*"` korunur. Saklı abonelikler yeniden doğrulanmaz (mevcut kayıtlar etkilenmez).
+
+### Güvenlik — IPv6 SSRF
+- Webhook adresi güvenlik denetimi IPv6 için tamamlandı: ULA (`fc00::/7`), link-local (`fe80::/10`), loopback (`::1`), unspecified (`::`) ve IPv4-mapped (`::ffff:0:0/96`) adresler reddedilir (`filter_var` bayraklarının kaçırabildiği aralıklar `inet_pton` ile kapatıldı). Hem abonelik oluşturma/güncellemede hem teslim anında (v2.8.0 pin'i ile birlikte) geçerlidir.
+
 ## [2.8.0] — 2026-09-25
 
 > Güvenlik sertleştirmesi. **Geriye dönük uyumlu**: meşru genel adresli webhook'lar etkilenmez; istemci tarafında değişiklik gerekmez.
