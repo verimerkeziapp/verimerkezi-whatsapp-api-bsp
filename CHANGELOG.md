@@ -2,6 +2,19 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.7.0] — 2026-09-25
+
+> Tümü **geriye dönük uyumlu ve opsiyonel**: `biz_opaque_callback_data` göndermeyen istekler ve mevcut webhook aboneleri hiçbir değişiklik görmez; hiçbir alan, olay adı, imza ya da durum kodu anlamı değişmedi.
+
+### Eklenenler — Callback bağlama (`biz_opaque_callback_data`)
+- `POST /wa/messages` artık opsiyonel `biz_opaque_callback_data` (metin, ≤512 karakter) kabul eder. Verilirse Meta gönderim gövdesine eklenir (text / template / medya / reaction hepsinde) ve Meta bunu `message.status.*` olaylarında `data.biz_opaque_callback_data` olarak **aynen** geri yankılar. Öneri: değeri `Idempotency-Key` ile aynı yapın (uzlaştırma bunun üstünden çalışır).
+
+### Eklenenler — Durum olayı (`message.status.*`) zenginleştirme
+- Olay gövdesine `phone_number_id`, `conversation` (Meta konuşma nesnesi; yoksa `null`), `pricing` (ücretlendirme; yoksa `null`) ve `biz_opaque_callback_data` alanları eklendi. Mevcut `wamid` / `recipient` / `timestamp` / `errors` alanları aynen korunur.
+
+### Eklenenler — Belirsiz gönderim uzlaştırması (V13-d)
+- Sonucu `meta_outcome_unknown` kalmış bir gönderim, `biz_opaque_callback_data` taşıyan bir durum olayı geldiğinde otomatik olarak "gönderildi" durumuna geçirilir (`unknown → completed`, `wamid` doldurulur; aynı anahtarla sonraki replay artık `200` döner). Yalnız belirsiz kayıtları etkiler; `biz_opaque` yoksa ek sorgu çalışmaz (mevcut trafiğe sıfır yük).
+
 ## [2.6.0] — 2026-09-25
 
 > Tümü **geriye dönük uyumlu**: yeni davranışlar varsayılan-kapalı hesap ayarı ya da ek alan; mevcut alan, olay adı, imza ve durum kodu anlamları değişmedi.
