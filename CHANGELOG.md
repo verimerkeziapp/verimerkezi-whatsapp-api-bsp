@@ -2,6 +2,16 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.10.0] — 2026-09-25
+
+> Webhook `*` artık açık listeye genişletilir + aynı adrese ikinci aktif abonelik engeli. **Geriye uyum:** `["*"]` gönderen istemciler 422 almaz (sessizce genişletilir); mevcut `*` abonelikleri tek seferlik göçle açık listeye çevrildi, bugün aldıkları olaylar birebir korundu.
+
+### Değişiklikler — Webhook `"*"` genişletme
+- `POST` / `PATCH /wa/webhooks`: `events: ["*"]` artık **saklanmaz**; o anki klasik olay listesine (12 olay = `WILDCARD_EVENTS`) genişletilerek kaydedilir. `["*"]` gönderen istemciler `422` almaz — sessizce genişletilir, yanıtta bilgilendirici `note` döner. İleride eklenen yeni olay türleri eski aboneliklere kendiliğinden gitmez. Var olan `"*"` abonelikleri (4 adet) tek seferlik göçle açık listeye çevrildi; bugünkü teslim davranışı birebir korundu.
+
+### Değişiklikler — Yinelenen adres engeli
+- Aynı hesapta aynı URL'ye zaten **aktif** bir abonelik varken yeni oluşturma → `409 webhook_url_exists` (`existing_id` alanıyla). `DELETE`→`POST` ve secret yenileme (sil→yeniden oluştur) akışları etkilenmez (silinen/pasif satır aktif sayılmaz).
+
 ## [2.9.0] — 2026-09-25
 
 > Webhook kapsam doğrulama + IPv6 SSRF sertleştirme. Mevcut abonelikler ve `*` anahtarlar **etkilenmez**; doğrulama yalnız create/update anında çalışır.
