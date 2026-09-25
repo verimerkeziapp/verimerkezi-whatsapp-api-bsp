@@ -2,6 +2,16 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.11.0] — 2026-09-25
+
+> Webhook secret rotasyonu (yerinde, kesintisiz) + `/messages/read` kendi hız kovasında. İkisi de **geriye dönük uyumlu**; rotasyon yapmayan aboneler ve mevcut istemciler etkilenmez.
+
+### Eklenenler — Webhook secret rotasyonu (V9-f)
+- `POST /wa/webhooks/{id}/rotate-secret` (yetki `webhooks:write`): aboneliği silip yeniden oluşturmadan (id/istatistik/geçmiş korunur) secret'ı döndürür. Yeni secret **yalnızca bu yanıtta** döner. Gövdede opsiyonel `grace_seconds` (0–604800, vars. 86400): bu süre boyunca VM her teslimde **ek** `X-VeriMerkezi-Signature-256-Previous` başlığını eski secret'la imzalar → alıcı geçiş sırasında hiçbir doğrulama kaybetmez. Yanıt `previous_valid_until` taşır. Birincil `X-VeriMerkezi-Signature-256` her zaman güncel secret'la; `grace_seconds=0` → previous imza yok. Yeni nullable kolonlar: `previous_secret_encrypted/_iv/_tag`, `previous_valid_until`.
+
+### Değişiklikler — Hız sınırı (V15)
+- `POST /wa/messages/read` (okundu/typing) artık **gönderim (send) hız kovasını tüketmez**; kendi kovasında. Kredi harcamayan okundu-işaretleri, mesaj gönderme kotanızı yemez. (Send kotası artar, azalmaz.)
+
 ## [2.10.0] — 2026-09-25
 
 > Webhook `*` artık açık listeye genişletilir + aynı adrese ikinci aktif abonelik engeli. **Geriye uyum:** `["*"]` gönderen istemciler 422 almaz (sessizce genişletilir); mevcut `*` abonelikleri tek seferlik göçle açık listeye çevrildi, bugün aldıkları olaylar birebir korundu.
