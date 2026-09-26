@@ -2,6 +2,13 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.15.0] — 2026-09-26
+
+> Webhook `button` alanı (hızlı yanıt / etkileşimli buton yanıtı). Tamamen additive; mevcut alanlar ve eşleştirme değişmedi.
+
+### Eklenenler — Buton yanıtı (V31)
+- `message.received` (+ `message.echo` / `message.history`) olaylarına `button` alanı: `{ "payload": "...", "text": "..." }`. Kaynaklar: şablon hızlı-yanıt butonu (`type: button` → `button.payload`/`text`), etkileşimli `button_reply` (id/title) ve `list_reply` (id/title). Buton olmayan mesajlarda `null`. Eşleştirme artık `context.message_id` yanında `data.button.payload` ile de yapılabilir.
+
 ## [2.14.0] — 2026-09-26
 
 > Şablonlar işletme hesabı (WABA) düzeyinde: şablon oluştururken telefon gerekmez. **Geriye dönük uyumlu** — `phone_number_id`/`waba_id` eskisi gibi çalışır; mevcut entegrasyonlar etkilenmez.
