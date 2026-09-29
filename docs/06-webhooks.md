@@ -191,7 +191,7 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 | `event` | Olay adı (ör. `message.received`) |
 | `event_id` | Olayın benzersiz kimliği (UUIDv7, zaman sıralı). Tekrar denemelerde aynı kalır; `X-VeriMerkezi-Event-Id` header'ı ile aynıdır — idempotency için bunu saklayın |
 | `event_type` | `event` ile aynı (geriye dönük uyumluluk) |
-| `occurred_at` | Olay zamanı, ISO 8601 (`+03:00`) |
+| `occurred_at` | Olay zamanı, ISO 8601, saat dilimi ofsetli (şu an `+03:00`). Ofseti dikkate alın; sabit `Z` (UTC) varsaymayın |
 | `created_at` | Aynı zaman, `YYYY-MM-DD HH:MM:SS` biçiminde (geriye dönük uyumluluk) |
 | `data` | Olaya özgü içerik — aşağıdaki tablolara bakın |
 
@@ -264,7 +264,7 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `number.status_changed` | `phone_number_id`, `display_phone_number`, `status` (`connected`/`disconnected`/`flagged`/`restricted`/`pending`), `event`, `reason`, `initiated_by`, `occurred_at` |
 | `message.history` | Normal mesaj alanları + `history: true`, `thread_id`, `phase`, `chunk_order`, `progress` ([11-gelismis.md](11-gelismis.md)) |
 | `message.status.sent` · `.delivered` · `.read` · `.failed` | `wamid`, `recipient` (alıcının telefonu), `timestamp`, `errors` |
-| `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_id` (bizdeki kimlik — `GET /wa/templates/{id}` için), `meta_template_id`, `name`, `template_name` (eşanlamlı), `language`, `category`, `waba_id`, `status`, `reason` (Meta'nın bildirdiği ret sebebi; onayda `null`) |
+| `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_id` (bizdeki kimlik — `GET /wa/templates/{id}` için), `meta_template_id`, `name`, `template_name` (eşanlamlı), `language`, `category`, `waba_id`, `status` (Meta'dan gelen olay değeri — ör. `template.flagged`'da `"FLAGGED"`; bu bir geçici uyarıdır, şablonun kalıcı durumu `PAUSED`/`DISABLED` olur), `reason` (Meta'nın bildirdiği ret sebebi; onayda `null`). **Not:** Yalnız bu dört şablon olayı yayınlanır; Meta'nın diğer şablon olayları (ör. `DISABLED`, `PENDING_DELETION`, `REINSTATED`, `IN_APPEAL`) şu an webhook olarak iletilmez — güncel durumu `GET /wa/templates` ile okuyun |
 | `credit.low` | `balance` (kalan mesaj kredisi), `threshold` (uyarı eşiği), `unit` (`messages`), `occurred_at` |
 | `credit.exhausted` | `balance` (`0`), `unit` (`messages`), `occurred_at` |
 | `quality.changed` | `phone` (numaranız), `quality` (`GREEN` / `YELLOW` / `RED`) |

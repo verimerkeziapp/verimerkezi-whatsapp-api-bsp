@@ -76,7 +76,7 @@ components:
         name: { type: string }
         language: { type: string, example: tr }
         category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
-        status: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED, DISABLED] }
+        status: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, PAUSED, DISABLED] }
         components: { type: array, items: { type: object } }
         rejected_reason: { type: string, nullable: true }
         quality_score: { type: string, nullable: true }
@@ -422,7 +422,7 @@ paths:
       operationId: listTemplates
       security: [{ BearerAuth: [templates:read] }]
       parameters:
-        - { name: status, in: query, required: false, schema: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED, DISABLED] } }
+        - { name: status, in: query, required: false, schema: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, PAUSED, DISABLED] } }
         - { name: category, in: query, required: false, schema: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] } }
         - { name: language, in: query, required: false, schema: { type: string } }
         - { name: q, in: query, required: false, schema: { type: string }, description: "Search in template name" }

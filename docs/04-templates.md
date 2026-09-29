@@ -141,7 +141,6 @@ Onaydan sonra kodu göndermek için bkz. [03-messages.md](03-messages.md#otp--do
 | `PENDING` | Meta inceliyor (5-30 dk) |
 | `APPROVED` | Onaylandı, kullanıma hazır |
 | `REJECTED` | Reddedildi (`rejected_reason` alanına bakın) |
-| `FLAGGED` | İşaretlendi (geçici uyarı) |
 | `PAUSED` | Geçici durduruldu (kalite/spam) |
 | `DISABLED` | Tamamen devre dışı |
 
