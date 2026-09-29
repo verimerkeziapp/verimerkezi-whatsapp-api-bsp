@@ -2,6 +2,15 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.15.2] — 2026-09-29
+
+> Yalnız doküman düzeltmesi. **API davranışı değişmedi.**
+
+### Düzeltmeler
+- **Şablon durumları:** `FLAGGED` bir şablon durumu değildir; dokümandan ve OpenAPI enum'undan çıkarıldı. Geçerli küme: `DRAFT`, `PENDING`, `APPROVED`, `REJECTED`, `PAUSED`, `DISABLED`. (`flagged`, numara durumu olarak `number.status_changed`'da geçerlidir; `template.flagged` **olayı** değişmeden yayınlanmaya devam eder.)
+- **Şablon olayları:** yalnız `template.approved`, `.rejected`, `.flagged`, `.paused` yayınlanır; Meta'nın diğer şablon olayları (`DISABLED`, `PENDING_DELETION`, `REINSTATED`, `IN_APPEAL` vb.) şu an iletilmez — notu eklendi.
+- **Zaman damgaları:** ISO 8601, saat dilimi ofsetli (şu an `+03:00`). İstemciler ofseti dikkate almalı, sabit `Z` (UTC) varsaymamalı.
+
 ## [2.15.1] — 2026-09-29
 
 > Yalnız doküman düzeltmesi: belgeler canlı kodla karşılaştırılıp eşitlendi. **API davranışı değişmedi.**
