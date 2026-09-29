@@ -2,6 +2,19 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.17.0] — 2026-09-30
+
+> Üç yeni webhook olayı + kullanıcı adı alanının açıklaması. Tamamen additive; mevcut alanlar, olaylar ve `*` abonelikleri etkilenmez.
+
+### Eklenenler — Şablon ve numara olayları (V33, V26)
+- **`template.category_changed`** (V33): Meta şablon kategorisini değiştirdiğinde gönderilir (`previous_category`, `new_category`, `correct_category`). Şablonun `category` alanı kendiliğinden güncellenir.
+- **`template.quality_changed`** (V26): şablon kalite puanı gerçekten değiştiğinde (`previous_quality_score` → `new_quality_score`: `GREEN`/`YELLOW`/`RED`/`UNKNOWN`).
+- **`number.name_changed`** (V26): numara görünen adı için Meta kararı geldiğinde (`decision`: `APPROVED`/`REJECTED`/`DEFERRED`, `requested_name`, `rejection_reason`).
+- Üçü de **`*` joker aboneliğine dahil değildir** — almak için olay listesine açıkça ekleyin.
+
+### Belgeleme — Kullanıcı adı (V32)
+- `message.received` üst düzey `username` ve `contact.username` alanları (Meta `profile.username`) belgelendi: kullanıcı adı olmayan göndericide `null`; Meta kademeli açtığı için şu an çoğunlukla `null`.
+
 ## [2.16.0] — 2026-09-29
 
 > Opt-out (mesaj almak istemeyenler) için anlık olay + liste ucu. Tamamen additive; mevcut alanlar, olaylar ve `*` abonelikleri etkilenmez.

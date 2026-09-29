@@ -114,6 +114,9 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | `message.history` ⁿ | Coexistence geçmiş aktarımı mesajı (bkz. [11-gelismis.md](11-gelismis.md)) |
 | `number.status_changed` ⁿ | Numara bağlandı / koptu / işaretlendi / kısıtlandı |
 | `contact.opt_out_changed` ⁿ | Kişinin mesaj alma izni (opt-out) değişti — "RET" / "ONAY" ya da panelden değişiklik (v2.16.0) |
+| `template.category_changed` ⁿ | Meta şablonun kategorisini değiştirdi (ör. UTILITY → MARKETING) (v2.17.0) |
+| `template.quality_changed` ⁿ | Şablonun kalite puanı değişti (v2.17.0) |
+| `number.name_changed` ⁿ | Numaranın görünen adı için Meta kararı geldi (v2.17.0) |
 | `credit.low` ⁿ | Mesaj kredisi bakiyesi eşiğin altına düştü (eşik hesap ayarından — varsayılan panelde tanımlı) |
 | `credit.exhausted` ⁿ | Mesaj kredisi tükendi — gönderim engellendi |
 | `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
@@ -203,7 +206,7 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 | `wamid` | WhatsApp mesaj kimliği |
 | `from` | Gönderenin telefonu (E.164, `+` olmadan). Telefonu gizli kullanıcılarda `null` |
 | `user_id` | WhatsApp kullanıcı kimliği (BSUID). `from` `null` ise gönderen kimliği budur |
-| `username` | WhatsApp kullanıcı adı (varsa) |
+| `username` | WhatsApp kullanıcı adı (Meta `profile.username`); kullanıcı adı olmayan göndericide `null`. Meta kullanıcı adlarını kademeli açtığı için şu an çoğunlukla `null` gelir — eşleştirmede telefon / `user_id`'yi esas alın. Aynı değer `contact.username`'de de bulunur |
 | `name` | Kişinin WhatsApp profil adı |
 | `type` | `text` · `image` · `video` · `audio` · `document` · `sticker` · `button` · `interactive` … |
 | `text` | Mesaj metni; medyada açıklama (caption), açıklama yoksa boş |
@@ -270,6 +273,9 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `credit.exhausted` | `balance` (`0`), `unit` (`messages`), `occurred_at` |
 | `quality.changed` | `phone` (numaranız), `quality` (`GREEN` / `YELLOW` / `RED`) |
 | `contact.opt_out_changed` | `contact_id` (int\|null), `phone` (E.164, `+90…`), `opted_out` (bool), `previous_opted_out` (bool\|null — kişi kaydı yoksa `null`), `source` (`whatsapp_ret`/`whatsapp_onay`/`admin_override`/`automation`/`panel`/`panel_bulk`), `phone_number_id` (string\|null — yalnız WhatsApp RET/ONAY'da dolu), `changed_at` (ISO 8601). Yalnız bayrak gerçekten değiştiğinde gönderilir |
+| `template.category_changed` | `template_id` (int), `meta_template_id` (str\|null), `name`, `language`, `waba_id`, `previous_category` (str\|null), `new_category` (`UTILITY`/`MARKETING`/`AUTHENTICATION`), `correct_category` (str\|null), `occurred_at`. Şablonun `category` alanı kendiliğinden güncellenir (`GET /wa/templates` yeni değeri döner) |
+| `template.quality_changed` | `template_id`, `meta_template_id`, `name`, `language`, `category`, `waba_id`, `previous_quality_score`, `new_quality_score` (`GREEN`/`YELLOW`/`RED`/`UNKNOWN`), `occurred_at`. Yalnız puan gerçekten değiştiğinde gönderilir |
+| `number.name_changed` | `phone_number_id`, `display_phone_number`, `decision` (`APPROVED`/`REJECTED`/`DEFERRED`/`null`), `requested_name` (str\|null), `rejection_reason` (str\|null), `occurred_at` |
 | `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
 
 `errors` başarılı durumlarda `null`, `message.status.failed`'da Meta'nın hata listesidir:

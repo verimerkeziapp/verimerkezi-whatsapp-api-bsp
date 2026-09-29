@@ -122,7 +122,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
 | **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
-| **20 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `contact.opt_out_changed`) | Evet |
+| **23 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`) | Evet |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
 | **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (mesaj gönderimi ve `/messages/read` ayrı sayaçlarda 120/dk; medya indirme ayrı sayaç: 60/dk) |
 | **Cursor pagination** (stateless) | Evet — `/contacts`, `/credit/transactions` (opak cursor), `/templates`, `/messages`, `/media` (tamsayı cursor) — yanıt zarfı uca göre değişir, bkz. [08](docs/08-pagination.md) |
