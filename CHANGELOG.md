@@ -2,6 +2,21 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.16.0] — 2026-09-29
+
+> Opt-out (mesaj almak istemeyenler) için anlık olay + liste ucu. Tamamen additive; mevcut alanlar, olaylar ve `*` abonelikleri etkilenmez.
+
+### Eklenenler — Opt-out olayı ve listesi (V25)
+- **Yeni webhook olayı `contact.opt_out_changed`:** kişinin `opted_out` bayrağı gerçekten değiştiğinde gönderilir. `data`: `contact_id`, `phone` (E.164), `opted_out`, `previous_opted_out`, `source` (`whatsapp_ret`/`whatsapp_onay`/`admin_override`/`automation`/`panel`/`panel_bulk`), `phone_number_id` (yalnız WhatsApp RET/ONAY'da), `changed_at`. Zarf diğer olaylarla aynı. **`*` joker aboneliğine dahil değildir** — almak için olay listesine açıkça ekleyin.
+- **Yeni uç `GET /wa/contacts/opted-out`** (scope `contacts:read`): reddedenler listesi; `limit` 1–200 (vars. 50), opak `cursor`, `since` (ISO 8601, `opted_out_at >= since`), sıralama `id desc`. Geçersiz `since` → `422 invalid_request` (`field: "since"`).
+- **`GET /wa/contacts`:** yanıtta `opted_out_at` alanı ve opsiyonel `?opted_out=true|false` süzgeci (geriye dönük uyumlu).
+
+### Güvenlik — API anahtarı scope doğrulaması (V18)
+- Anahtar oluşturma isteğinde verilen scope'ların **hiçbiri geçerli değilse istek reddedilir**. Geçerli ve geçersiz adlar karışık verilirse geçersizler yok sayılır.
+
+### Düzeltmeler — Sayfalama dokümanı
+- `docs/08`: genel `data` + `pagination` zarfı örneği yanlıştı. Liste uçlarının gerçek zarfları uç bazında belgelendi (`contacts` / `transactions` / `templates` / `data` / `media` + `paging`). `/templates` cursor'ının tamsayı olduğu eklendi. "Tüm kayıtları çekme" SDK örnekleri doğru alanları (`contacts`, `next_cursor`) okuyacak ve PHP imzasına uyacak şekilde düzeltildi. API davranışı değişmedi.
+
 ## [2.15.2] — 2026-09-29
 
 > Yalnız doküman düzeltmesi. **API davranışı değişmedi.**

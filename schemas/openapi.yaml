@@ -66,6 +66,7 @@ components:
         tags: { type: array, items: { type: string } }
         source: { type: string }
         opted_out: { type: boolean }
+        opted_out_at: { type: string, format: date-time, nullable: true }
         created_at: { type: string, format: date-time }
 
     Template:
@@ -334,6 +335,10 @@ paths:
         - in: query
           name: q
           schema: { type: string }
+        - in: query
+          name: opted_out
+          description: Filter by opt-out state (optional).
+          schema: { type: boolean }
       responses:
         '200':
           description: OK
@@ -375,6 +380,57 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+
+  /contacts/opted-out:
+    get:
+      summary: List contacts who opted out (cursor pagination)
+      description: >-
+        Contacts whose opted_out flag is true, ordered by id desc. Use `since` for incremental sync
+        together with the `contact.opt_out_changed` webhook event. Added in 2.16.0.
+      tags: [Contacts]
+      security: [{ BearerAuth: [contacts:read] }]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - in: query
+          name: cursor
+          description: Opaque cursor (same format as /contacts).
+          schema: { type: string }
+        - in: query
+          name: since
+          description: ISO 8601; only contacts with opted_out_at >= since.
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        phone: { type: string, example: "+905551234567" }
+                        name: { type: string, nullable: true }
+                        opted_out: { type: boolean }
+                        opted_out_at: { type: string, format: date-time, nullable: true }
+                        reason: { type: string, nullable: true }
+                  next_cursor: { type: string, nullable: true }
+                  has_more: { type: boolean }
+        '401': { description: Invalid or missing API key }
+        '403': { description: Missing contacts:read scope }
+        '422':
+          description: Invalid `since` (error.field = "since")
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '429': { description: Rate limited }
 
   /contacts/bulk:
     post:

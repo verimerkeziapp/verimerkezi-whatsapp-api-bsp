@@ -115,17 +115,17 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Sağlık / izleme** (kuyruk, teslim gecikmesi p95) | Evet — `GET /health` |
 | **Şablon yönetimi** (oluştur / doğrula / ayrıntı / düzenle / sil, süzgeç + sayfalama) | Evet — `POST` / `GET` / `PATCH` / `DELETE /templates`, `POST /templates/validate` |
 | **Dinamik URL butonu** (şablon butonunda `{{1}}` → her alıcıya özel link) | Evet — `POST /messages` `button` bileşeni |
-| **Kişi rehberi** (ekle / toplu ekle / listele) | Evet — `POST /contacts`, `/contacts/bulk`, `GET /contacts` |
+| **Kişi rehberi** (ekle / toplu ekle / listele / reddedenler) | Evet — `POST /contacts`, `/contacts/bulk`, `GET /contacts`, `GET /contacts/opted-out` |
 | **Hesap & numaralar** (`GET /me`, `GET /numbers`) | Evet |
 | **Raporlar** (`GET /reports/summary`) | Evet |
 | **Kredi** (`GET /credit/balance\|packages\|usage\|transactions`) | Evet |
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
 | **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
-| **19 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`) | Evet |
+| **20 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `contact.opt_out_changed`) | Evet |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
 | **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (mesaj gönderimi ve `/messages/read` ayrı sayaçlarda 120/dk; medya indirme ayrı sayaç: 60/dk) |
-| **Cursor pagination** (stateless) | Evet — `/contacts`, `/credit/transactions` (opak cursor), `/messages`, `/media` (tamsayı cursor), `/templates` |
+| **Cursor pagination** (stateless) | Evet — `/contacts`, `/credit/transactions` (opak cursor), `/templates`, `/messages`, `/media` (tamsayı cursor) — yanıt zarfı uca göre değişir, bkz. [08](docs/08-pagination.md) |
 | **Tier auto-sync** (TIER_50 -> 250 -> 1K -> 10K -> 100K -> UNLIMITED) | Evet |
 | **Multi-tenant izolasyon** (her API key tek müşteri) | Evet |
 

@@ -113,6 +113,7 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | `message.sent` ⁿ | API dışı giden mesaj (panel / otomasyon / kampanya / opt-out) — `data.source` kaynağı belirtir |
 | `message.history` ⁿ | Coexistence geçmiş aktarımı mesajı (bkz. [11-gelismis.md](11-gelismis.md)) |
 | `number.status_changed` ⁿ | Numara bağlandı / koptu / işaretlendi / kısıtlandı |
+| `contact.opt_out_changed` ⁿ | Kişinin mesaj alma izni (opt-out) değişti — "RET" / "ONAY" ya da panelden değişiklik (v2.16.0) |
 | `credit.low` ⁿ | Mesaj kredisi bakiyesi eşiğin altına düştü (eşik hesap ayarından — varsayılan panelde tanımlı) |
 | `credit.exhausted` ⁿ | Mesaj kredisi tükendi — gönderim engellendi |
 | `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
@@ -268,6 +269,7 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `credit.low` | `balance` (kalan mesaj kredisi), `threshold` (uyarı eşiği), `unit` (`messages`), `occurred_at` |
 | `credit.exhausted` | `balance` (`0`), `unit` (`messages`), `occurred_at` |
 | `quality.changed` | `phone` (numaranız), `quality` (`GREEN` / `YELLOW` / `RED`) |
+| `contact.opt_out_changed` | `contact_id` (int\|null), `phone` (E.164, `+90…`), `opted_out` (bool), `previous_opted_out` (bool\|null — kişi kaydı yoksa `null`), `source` (`whatsapp_ret`/`whatsapp_onay`/`admin_override`/`automation`/`panel`/`panel_bulk`), `phone_number_id` (string\|null — yalnız WhatsApp RET/ONAY'da dolu), `changed_at` (ISO 8601). Yalnız bayrak gerçekten değiştiğinde gönderilir |
 | `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
 
 `errors` başarılı durumlarda `null`, `message.status.failed`'da Meta'nın hata listesidir:
