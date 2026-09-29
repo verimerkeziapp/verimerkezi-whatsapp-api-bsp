@@ -34,7 +34,7 @@ Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsin
 
 Yukarıdakilere ek olarak geçerli scope adları: `templates:write`, `webhooks:read`, `webhooks:write`, `campaigns:read`, `campaigns:write`, `automation:read`, `automation:write`, `inbox:write`.
 
-> **Öneri:** Anahtar oluştururken ihtiyacınız olan scope'ları her zaman **açıkça seçin**.
+> **Öneri:** Anahtar oluştururken ihtiyacınız olan scope'ları her zaman **açıkça seçin**. Yalnız geçersiz scope adlarıyla yapılan anahtar oluşturma isteği reddedilir; geçerli ve geçersiz adlar karışık verilirse geçersiz olanlar yok sayılır.
 
 > **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:send` + `templates:read`, gelen medyayı indiren bir entegrasyon için `messages:read` yeterlidir.
 

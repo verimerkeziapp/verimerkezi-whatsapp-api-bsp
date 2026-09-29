@@ -1,6 +1,6 @@
 # 08 · Pagination (Cursor-based)
 
-Veri Merkezi listeleme endpoint'lerinde **cursor** pagination kullanır (cursor biçimi uca göre değişir — bkz. [Cursor Yapısı](#cursor-yapısı)). `offset` veya sayfa numarası yoktur — bunun yerine her yanıt **bir sonraki sayfa için cursor** döner.
+Veri Merkezi listeleme endpoint'lerinde **cursor** pagination kullanır. `offset` veya sayfa numarası yoktur — bunun yerine her yanıt **bir sonraki sayfa için cursor** döner. Cursor biçimi ve yanıt zarfı **uca göre değişir** (bkz. [Uç bazında yanıt zarfı](#uç-bazında-yanıt-zarfı)).
 
 ## Niye Cursor?
 
@@ -22,15 +22,12 @@ curl "https://api.verimerkezi.app/wa/contacts?limit=50" \
 ```json
 {
  "ok": true,
- "data": [
- { "id": 100, "phone_e164": "..." },
- { "id": 99, "phone_e164": "..." },
- ...
+ "contacts": [
+ { "id": 100, "phone": "+905551234567", "name": "Ayşe Yılmaz" },
+ { "id": 99, "phone": "+905552223344", "name": "Mehmet Kaya" }
  ],
- "pagination": {
  "next_cursor": "eyJpZCI6NTEsImsiOiJpZCIsImQiOiJkZXNjIn0",
  "has_more": true
- }
 }
 ```
 
@@ -50,13 +47,26 @@ curl "https://api.verimerkezi.app/wa/contacts?limit=50&cursor=eyJpZCI6NTEsImsiOi
 ```json
 {
  "ok": true,
- "data": [...],
- "pagination": {
+ "contacts": [],
  "next_cursor": null,
  "has_more": false
- }
 }
 ```
+
+## Uç Bazında Yanıt Zarfı
+
+Tüm yanıtlar `"ok": true` ile başlar; liste alanının adı ve cursor'ın yeri uca göre farklıdır:
+
+| Endpoint | Liste alanı | Cursor alanı | Cursor tipi |
+|---|---|---|---|
+| `GET /wa/contacts` | `contacts` | `next_cursor` (+ `has_more`) | opak string |
+| `GET /wa/contacts/opted-out` | `contacts` | `next_cursor` (+ `has_more`) | opak string |
+| `GET /wa/credit/transactions` | `transactions` | `next_cursor` (+ `has_more`) | opak string |
+| `GET /wa/templates` | `templates` | `next_cursor` (+ `has_more`) | tamsayı |
+| `GET /wa/messages` | `data` (+ `phone_number_id`) | `next_cursor` (+ `has_more`) | tamsayı |
+| `GET /wa/media` | `media` | **`paging.next_cursor`** (+ `paging.has_more`, `paging.limit`) | tamsayı |
+
+> DIKKAT: `/wa/media` yanıtında cursor **iç içe** `paging` nesnesindedir: `{ "ok": true, "media": [...], "paging": { "limit": 50, "has_more": true, "next_cursor": 812 } }`.
 
 ## Tüm Kayıtları Çekme
 
@@ -65,11 +75,9 @@ curl "https://api.verimerkezi.app/wa/contacts?limit=50&cursor=eyJpZCI6NTEsImsiOi
 $allContacts = [];
 $cursor = null;
 do {
- $params = ['limit' => 100];
- if ($cursor) $params['cursor'] = $cursor;
- $response = $vm->listContacts($params);
- $allContacts = array_merge($allContacts, $response['data']);
- $cursor = $response['pagination']['next_cursor'] ?? null;
+ $response = $vm->listContacts($cursor, 200);
+ $allContacts = array_merge($allContacts, $response['contacts']);
+ $cursor = $response['next_cursor'] ?? null;
 } while ($cursor);
 
 echo count($allContacts) . " kişi yüklendi\n";
@@ -80,9 +88,9 @@ echo count($allContacts) . " kişi yüklendi\n";
 const all = [];
 let cursor = null;
 do {
- const r = await vm.listContacts({ limit: 100, cursor });
- all.push(...r.data);
- cursor = r.pagination.next_cursor;
+ const r = await vm.listContacts({ limit: 200, cursor });
+ all.push(...r.contacts);
+ cursor = r.next_cursor;
 } while (cursor);
 console.log(`${all.length} kişi yüklendi`);
 ```
@@ -92,9 +100,9 @@ console.log(`${all.length} kişi yüklendi`);
 all_contacts = []
 cursor = None
 while True:
- r = vm.list_contacts(limit=100, cursor=cursor)
- all_contacts.extend(r['data'])
- cursor = r['pagination']['next_cursor']
+ r = vm.list_contacts(limit=200, cursor=cursor)
+ all_contacts.extend(r['contacts'])
+ cursor = r.get('next_cursor')
  if not cursor:
  break
 print(f"{len(all_contacts)} kişi yüklendi")
@@ -102,36 +110,27 @@ print(f"{len(all_contacts)} kişi yüklendi")
 
 ## Cursor Yapısı
 
-`/contacts` ve `/credit/transactions` cursor'ı base64-encoded JSON'dır (opaque — değiştirmeyin). `/messages` ve `/media` cursor'ı ise **tamsayıdır** (önceki sayfanın son kaydının `id`'si; sonraki sayfa bu değerden küçük `id`'leri döner). Her durumda yalnızca API'nin döndürdüğü `next_cursor` değerini kullanın.
+- **Opak cursor** (`/contacts`, `/contacts/opted-out`, `/credit/transactions`): base64 kodlu bir değerdir. İçeriğine güvenmeyin, değiştirmeyin.
+- **Tamsayı cursor** (`/templates`, `/messages`, `/media`): önceki sayfanın son kaydının `id`'sidir; sonraki sayfa bu değerden küçük `id`'leri döner.
 
-Opak cursor örneği:
+> DIKKAT: Cursor'ı **manipüle etmeyin**. Her durumda yalnızca API'nin döndürdüğü değeri geri gönderin.
 
-```
-eyJpZCI6NTEsImsiOiJpZCIsImQiOiJkZXNjIn0
-v base64 decode v
-{"id":51,"k":"id","d":"desc"}
-```
-
-- `id`: son kaydın ID'si
-- `k`: sıralama alanı (`id`, `created_at`, vs.)
-- `d`: sıra yönü (`asc` / `desc`)
-
-> DIKKAT: Cursor'ı **manipüle etmeyin**. Sadece API'nin döndürdüğü değeri geri gönderin.
-
-## Cursor Destekleyen Endpoint'ler
+## Sıralama
 
 | Endpoint | Sıralama |
 |---|---|
 | `GET /wa/contacts` | `id desc` |
+| `GET /wa/contacts/opted-out` | `id desc` |
 | `GET /wa/credit/transactions` | `id desc` |
-| `GET /wa/messages` | `id desc` (tamsayı cursor) |
-| `GET /wa/media` | `id desc` (tamsayı cursor) |
+| `GET /wa/messages` | `id desc` |
+| `GET /wa/media` | `id desc` |
 
 ## Limit Sınırları
 
 | Endpoint | Default | Max |
 |---|---|---|
 | `/wa/contacts` | 50 | 200 |
+| `/wa/contacts/opted-out` | 50 | 200 |
 | `/wa/credit/transactions` | 50 | 200 |
 | `/wa/messages` | 50 | 100 |
 | `/wa/media` | 50 | 100 |
@@ -158,14 +157,15 @@ let currentCursor = null;
 async function nextPage() {
  cursorStack.push(currentCursor);
  const r = await vm.listContacts({ limit: 20, cursor: currentCursor });
- currentCursor = r.pagination.next_cursor;
- return r.data;
+ currentCursor = r.next_cursor;
+ return r.contacts;
 }
 
 async function previousPage() {
  cursorStack.pop(); // current
  const prev = cursorStack.pop();
  currentCursor = prev;
- return await vm.listContacts({ limit: 20, cursor: prev });
+ const r = await vm.listContacts({ limit: 20, cursor: prev });
+ return r.contacts;
 }
 ```

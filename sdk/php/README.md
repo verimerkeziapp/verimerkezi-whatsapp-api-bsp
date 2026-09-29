@@ -173,7 +173,7 @@ Webhook abonelikleri artık panele girmeden koddan yönetilebilir. **`secret`
 yalnızca `createWebhook` yanıtında bir kez döner** — güvenli saklayın.
 
 `*` (joker) yalnızca eski olayları kapsar; `credit.low`, `credit.exhausted`,
-`message.revoked/edited/history/sent`, `number.status_changed` gibi yeni olayları
+`message.revoked/edited/history/sent`, `number.status_changed`, `contact.opt_out_changed` gibi yeni olayları
 almak için bunları `events` listesine açıkça ekleyin.
 
 ```php
