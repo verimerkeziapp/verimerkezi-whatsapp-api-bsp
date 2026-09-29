@@ -10,6 +10,7 @@ API, **dakikalık fixed-window** limit uygular. Her API anahtarı için **dakika
 |---|---|
 | Genel istekler (GET/POST/PATCH/DELETE) | 120 / dakika |
 | Mesaj gönderim (POST /wa/messages) | 120 / dakika (ayrı sayaç) |
+| Okundu / yazıyor (POST /wa/messages/read) | 120 / dakika (ayrı sayaç — mesaj gönderim kotasını tüketmez) |
 | Medya indirme (GET / HEAD /wa/media…) | 60 / dakika (ayrı sayaç) |
 
 > Yüksek hacimli kullanım için anahtar bazında limit artırımı: bilgi@verimerkezi.app

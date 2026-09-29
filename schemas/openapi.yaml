@@ -5,7 +5,8 @@ info:
     Tech Provider REST API for sending WhatsApp Business Cloud messages,
     managing contacts, templates, and business profiles.
 
-    Per-message credit model. Test mode keys (`vmk_test_...`) are free.
+    Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
+    (the returned wamid is a fake `test.<hex>` id).
   version: "2.1.0"
   contact:
     name: Veri Merkezi
@@ -75,7 +76,7 @@ components:
         name: { type: string }
         language: { type: string, example: tr }
         category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
-        status: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED] }
+        status: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED, DISABLED] }
         components: { type: array, items: { type: object } }
         rejected_reason: { type: string, nullable: true }
         quality_score: { type: string, nullable: true }
@@ -203,7 +204,18 @@ paths:
                         — its parameters[0].text fills the trailing `{{1}}` of the template URL button
                         (one variable, at the end of the URL; API send only).
                       items: { type: object }
-                text: { type: string, description: "Plain text body. Only within the 24h customer service window." }
+                text:
+                  description: >-
+                    Plain text body, as a string or as an object `{ "body": "..." }` (the `body` value is used).
+                    A non-string body returns 422 invalid_request (field "text").
+                    Only within the 24h customer service window.
+                  oneOf:
+                    - { type: string }
+                    - type: object
+                      properties:
+                        body: { type: string }
+                        preview_url: { type: boolean }
+                      required: [body]
                 image:
                   type: object
                   description: "Image media. Provide a public https link (or Meta media id)."
@@ -410,7 +422,7 @@ paths:
       operationId: listTemplates
       security: [{ BearerAuth: [templates:read] }]
       parameters:
-        - { name: status, in: query, required: false, schema: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED] } }
+        - { name: status, in: query, required: false, schema: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, FLAGGED, PAUSED, DISABLED] } }
         - { name: category, in: query, required: false, schema: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] } }
         - { name: language, in: query, required: false, schema: { type: string } }
         - { name: q, in: query, required: false, schema: { type: string }, description: "Search in template name" }

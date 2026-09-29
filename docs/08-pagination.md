@@ -1,6 +1,6 @@
 # 08 · Pagination (Cursor-based)
 
-Veri Merkezi tüm listeleme endpoint'lerinde **opaque cursor** pagination kullanır. `offset` veya sayfa numarası yoktur — bunun yerine her yanıt **bir sonraki sayfa için cursor** döner.
+Veri Merkezi listeleme endpoint'lerinde **cursor** pagination kullanır (cursor biçimi uca göre değişir — bkz. [Cursor Yapısı](#cursor-yapısı)). `offset` veya sayfa numarası yoktur — bunun yerine her yanıt **bir sonraki sayfa için cursor** döner.
 
 ## Niye Cursor?
 
@@ -102,7 +102,9 @@ print(f"{len(all_contacts)} kişi yüklendi")
 
 ## Cursor Yapısı
 
-Cursor base64-encoded JSON'dır (opaque — değiştirmeyin):
+`/contacts` ve `/credit/transactions` cursor'ı base64-encoded JSON'dır (opaque — değiştirmeyin). `/messages` ve `/media` cursor'ı ise **tamsayıdır** (önceki sayfanın son kaydının `id`'si; sonraki sayfa bu değerden küçük `id`'leri döner). Her durumda yalnızca API'nin döndürdüğü `next_cursor` değerini kullanın.
+
+Opak cursor örneği:
 
 ```
 eyJpZCI6NTEsImsiOiJpZCIsImQiOiJkZXNjIn0
@@ -122,12 +124,18 @@ v base64 decode v
 |---|---|
 | `GET /wa/contacts` | `id desc` |
 | `GET /wa/credit/transactions` | `id desc` |
+| `GET /wa/messages` | `id desc` (tamsayı cursor) |
+| `GET /wa/media` | `id desc` (tamsayı cursor) |
 
 ## Limit Sınırları
 
 | Endpoint | Default | Max |
 |---|---|---|
-| `/wa/contacts` | 50 | 100 |
+| `/wa/contacts` | 50 | 200 |
+| `/wa/credit/transactions` | 50 | 200 |
+| `/wa/messages` | 50 | 100 |
+| `/wa/media` | 50 | 100 |
+| `/wa/templates` | 50 | 100 |
 
 ## Cursor + Filter
 

@@ -26,6 +26,8 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 
 > DIKKAT: Yalnızca **24 saat service window** içinde çalışır. Müşteri son 24 saatte mesaj atmadıysa şablon kullanın.
 
+> **Biçim:** `text` alanı düz metin (`"text": "Merhaba"`) ya da `{ "body": "..." }` nesnesi olarak gönderilebilir; nesnede `body` değeri kullanılır. `body` metin değilse `422 invalid_request` (`field: "text"`) döner.
+
 ```json
 {
  "phone_number_id": "1234567890",

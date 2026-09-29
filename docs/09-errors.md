@@ -25,7 +25,7 @@
 
 ## Hata Yanıt Formatı
 
-Tüm hatalar şu yapıyı izler:
+Hatalar şu yapıyı izler:
 
 ```json
 {
@@ -37,6 +37,8 @@ Tüm hatalar şu yapıyı izler:
  }
 }
 ```
+
+> **Not (mevcut durum):** `429` (hız sınırı) ve `503 rate_limit_unavailable` yanıtlarının gövdesinde şu an `ok` alanı **yoktur**; yalnız `{ "error": { ... } }` döner (`503` ile birlikte `Retry-After: 5`). Başarısızlığı `ok` alanı yerine **HTTP durum kodu** ile tespit edin.
 
 - `code` — makine-okunur hata kodu (aşağıdaki tabloya bakın)
 - `message` — Türkçe açıklama

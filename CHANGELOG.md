@@ -2,6 +2,20 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.15.1] — 2026-09-29
+
+> Yalnız doküman düzeltmesi: belgeler canlı kodla karşılaştırılıp eşitlendi. **API davranışı değişmedi.**
+
+### Düzeltmeler — Doküman ↔ kod tutarlılığı
+- **Test anahtarı (`vmk_test_*`):** "sandbox / test numarasıyla çalışır" ifadesi düzeltildi — mesaj Meta'ya gönderilmez, yanıttaki `wamid` sahtedir (`test.<hex>`).
+- **`text` biçimi:** `POST /messages`'ta `text` hem düz metin hem `{ "body": "..." }` nesnesi olarak kabul edilir; `body` metin değilse `422 invalid_request` (`field: "text"`). OpenAPI şeması buna göre güncellendi.
+- **Hız sınırı:** `POST /messages/read` kendi sayacındadır (120/dk) ve gönderim kotasını tüketmez (2.11.0) — tabloya eklendi.
+- **Scope'lar:** geçerli scope listesi tamamlandı (`templates:write`, `webhooks:*`, `campaigns:*`, `automation:*`, `inbox:write`).- **Sayfalama:** `/contacts` ve `/credit/transactions` en fazla 200, `/messages` `/media` `/templates` en fazla 100 (varsayılan hepsinde 50). `/messages` ve `/media` cursor'ı tamsayıdır; `/contacts` ve `/credit/transactions` cursor'ı opaktır.
+- **Şablon durumları:** `DRAFT` (dokümana) ve `DISABLED` (OpenAPI enum'una) eklendi.
+- **`GET /numbers`:** varsayılan yalnız `active`; `?status=all` ve tek durum süzgeci belgelendi.
+- **Hata zarfı:** `429` ve `503 rate_limit_unavailable` gövdelerinde şu an `ok` alanı bulunmadığı notu eklendi.
+- **Webhook retry:** toplam deneme süresi "36 saat" → ≈ 38,6 saat (SSS).
+
 ## [2.15.0] — 2026-09-26
 
 > Webhook `button` alanı (hızlı yanıt / etkileşimli buton yanıtı). Tamamen additive; mevcut alanlar ve eşleştirme değişmedi.

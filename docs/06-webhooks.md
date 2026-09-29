@@ -490,6 +490,6 @@ Webhook'u canlıya almadan önce sahte bir `test.ping` olayı gönderebilirsiniz
 
 **S: Webhook URL'mi nasıl test ederim?C:** [webhook.site](https://webhook.site) veya [ngrok](https://ngrok.com) kullanarak public URL elde edip Veri Merkezi'ne kaydedin. Test ping ile sahte event gönderin.
 
-**S: HMAC doğrulama yapmazsam ne olur?C:** Bir saldırgan sahte event göndererek sisteminizi yanıltabilir. **Mutlaka doğrulayın.S: Webhook bir kere düşerse mesajları kaybeder miyim?C:** Hayır. Veri Merkezi 7 deneme + 36 saat içinde sunucunuzu denemeye devam eder. Dead-letter'a düşse bile panelden manuel replay edebilirsiniz.
+**S: HMAC doğrulama yapmazsam ne olur?C:** Bir saldırgan sahte event göndererek sisteminizi yanıltabilir. **Mutlaka doğrulayın.S: Webhook bir kere düşerse mesajları kaybeder miyim?C:** Hayır. Veri Merkezi 7 deneme boyunca (toplam ≈ 38,6 saat) sunucunuzu denemeye devam eder. Dead-letter'a düşse bile panelden manuel replay edebilirsiniz.
 
 **S: Aynı event birden fazla webhook'a gönderilebilir mi?C:** Evet. Birden fazla aktif subscription'ınız varsa her birine bağımsız iletilir.
