@@ -124,8 +124,8 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
 | **19 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`) | Evet |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
-| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (medya indirme ayrı sayaç: 60/dk) |
-| **Cursor pagination** (opaque, stateless) | Evet — `/contacts`, `/credit/transactions`, `/media`, `/templates` |
+| **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (mesaj gönderimi ve `/messages/read` ayrı sayaçlarda 120/dk; medya indirme ayrı sayaç: 60/dk) |
+| **Cursor pagination** (stateless) | Evet — `/contacts`, `/credit/transactions` (opak cursor), `/messages`, `/media` (tamsayı cursor), `/templates` |
 | **Tier auto-sync** (TIER_50 -> 250 -> 1K -> 10K -> 100K -> UNLIMITED) | Evet |
 | **Multi-tenant izolasyon** (her API key tek müşteri) | Evet |
 
@@ -134,7 +134,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 ## Güvenlik
 
 - **HTTPS only** — `https://api.verimerkezi.app/wa` (HTTP otomatik reddedilir)
-- **API key formatı:** `vmk_live_*` (production) / `vmk_test_*` (sandbox)
+- **API key formatı:** `vmk_live_*` (production) / `vmk_test_*` (test — Meta'ya gönderim yapılmaz, sahte `test.<hex>` wamid döner)
 - **Webhook imzası:** `X-VeriMerkezi-Signature-256: sha256=<hmac>` header'ı
 - **Replay koruması:** `X-VeriMerkezi-Timestamp` (5 dakikadan eski payload reddedilmeli)
 - **HMAC formülü:** `hash_hmac('sha256', timestamp + '.' + raw_body, webhook_secret)`

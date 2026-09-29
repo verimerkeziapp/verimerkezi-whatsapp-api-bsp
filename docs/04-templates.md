@@ -137,6 +137,7 @@ Onaydan sonra kodu göndermek için bkz. [03-messages.md](03-messages.md#otp--do
 
 | Durum | Açıklama |
 |---|---|
+| `DRAFT` | Taslak (henüz Meta'ya gönderilmedi) |
 | `PENDING` | Meta inceliyor (5-30 dk) |
 | `APPROVED` | Onaylandı, kullanıma hazır |
 | `REJECTED` | Reddedildi (`rejected_reason` alanına bakın) |

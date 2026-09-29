@@ -13,7 +13,7 @@ Authorization: Bearer vmk_live_<32-char>
 | Prefix | Ortam | Açıklama |
 |---|---|---|
 | `vmk_live_*` | Production | Gerçek WhatsApp mesajları gönderilir, faturalandırılır |
-| `vmk_test_*` | Sandbox | Test numarasıyla çalışır, ücretsiz |
+| `vmk_test_*` | Test | Mesaj **Meta'ya gönderilmez** (gerçek alıcıya gitmez), ücretsizdir; yanıttaki `wamid` sahtedir (`test.<hex>` biçiminde) |
 
 ## Scope (İzinler)
 
@@ -31,6 +31,10 @@ Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsin
 | `profile:read` | İşletme profili okuma |
 | `profile:write` | İşletme profili güncelleme |
 | `reports:read` | Raporlar, analitik |
+
+Yukarıdakilere ek olarak geçerli scope adları: `templates:write`, `webhooks:read`, `webhooks:write`, `campaigns:read`, `campaigns:write`, `automation:read`, `automation:write`, `inbox:write`.
+
+> **Öneri:** Anahtar oluştururken ihtiyacınız olan scope'ları her zaman **açıkça seçin**.
 
 > **En az ayrıcalık ilkesi:** Sadece ihtiyacınız olan scope'ları açın. Mesaj gönderim botu için `messages:send` + `templates:read`, gelen medyayı indiren bir entegrasyon için `messages:read` yeterlidir.
 

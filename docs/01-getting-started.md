@@ -36,7 +36,7 @@ Veri Merkezi, Meta'nın resmî **Embedded Signup v4** akışını kullanır:
  - `reports:read` — raporlar ve analitik
 3. **Oluştur**'a basın -> anahtar **bir kez** gösterilir:
  - `vmk_live_abc123...` (production)
- - `vmk_test_xyz789...` (sandbox)
+ - `vmk_test_xyz789...` (test — mesaj Meta'ya gönderilmez, sahte `test.<hex>` wamid döner)
 
 > DIKKAT: **Anahtarı güvenli yerde saklayın.** Tekrar gösterilmez. Kaybederseniz iptal edip yenisini oluşturun.
 
@@ -94,7 +94,7 @@ Mesaj gönderiminin yanında, hesabınızı yönetmek için aşağıdaki **salt-
 | Endpoint | Açıklama | Scope |
 |---|---|---|
 | `GET /me` | Hesap bilgisi + bağlı numaralar özeti | — |
-| `GET /numbers` | Bağlı WhatsApp numaralarınız (tier, kalite puanı, durum) | — |
+| `GET /numbers` | Bağlı WhatsApp numaralarınız (tier, kalite puanı, durum). Varsayılan olarak yalnız `active` numaralar döner; `?status=all` tümü, `?status=pending\|active\|disabled\|banned\|disconnected` tek durum | — |
 
 ```bash
 curl https://api.verimerkezi.app/wa/numbers \
