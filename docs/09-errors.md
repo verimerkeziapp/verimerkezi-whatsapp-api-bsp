@@ -74,6 +74,7 @@ Hatalar şu yapıyı izler:
 | `history_not_applicable` | 422 | Numara coexistence değil (geçmiş aktarımı yok) |
 | `media_invalid_format` | 422 | Desteklenmeyen MIME |
 | `invalid_media_id` | 400 | `media_id` yalnızca rakamlardan oluşmalı |
+| `invalid_media` | 422 | Medya nesnesi geçersiz (ör. `audio.voice` boolean değil — `field: "audio.voice"`) |
 | `media_not_found` | 404 | Medya kaydı yok ya da sizin hesabınıza ait değil |
 | `media_file_missing` | 404 | Kayıt var, dosya depoda bulunamadı |
 | `range_not_satisfiable` | 416 | İstenen bayt aralığı geçersiz |

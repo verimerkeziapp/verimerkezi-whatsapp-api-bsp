@@ -2,6 +2,18 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.18.0] — 2026-10-02
+
+> Sesli not desteği + OGG/Opus düzeltmesi. Geriye dönük uyumlu; mp3/m4a/aac/amr gönderimleri eskisi gibi çalışır.
+
+### Eklenenler — `audio.voice`
+- `POST /wa/messages` (`type: "audio"`): opsiyonel `audio.voice` (boolean). `true` → WhatsApp **sesli not** olarak gönderilir (Meta kuralı: yalnız OGG/Opus, tercihen mono). Boolean dışı değer → `422 invalid_media` (`field: "audio.voice"`).
+- `voice` verilmezse: medya Meta'da `audio/ogg` kayıtlıysa veya `link` `.ogg`/`.opus` ile bitiyorsa otomatik `voice: true` eklenir.
+
+### Düzeltmeler
+- **fix:** OGG/Opus sesli notlar alıcıda "artık mevcut değil" görünüyordu.
+- `POST /wa/media`: dosya Meta'ya türe uygun uzantılı adla yüklenir (ör. `.ogg`). Yanıt biçimi değişmedi.
+
 ## [2.17.0] — 2026-09-30
 
 > Üç yeni webhook olayı + kullanıcı adı alanının açıklaması. Tamamen additive; mevcut alanlar, olaylar ve `*` abonelikleri etkilenmez.
