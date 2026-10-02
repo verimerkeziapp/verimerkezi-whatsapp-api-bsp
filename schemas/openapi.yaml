@@ -234,6 +234,13 @@ paths:
                   description: "Audio media. Provide a public https link (or Meta media id)."
                   properties:
                     link: { type: string, format: uri, example: "https://example.com/audio.mp3" }
+                    id: { type: string, description: "Meta media id (from POST /media)." }
+                    voice:
+                      type: boolean
+                      description: >-
+                        Send as a WhatsApp voice note (OGG/Opus only, preferably mono). If omitted, set
+                        automatically to true when the media is audio/ogg on Meta or the link ends with
+                        .ogg/.opus. Non-boolean value -> 422 invalid_media (field "audio.voice").
                 document:
                   type: object
                   description: "Document media. Provide a public https link (or Meta media id)."

@@ -278,7 +278,18 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 - Medya nesnesi (`image` / `video` / `audio` / `document`) içinde kaynak **ya** `link` (herkese açık `https://` URL) **ya da** `id` (önceden yüklenmiş Meta media id) bulunur — biri zorunludur.
 - `caption` — yalnızca `image`, `video` ve `document` için geçerlidir (görünen açıklama metni).
 - `filename` — yalnızca `document` için; alıcıda görünen dosya adı.
-- `audio` — ne `caption` ne `filename` alır (yalnızca `link`/`id`).
+- `audio` — ne `caption` ne `filename` alır (yalnızca `link`/`id` ve opsiyonel `voice`).
+- `audio.voice` — opsiyonel boolean. `true` ise ses, WhatsApp'ta **sesli not** (mikrofon simgeli, dalga formlu) olarak gönderilir; Meta kuralı gereği dosya **OGG/Opus** (tercihen mono) olmalıdır. `true`/`false` dışı değer → `422 invalid_media` (`field: "audio.voice"`).
+  - Verilmezse: medya Meta'da `audio/ogg` olarak kayıtlıysa veya `link` `.ogg` / `.opus` ile bitiyorsa API otomatik `voice: true` ekler. Diğer ses türleri (mp3, m4a, aac, amr) normal ses dosyası olarak gider.
+
+```json
+{
+ "phone_number_id": "1234567890",
+ "to": "905551112233",
+ "type": "audio",
+ "audio": { "id": "<media_id>", "voice": true }
+}
+```
 
 ### Meta boyut ve format limitleri
 
