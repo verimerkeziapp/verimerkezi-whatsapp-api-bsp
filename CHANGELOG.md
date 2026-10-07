@@ -2,6 +2,14 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.19.2] — 2026-10-08
+
+> Yalnız doküman düzeltmesi. **API davranışı değişmedi.**
+
+### Düzeltmeler
+- **`PATCH /account/retention`:** saklama süreleri hesap bazında saklanır; **şu an yalnız arama kayıtlarına uygulanır** (mesaj ve medya silme henüz etkin değil). OpenAPI özeti ve `docs/11` buna göre düzeltildi.
+- Örneklerdeki `phone_number_id` değerleri yer tutucuyla (`1234567890`) değiştirildi (`docs/04`, SDK README'leri).
+
 ## [2.19.1] — 2026-10-08
 
 > Belgeler, OpenAPI, SDK ve Postman tek sürümde hizalandı. **API davranışı değişmedi.**

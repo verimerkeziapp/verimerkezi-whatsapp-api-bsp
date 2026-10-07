@@ -1263,7 +1263,7 @@ paths:
 
   /account/retention:
     patch:
-      summary: KVKK data retention periods (days); expired data is purged periodically
+      summary: "KVKK data retention periods (days). Stored per account; currently enforced for call records only (message and media purge not yet active)"
       tags: [Account]
       operationId: updateRetention
       security: [{ BearerAuth: ["profile:write"] }]

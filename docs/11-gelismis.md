@@ -227,7 +227,7 @@ Ayrıntılı istek/yanıt şemaları için bkz. [schemas/openapi.yaml](../schema
 | Yöntem | Yol | Scope | Açıklama |
 |---|---|---|---|
 | `PATCH` | `/wa/account/settings` | `profile:write` | Hesap geneli ayarlar: `default_automation_enabled`, `default_opt_out_autoreply_enabled` (yeni bağlanan numaralara uygulanır), `revoke_edit_clean`. Değerler `GET /wa/me` → `account_settings` altında görünür |
-| `PATCH` | `/wa/account/retention` | `profile:write` | KVKK saklama süreleri (gün): `messages_days`, `media_days`, `webhook_deliveries_days` |
+| `PATCH` | `/wa/account/retention` | `profile:write` | KVKK saklama süreleri (gün): `messages_days`, `media_days`, `webhook_deliveries_days`. Ayarlar hesap bazında saklanır; **şu an yalnız arama kayıtlarına uygulanır** (mesaj ve medya silme henüz etkin değil) |
 | `POST` | `/wa/privacy/erasure` | `profile:write` | KVKK silme / unutulma hakkı: `{ phone_number_id?, wa_id \| user_id }` → `202`; tamamlanınca `privacy.erasure_completed` olayı. Kişinin mesaj gövdeleri, medyası, konuşma bilgileri, webhook teslim gövdeleri, idempotency yanıtları ve arama kayıtlarındaki numarası silinir; opt-out/onay kaydı korunur. İdempotent |
 | `POST` | `/wa/test/inbound` | — (yalnız `vmk_test_`) | Sandbox: sahte gelen mesaj (`type`: `text` / `revoke` / `edit`) enjekte eder ve imzalı olayı webhook aboneliğinize gönderir. Meta'ya istek gitmez |
 | `POST` | `/wa/webhooks/{id}/rotate-secret` | `webhooks:write` | Webhook secret'ını yerinde döndürür (geçiş süresi + çift imza) — bkz. [06-webhooks.md](06-webhooks.md) ve CHANGELOG 2.11.0 |
