@@ -15,7 +15,7 @@
 
 const crypto = require('crypto');
 
-const VERSION = '2.19.2';
+const VERSION = '2.20.0';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {
@@ -332,9 +332,57 @@ class VeriMerkeziClient {
  return this._post('/calls/' + encodeURIComponent(id) + '/' + action, body);
  }
 
+ // ── Formlar (WhatsApp Flows) — 2026-10-08 ─────────────────────────────
+ // Formlar WABA düzeyindedir. Yönetim kredisiz; form mesajı (sendFlow) normal mesaj gibi 1 kredi.
+ // Olaylar: flow.completed / flow.status_changed ('*' kapsamaz — açıkça ekleyin).
+ // phoneNumberId (isteğe bağlı) Meta arayüzünde oluşturulmuş formu hesabınıza bağlamak içindir.
+ listFlows(phoneNumberId, { limit, after } = {}) {
+ const params = new URLSearchParams({ phone_number_id: phoneNumberId });
+ if (limit != null) params.set('limit', String(limit));
+ if (after) params.set('after', after);
+ return this._get('/flows?' + params.toString());
+ }
+ // categories: ['LEAD_GENERATION', ...]; flowJson: nesne ya da JSON metni (≤ 10 MB)
+ createFlow(phoneNumberId, name, categories, flowJson, endpointUri = null) {
+ const body = { phone_number_id: phoneNumberId, name, categories, flow_json: flowJson };
+ if (endpointUri) body.endpoint_uri = endpointUri;
+ return this._post('/flows', body);
+ }
+ getFlow(flowId, phoneNumberId = null) { return this._get(this._flowPath(flowId, '', phoneNumberId)); }
+ // Yalnız DRAFT form
+ updateFlowJson(flowId, flowJson, phoneNumberId = null) { return this._put(this._flowPath(flowId, '/json', phoneNumberId), { flow_json: flowJson }); }
+ publishFlow(flowId, phoneNumberId = null) { return this._post(this._flowPath(flowId, '/publish', phoneNumberId), {}); }
+ deprecateFlow(flowId, phoneNumberId = null) { return this._post(this._flowPath(flowId, '/deprecate', phoneNumberId), {}); }
+ // Yalnız DRAFT form
+ deleteFlow(flowId, phoneNumberId = null) { return this._delete(this._flowPath(flowId, '', phoneNumberId)); }
+ getFlowPreview(flowId, invalidate = false, phoneNumberId = null) {
+ const p = this._flowPath(flowId, '/preview', phoneNumberId);
+ return this._get(p + (invalidate ? (p.includes('?') ? '&' : '?') + 'invalidate=true' : ''));
+ }
+ // from/to: YYYY-MM-DD; metric: ENDPOINT_REQUEST_COUNT (varsayılan) ...; granularity: DAY | HOUR | LIFETIME
+ getFlowMetrics(flowId, { from, to, metric, granularity, phoneNumberId } = {}) {
+ const params = new URLSearchParams();
+ if (from) params.set('from', from);
+ if (to) params.set('to', to);
+ if (metric) params.set('metric', metric);
+ if (granularity) params.set('granularity', granularity);
+ if (phoneNumberId) params.set('phone_number_id', phoneNumberId);
+ const qs = params.toString();
+ return this._get('/flows/' + encodeURIComponent(flowId) + '/metrics' + (qs ? '?' + qs : ''));
+ }
+ // flow: { flow_id | flow_name, flow_token?, cta (≤20), body, header?, footer?, mode: 'published'|'draft', action?, screen, data? }
+ // Yanıttaki flow.flow_token, flow.completed olayında aynen döner.
+ sendFlow(phoneNumberId, to, flow) {
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'flow', flow });
+ }
+ _flowPath(flowId, suffix, phoneNumberId) {
+ return '/flows/' + encodeURIComponent(flowId) + suffix + (phoneNumberId ? '?phone_number_id=' + encodeURIComponent(phoneNumberId) : '');
+ }
+
  _get(path) { return this._request('GET', path); }
  _post(path, body) { return this._request('POST', path, body); }
  _patch(path, body) { return this._request('PATCH', path, body); }
+ _put(path, body) { return this._request('PUT', path, body); }
  _delete(path) { return this._request('DELETE', path); }
 
  async _request(method, path, body = null) {

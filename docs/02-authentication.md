@@ -33,6 +33,8 @@ Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsin
 | `reports:read` | Raporlar, analitik |
 | `calls:read` | Arama ayarları, arama izni durumu ve arama geçmişi okuma ([12-arama.md](12-arama.md)) |
 | `calls:write` | Arama ayarlarını değiştirme, arama başlatma / kabul / ret / sonlandırma, arama izni isteme |
+| `flows:read` | Formları (WhatsApp Flows) listeleme, ayrıntı, önizleme, metrik ([13-formlar.md](13-formlar.md)) |
+| `flows:write` | Form oluşturma, JSON güncelleme, yayınlama, kullanımdan kaldırma, silme |
 
 Yukarıdakilere ek olarak geçerli scope adları: `templates:write`, `webhooks:read`, `webhooks:write`, `campaigns:read`, `campaigns:write`, `automation:read`, `automation:write`, `inbox:write`.
 

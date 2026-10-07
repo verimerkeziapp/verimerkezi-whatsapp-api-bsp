@@ -1,0 +1,36 @@
+{
+  "version": "6.0",
+  "screens": [
+    {
+      "id": "TEKLIF",
+      "title": "Teklif bilgisi",
+      "terminal": true,
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextInput", "name": "ad", "label": "Ad Soyad", "required": true },
+          {
+            "type": "Dropdown",
+            "name": "brans",
+            "label": "Sigorta türü",
+            "required": true,
+            "data-source": [
+              { "id": "kasko", "title": "Kasko" },
+              { "id": "trafik", "title": "Trafik" },
+              { "id": "saglik", "title": "Sağlık" }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Gönder",
+            "on-click-action": {
+              "name": "complete",
+              "payload": { "ad": "${form.ad}", "brans": "${form.brans}" }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

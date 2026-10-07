@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.19.2)
+VeriMerkezi WhatsApp API — Python SDK (v2.20.0)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -15,7 +15,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.19.2'
+__version__ = '2.20.0'
 VERSION = __version__
 
 
@@ -341,9 +341,65 @@ class VeriMerkeziClient:
             return self._post('/calls/_/' + action, dict(body, call_id=cid))
         return self._post('/calls/' + quote(cid, safe='') + '/' + action, body)
 
+    # ── Formlar (WhatsApp Flows) — 2026-10-08 ─────────────────────────
+    # Formlar WABA düzeyindedir. Yönetim kredisiz; form mesajı (send_flow) normal mesaj gibi 1 kredi.
+    # Olaylar: flow.completed / flow.status_changed ('*' kapsamaz — açıkça ekleyin).
+    # phone_id (isteğe bağlı) Meta arayüzünde oluşturulmuş formu hesabınıza bağlamak içindir.
+    def list_flows(self, phone_id, limit=None, after=None) -> dict:
+        q = ['phone_number_id=' + quote(str(phone_id))]
+        if limit is not None: q.append('limit=' + str(int(limit)))
+        if after: q.append('after=' + quote(str(after)))
+        return self._get('/flows?' + '&'.join(q))
+
+    def create_flow(self, phone_id, name, categories, flow_json, endpoint_uri=None) -> dict:
+        """flow_json: dict ya da JSON metni (≤ 10 MB); categories: ['LEAD_GENERATION', ...]"""
+        body = {'phone_number_id': str(phone_id), 'name': name, 'categories': list(categories), 'flow_json': flow_json}
+        if endpoint_uri: body['endpoint_uri'] = endpoint_uri
+        return self._post('/flows', body)
+
+    def get_flow(self, flow_id, phone_id=None) -> dict:
+        return self._get(self._flow_path(flow_id, '', phone_id))
+
+    def update_flow_json(self, flow_id, flow_json, phone_id=None) -> dict:
+        """Yalnız DRAFT form."""
+        return self._put(self._flow_path(flow_id, '/json', phone_id), {'flow_json': flow_json})
+
+    def publish_flow(self, flow_id, phone_id=None) -> dict:
+        return self._post(self._flow_path(flow_id, '/publish', phone_id), {})
+
+    def deprecate_flow(self, flow_id, phone_id=None) -> dict:
+        return self._post(self._flow_path(flow_id, '/deprecate', phone_id), {})
+
+    def delete_flow(self, flow_id, phone_id=None) -> dict:
+        """Yalnız DRAFT form."""
+        return self._delete(self._flow_path(flow_id, '', phone_id))
+
+    def get_flow_preview(self, flow_id, invalidate=False, phone_id=None) -> dict:
+        p = self._flow_path(flow_id, '/preview', phone_id)
+        return self._get(p + (('&' if '?' in p else '?') + 'invalidate=true' if invalidate else ''))
+
+    def get_flow_metrics(self, flow_id, date_from=None, date_to=None, metric=None, granularity=None, phone_id=None) -> dict:
+        """date_from/date_to: YYYY-MM-DD; granularity: DAY | HOUR | LIFETIME"""
+        q = []
+        if date_from: q.append('from=' + quote(str(date_from)))
+        if date_to: q.append('to=' + quote(str(date_to)))
+        if metric: q.append('metric=' + quote(str(metric)))
+        if granularity: q.append('granularity=' + quote(str(granularity)))
+        if phone_id: q.append('phone_number_id=' + quote(str(phone_id)))
+        return self._get('/flows/' + quote(str(flow_id), safe='') + '/metrics' + ('?' + '&'.join(q) if q else ''))
+
+    def send_flow(self, phone_id, to, flow) -> dict:
+        """flow: flow_id | flow_name, flow_token?, cta (≤20), body, header?, footer?, mode (published|draft), action?, screen, data?
+        Yanıttaki flow.flow_token, flow.completed olayında aynen döner."""
+        return self._post('/messages', {'phone_number_id': str(phone_id), 'to': str(to), 'type': 'flow', 'flow': flow})
+
+    def _flow_path(self, flow_id, suffix, phone_id):
+        return '/flows/' + quote(str(flow_id), safe='') + suffix + ('?phone_number_id=' + quote(str(phone_id)) if phone_id else '')
+
     def _get(self, path): return self._request('GET', path)
     def _post(self, path, body): return self._request('POST', path, body)
     def _patch(self, path, body): return self._request('PATCH', path, body)
+    def _put(self, path, body): return self._request('PUT', path, body)
     def _delete(self, path): return self._request('DELETE', path)
 
     def _request(self, method, path, body=None):

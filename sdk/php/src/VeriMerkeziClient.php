@@ -20,7 +20,7 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.19.2';
+ public const VERSION = '2.20.0';
 
  private string $apiKey;
  private string $baseUrl;
@@ -408,9 +408,68 @@ class VeriMerkeziClient
  return $this->post('/calls/' . rawurlencode($callId) . '/' . $action, $body);
  }
 
+ // ── Formlar (WhatsApp Flows) — 2026-10-08 ─────────────────────────────
+ // Formlar WABA düzeyindedir. Yönetim kredisiz; form mesajı (sendFlow) normal mesaj gibi 1 kredi.
+ // Olaylar: flow.completed / flow.status_changed ('*' kapsamaz — açıkça ekleyin).
+ // $phoneNumberId (isteğe bağlı) Meta arayüzünde oluşturulmuş formu hesabınıza bağlamak içindir.
+ public function listFlows(string $phoneNumberId, ?int $limit = null, ?string $after = null): array
+ {
+ $q = ['phone_number_id' => $phoneNumberId];
+ if ($limit !== null) $q['limit'] = $limit;
+ if ($after !== null && $after !== '') $q['after'] = $after;
+ return $this->get('/flows?' . http_build_query($q));
+ }
+
+ /** @param array|string $flowJson nesne (dizi) ya da JSON metni (≤ 10 MB) */
+ public function createFlow(string $phoneNumberId, string $name, array $categories, $flowJson, ?string $endpointUri = null): array
+ {
+ $body = ['phone_number_id' => $phoneNumberId, 'name' => $name, 'categories' => array_values($categories), 'flow_json' => $flowJson];
+ if ($endpointUri !== null && $endpointUri !== '') $body['endpoint_uri'] = $endpointUri;
+ return $this->post('/flows', $body);
+ }
+
+ public function getFlow(string $flowId, ?string $phoneNumberId = null): array { return $this->get($this->flowPath($flowId, '', $phoneNumberId)); }
+ /** Yalnız DRAFT form. */
+ public function updateFlowJson(string $flowId, $flowJson, ?string $phoneNumberId = null): array { return $this->put($this->flowPath($flowId, '/json', $phoneNumberId), ['flow_json' => $flowJson]); }
+ public function publishFlow(string $flowId, ?string $phoneNumberId = null): array { return $this->post($this->flowPath($flowId, '/publish', $phoneNumberId), []); }
+ public function deprecateFlow(string $flowId, ?string $phoneNumberId = null): array { return $this->post($this->flowPath($flowId, '/deprecate', $phoneNumberId), []); }
+ /** Yalnız DRAFT form. */
+ public function deleteFlow(string $flowId, ?string $phoneNumberId = null): array { return $this->delete($this->flowPath($flowId, '', $phoneNumberId)); }
+
+ public function getFlowPreview(string $flowId, bool $invalidate = false, ?string $phoneNumberId = null): array
+ {
+ $p = $this->flowPath($flowId, '/preview', $phoneNumberId);
+ return $this->get($p . ($invalidate ? (str_contains($p, '?') ? '&' : '?') . 'invalidate=true' : ''));
+ }
+
+ /** $filtre: from, to (YYYY-MM-DD), metric (ENDPOINT_REQUEST_COUNT ...), granularity (DAY|HOUR|LIFETIME), phone_number_id */
+ public function getFlowMetrics(string $flowId, array $filtre = []): array
+ {
+ $q = http_build_query(array_filter([
+ 'from' => $filtre['from'] ?? null, 'to' => $filtre['to'] ?? null, 'metric' => $filtre['metric'] ?? null,
+ 'granularity' => $filtre['granularity'] ?? null, 'phone_number_id' => $filtre['phone_number_id'] ?? null,
+ ], fn ($v) => $v !== null && $v !== ''));
+ return $this->get('/flows/' . rawurlencode($flowId) . '/metrics' . ($q !== '' ? '?' . $q : ''));
+ }
+
+ /**
+ * Form mesajı. $flow: flow_id | flow_name, flow_token?, cta (≤20), body, header?, footer?, mode (published|draft), action?, screen, data?
+ * Yanıttaki flow.flow_token, flow.completed olayında aynen döner.
+ */
+ public function sendFlow(string $phoneNumberId, string $to, array $flow): array
+ {
+ return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'type' => 'flow', 'flow' => $flow]);
+ }
+
+ private function flowPath(string $flowId, string $suffix, ?string $phoneNumberId): string
+ {
+ return '/flows/' . rawurlencode($flowId) . $suffix . ($phoneNumberId ? '?phone_number_id=' . rawurlencode($phoneNumberId) : '');
+ }
+
  private function get(string $path): array { return $this->request('GET', $path); }
  private function post(string $path, array $body): array { return $this->request('POST', $path, $body); }
  private function patch(string $path, array $body): array { return $this->request('PATCH', $path, $body); }
+ private function put(string $path, array $body): array { return $this->request('PUT', $path, $body); }
  private function delete(string $path): array { return $this->request('DELETE', $path); }
 
  private function request(string $method, string $path, ?array $body = null): array

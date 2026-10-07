@@ -124,6 +124,8 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | `call.status` ⁿ | Arama durumu: `ringing` / `accepted` / `rejected` / `missed` / `failed` (v2.19.0) |
 | `call.terminate` ⁿ | Arama bitti (süre, `billable_pulses`, hatalar) (v2.19.0) |
 | `call.permission_reply` ⁿ | Müşteri arama izni isteğinizi yanıtladı (v2.19.0) |
+| `flow.completed` ⁿ | Müşteri bir formu (WhatsApp Flow) gönderdi — bkz. [13-formlar.md](13-formlar.md) (v2.20.0) |
+| `flow.status_changed` ⁿ | Formun Meta durumu değişti (`PUBLISHED` / `THROTTLED` / `BLOCKED` …) (v2.20.0) |
 | `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
 
 > **ⁿ = yeni olay (22–23 Eylül 2026).** Bu olaylar `*` aboneliğine **dahil DEĞİLDİR** — mevcut `*` aboneleri beklemedikleri trafik almaz. Yeni bir olayı almak için abonelik oluştururken/güncellerken listeye **açıkça ekleyin** (API'de `events` dizisine, panelde işaret kutusuyla). `*` seçtiğinizde `POST /wa/webhooks` yanıtındaki `note` alanı, joker kapsamı dışında kalan bu olayları size hatırlatır.
@@ -286,6 +288,8 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `call.status` | `call_id`, `phone_number_id`, `status` (`ringing`/`accepted`/`rejected`/`missed`/`failed`), `recipient`, `timestamp`, `biz_opaque_callback_data` |
 | `call.terminate` | `call_id`, `phone_number_id`, `direction`, `from`, `to`, `status` (`completed`/`failed`), `duration_sec`, `start_time`, `end_time` (ISO 8601), `billable_pulses` (yalnız işletme başlatmalı; diğerinde `null`), `errors`, `timestamp` |
 | `call.permission_reply` | `phone_number_id`, `from`, `user_id`, `granted` (bool), `response`, `permanent` (bool), `expires_at` (ISO 8601 / `null`), `response_source`, `wamid`, `timestamp` |
+| `flow.completed` | `event_id` (yanıt için sabit), `phone_number_id`, `from`, `user_id`, `contact_name`, `message_id`, `context_message_id`, `flow_token`, `flow_id` (yalnız API'den gönderildiyse), `response` (ayrıştırılmış form yanıtı), `response_raw`, `media[]` (`field`, `media_id` → `GET /wa/media/{media_id}`, `mime_type`, `sha256`, `file_name`, `meta_media_id`), `timestamp` |
+| `flow.status_changed` | `flow_id`, `waba_id`, `old_status`, `new_status`, `reason`, `occurred_at` |
 | `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
 
 `errors` başarılı durumlarda `null`, `message.status.failed`'da Meta'nın hata listesidir:

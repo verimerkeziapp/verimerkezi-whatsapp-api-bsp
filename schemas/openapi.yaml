@@ -8,8 +8,8 @@ info:
     Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
     (the returned wamid is a fake `test.<hex>` id).
 
-    API version 2.19.2 (2026-10-08) - 50 endpoints; docs, OpenAPI, SDKs and Postman share this version.
-  version: "2.19.2"
+    API version 2.20.0 (2026-10-08) - 59 endpoints; docs, OpenAPI, SDKs and Postman share this version.
+  version: "2.20.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -107,6 +107,35 @@ components:
         sdp_answer: { type: string, description: "WebRTC SDP answer (RFC 8866)" }
         call_id: { type: string, description: "Only when the path segment is '_'" }
 
+    Flow:
+      type: object
+      properties:
+        flow_id: { type: string }
+        name: { type: [string, "null"] }
+        status: { type: [string, "null"], enum: [DRAFT, PUBLISHED, DEPRECATED, BLOCKED, THROTTLED, null] }
+        categories: { type: array, items: { type: string, enum: [SIGN_UP, SIGN_IN, APPOINTMENT_BOOKING, LEAD_GENERATION, CONTACT_US, CUSTOMER_SUPPORT, SURVEY, OTHER] } }
+        validation_errors: { type: array, items: { type: object }, description: "Meta Flow JSON validation errors (as returned by Meta)" }
+        health_status: { type: [object, "null"], description: "Meta health_status (can_send_message, entities) when available" }
+        json_version: { type: [string, "null"] }
+        data_api_version: { type: [string, "null"] }
+        endpoint_uri: { type: [string, "null"] }
+    FlowMessage:
+      type: object
+      description: "Interactive WhatsApp Flow message (type=flow). Exactly one of flow_id / flow_name."
+      required: [cta, body]
+      properties:
+        flow_id: { type: string }
+        flow_name: { type: string }
+        flow_token: { type: string, maxLength: 191, description: "Your correlation token; generated (vmf_...) when omitted and echoed in flow.completed" }
+        cta: { type: string, maxLength: 20, description: "Button text, no emoji" }
+        body: { type: string, maxLength: 1024 }
+        header: { type: string, maxLength: 60 }
+        footer: { type: string, maxLength: 60 }
+        mode: { type: string, enum: [published, draft], default: published }
+        action: { type: string, enum: [navigate, data_exchange], default: navigate }
+        screen: { type: string, description: "Entry screen id (required for navigate)" }
+        data: { type: object, description: "Initial screen data (navigate only)" }
+
     Template:
       type: object
       properties:
@@ -128,10 +157,11 @@ components:
     WebhookEvent:
       type: string
       description: |
-        28 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
-        account.alert). The other 16 (message.revoked/edited/history/sent, number.status_changed,
+        30 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
+        account.alert). The other 18 (message.revoked/edited/history/sent, number.status_changed,
         number.name_changed, credit.low/exhausted, privacy.erasure_completed, contact.opt_out_changed,
-        template.category_changed/quality_changed, call.connect/status/terminate/permission_reply)
+        template.category_changed/quality_changed, call.connect/status/terminate/permission_reply,
+        flow.completed, flow.status_changed)
         must be selected explicitly.
       enum:
         - "*"
@@ -163,6 +193,8 @@ components:
         - "call.status"
         - "call.terminate"
         - "call.permission_reply"
+        - "flow.completed"
+        - "flow.status_changed"
 
     WebhookSubscription:
       type: object
@@ -259,8 +291,8 @@ paths:
                 to: { type: string, example: "905551234567" }
                 type:
                   type: string
-                  enum: [image, video, audio, document]
-                  description: "Media type. Set when sending a free-form media message."
+                  enum: [image, video, audio, document, flow]
+                  description: "Media type for a free-form media message, or `flow` for a WhatsApp Flow message (see `flow`)."
                 template:
                   type: object
                   properties:
@@ -281,6 +313,8 @@ paths:
                         `{ "type": "button", "sub_type": "url", "index": 0, "parameters": [{ "type": "text", "text": "..." }] }`
                         — its parameters[0].text fills the trailing `{{1}}` of the template URL button
                         (one variable, at the end of the URL; API send only).
+                        For a FLOW button: `{ "type": "button", "sub_type": "flow", "index": 0, "parameters": [{ "type": "action", "flow_token": "...", "flow_action_data": {} }] }`
+                        (Meta's native `{ "type": "action", "action": { ... } }` is also accepted).
                       items: { type: object }
                 text:
                   description: >-
@@ -294,6 +328,8 @@ paths:
                         body: { type: string }
                         preview_url: { type: boolean }
                       required: [body]
+                flow:
+                  $ref: '#/components/schemas/FlowMessage'
                 image:
                   type: object
                   description: "Image media. Provide a public https link (or Meta media id)."
@@ -1599,3 +1635,190 @@ paths:
                   can_request: { type: [boolean, "null"] }
                   can_call: { type: boolean }
                   actions: { type: array, items: { type: object } }
+  /flows:
+    get:
+      summary: List WhatsApp Flows of the number's WABA
+      tags: [Flows]
+      operationId: listFlows
+      security: [{ BearerAuth: ["flows:read"] }]
+      parameters:
+        - { name: phone_number_id, in: query, required: true, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: after, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  phone_number_id: { type: string }
+                  waba_id: { type: string }
+                  flows: { type: array, items: { $ref: '#/components/schemas/Flow' } }
+                  paging: { type: object, properties: { after: { type: [string, "null"] } } }
+    post:
+      summary: Create a Flow (with Flow JSON)
+      description: Creates the Flow in DRAFT with the given Flow JSON. Meta validation errors are returned in validation_errors. No credit.
+      tags: [Flows]
+      operationId: createFlow
+      security: [{ BearerAuth: ["flows:write"] }]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number_id, name, categories, flow_json]
+              properties:
+                phone_number_id: { type: string }
+                name: { type: string, maxLength: 200 }
+                categories: { type: array, minItems: 1, items: { type: string, enum: [SIGN_UP, SIGN_IN, APPOINTMENT_BOOKING, LEAD_GENERATION, CONTACT_US, CUSTOMER_SUPPORT, SURVEY, OTHER] } }
+                flow_json: { oneOf: [ { type: object }, { type: string } ], description: "Flow JSON object or string (max 10 MB)" }
+                endpoint_uri: { type: string, format: uri }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  flow_id: { type: string }
+                  status: { type: string, enum: [DRAFT] }
+                  validation_errors: { type: array, items: { type: object } }
+        '403': { description: "insufficient_scope / test_mode_unsupported" }
+        '422': { description: "invalid_request / invalid_flow_json / meta_flow_failed" }
+  /flows/{flow_id}:
+    parameters:
+      - { name: flow_id, in: path, required: true, schema: { type: string, pattern: "^[0-9]+$" } }
+      - { name: phone_number_id, in: query, required: false, schema: { type: string }, description: "Needed only for Flows created outside this API (links the Flow to your account)" }
+    get:
+      summary: Flow details
+      tags: [Flows]
+      operationId: getFlow
+      security: [{ BearerAuth: ["flows:read"] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties: { ok: { type: boolean } }
+                  - $ref: '#/components/schemas/Flow'
+        '404': { description: flow_not_found }
+    delete:
+      summary: Delete a DRAFT Flow
+      tags: [Flows]
+      operationId: deleteFlow
+      security: [{ BearerAuth: ["flows:write"] }]
+      responses:
+        '200': { description: "{ ok, flow_id, deleted: true }" }
+        '409': { description: flow_not_draft }
+  /flows/{flow_id}/json:
+    put:
+      summary: Replace the Flow JSON of a DRAFT Flow
+      tags: [Flows]
+      operationId: updateFlowJson
+      security: [{ BearerAuth: ["flows:write"] }]
+      parameters:
+        - { name: flow_id, in: path, required: true, schema: { type: string } }
+        - { name: phone_number_id, in: query, required: false, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [flow_json]
+              properties:
+                flow_json: { oneOf: [ { type: object }, { type: string } ] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  flow_id: { type: string }
+                  validation_errors: { type: array, items: { type: object } }
+        '409': { description: flow_not_draft }
+  /flows/{flow_id}/publish:
+    post:
+      summary: Publish a Flow (irreversible)
+      tags: [Flows]
+      operationId: publishFlow
+      security: [{ BearerAuth: ["flows:write"] }]
+      parameters:
+        - { name: flow_id, in: path, required: true, schema: { type: string } }
+        - { name: phone_number_id, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: "{ ok, flow_id, status: PUBLISHED }" }
+        '422': { description: meta_flow_failed }
+  /flows/{flow_id}/deprecate:
+    post:
+      summary: Deprecate a published Flow
+      tags: [Flows]
+      operationId: deprecateFlow
+      security: [{ BearerAuth: ["flows:write"] }]
+      parameters:
+        - { name: flow_id, in: path, required: true, schema: { type: string } }
+        - { name: phone_number_id, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: "{ ok, flow_id, status: DEPRECATED }" }
+  /flows/{flow_id}/preview:
+    get:
+      summary: Flow preview URL
+      tags: [Flows]
+      operationId: getFlowPreview
+      security: [{ BearerAuth: ["flows:read"] }]
+      parameters:
+        - { name: flow_id, in: path, required: true, schema: { type: string } }
+        - { name: invalidate, in: query, required: false, schema: { type: boolean, default: false } }
+        - { name: phone_number_id, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  flow_id: { type: string }
+                  preview_url: { type: [string, "null"] }
+                  expires_at: { type: [string, "null"] }
+  /flows/{flow_id}/metrics:
+    get:
+      summary: Flow endpoint metrics (Meta pass-through)
+      tags: [Flows]
+      operationId: getFlowMetrics
+      security: [{ BearerAuth: ["flows:read"] }]
+      parameters:
+        - { name: flow_id, in: path, required: true, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date }, description: "Default: to - 6 days" }
+        - { name: to, in: query, required: false, schema: { type: string, format: date }, description: "Default: today" }
+        - { name: metric, in: query, required: false, schema: { type: string, enum: [ENDPOINT_REQUEST_COUNT, ENDPOINT_REQUEST_ERROR, ENDPOINT_REQUEST_ERROR_RATE, ENDPOINT_REQUEST_LATENCY_SECONDS_CEIL, ENDPOINT_AVAILABILITY], default: ENDPOINT_REQUEST_COUNT } }
+        - { name: granularity, in: query, required: false, schema: { type: string, enum: [DAY, HOUR, LIFETIME], default: DAY } }
+        - { name: phone_number_id, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  flow_id: { type: string }
+                  from: { type: string }
+                  to: { type: string }
+                  metric: { type: [object, "null"], description: "Meta metric object (name, granularity, data_points) as-is" }

@@ -2,6 +2,21 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.20.0] — 2026-10-08
+
+> Formlar (WhatsApp Flows). Tamamen additive; mevcut uçlar, olaylar ve `*` abonelikleri etkilenmez. Ayrıntı: [docs/13-formlar.md](docs/13-formlar.md).
+
+### Eklenenler — Formlar (WhatsApp Flows)
+- **9 yeni uç:** `POST`/`GET /flows`, `GET`/`DELETE /flows/{flow_id}`, `PUT /flows/{flow_id}/json`, `POST /flows/{flow_id}/publish` · `/deprecate`, `GET /flows/{flow_id}/preview` · `/metrics`.
+- **Gönderim:** `POST /messages` `type: "flow"` (1 kredi; `mode: draft` ile taslak denemesi) ve FLOW butonlu şablon parametresi.
+- **Yeni scope'lar:** `flows:read`, `flows:write`.
+- **2 yeni webhook olayı:** `flow.completed` (form yanıtı; formdaki dosyalar `GET /media/{media_id}` ile alınır), `flow.status_changed` — **`*` joker aboneliğine dahil değildir**; açıkça ekleyin (toplam 30 olay).
+- **Hazır örnek:** [examples/flows/teklif-formu.flow.json](examples/flows/teklif-formu.flow.json) — canlıda denenmiş tek ekranlı statik teklif formu.
+- **SDK'lar** 2.20.0: `listFlows`, `createFlow`, `getFlow`, `updateFlowJson`, `publishFlow`, `deprecateFlow`, `deleteFlow`, `getFlowPreview`, `getFlowMetrics`, `sendFlow` (Python'da snake_case). **OpenAPI** 2.20.0 (59 uç), **Postman** "10. Formlar" klasörü.
+
+### Kapsam notu
+- **Statik** formlar desteklenir. Meta'nın Endpoint (`data_exchange`) özelliğini kullanan formlarda şifreli Endpoint trafiğini Veri Merkezi karşılamaz.
+
 ## [2.19.2] — 2026-10-08
 
 > Yalnız doküman düzeltmesi. **API davranışı değişmedi.**

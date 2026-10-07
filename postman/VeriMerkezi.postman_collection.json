@@ -2,8 +2,8 @@
   "info": {
     "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.19.2 (2026-10-08).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 50 uç, 9 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n28 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
-    "version": "2.19.2",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.20.0 (2026-10-08).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 59 uç, 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n30 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "version": "2.20.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -52,6 +52,10 @@
     {
       "key": "call_id",
       "value": "wacid.1234567890"
+    },
+    {
+      "key": "flow_id",
+      "value": "1234567890123456"
     }
   ],
   "item": [
@@ -1591,6 +1595,270 @@
               }
             },
             "description": "Kapsam: calls:write. İşletme başlatmalı aramalar için tek eylem."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Formlar (Flows)",
+      "description": "WhatsApp Flows (Formlar). Kapsam: flows:read / flows:write. Formlar WABA düzeyindedir; yönetim kredisiz, form mesajı (POST /messages type: flow) 1 kredi. Olaylar: flow.completed, flow.status_changed ('*' kapsamaz — açıkça seçin). Meta arayüzünde oluşturulan formlar için {flow_id} uçlarına ?phone_number_id= ekleyin.",
+      "item": [
+        {
+          "name": "GET /flows — Formlar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/flows?phone_number_id={{phone_number_id}}&limit=25",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows"
+              ],
+              "query": [
+                {
+                  "key": "phone_number_id",
+                  "value": "{{phone_number_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "25"
+                }
+              ]
+            },
+            "description": "Kapsam: flows:read. Numaranın WABA'sındaki formlar; paging.after ile sonraki sayfa (?after=)."
+          }
+        },
+        {
+          "name": "POST /flows — Form oluştur",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/flows",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"name\": \"Başvuru formu\",\n  \"categories\": [\n    \"LEAD_GENERATION\"\n  ],\n  \"flow_json\": {\n    \"version\": \"7.2\",\n    \"screens\": [\n      {\n        \"id\": \"WELCOME\",\n        \"title\": \"Başvuru\",\n        \"terminal\": true,\n        \"layout\": {\n          \"type\": \"SingleColumnLayout\",\n          \"children\": [\n            {\n              \"type\": \"TextInput\",\n              \"name\": \"ad\",\n              \"label\": \"Ad Soyad\",\n              \"required\": true\n            },\n            {\n              \"type\": \"Footer\",\n              \"label\": \"Gönder\",\n              \"on-click-action\": {\n                \"name\": \"complete\",\n                \"payload\": {\n                  \"ad\": \"${form.ad}\"\n                }\n              }\n            }\n          ]\n        }\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: flows:write. DRAFT oluşturur; Meta doğrulama hataları validation_errors'ta. Idempotency-Key desteklenir. Test anahtarıyla 403 test_mode_unsupported."
+          }
+        },
+        {
+          "name": "GET /flows/{flow_id} — Ayrıntı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/flows/{{flow_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows",
+                "{{flow_id}}"
+              ]
+            },
+            "description": "Kapsam: flows:read. status: DRAFT | PUBLISHED | DEPRECATED | BLOCKED | THROTTLED."
+          }
+        },
+        {
+          "name": "PUT /flows/{flow_id}/json — JSON güncelle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/flows/{{flow_id}}/json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows",
+                "{{flow_id}}",
+                "json"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flow_json\": {\n    \"version\": \"7.2\",\n    \"screens\": [\n      {\n        \"id\": \"WELCOME\",\n        \"title\": \"Başvuru\",\n        \"terminal\": true,\n        \"layout\": {\n          \"type\": \"SingleColumnLayout\",\n          \"children\": [\n            {\n              \"type\": \"TextInput\",\n              \"name\": \"ad\",\n              \"label\": \"Ad Soyad\",\n              \"required\": true\n            },\n            {\n              \"type\": \"Footer\",\n              \"label\": \"Gönder\",\n              \"on-click-action\": {\n                \"name\": \"complete\",\n                \"payload\": {\n                  \"ad\": \"${form.ad}\"\n                }\n              }\n            }\n          ]\n        }\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: flows:write. Yalnız DRAFT (aksi 409 flow_not_draft)."
+          }
+        },
+        {
+          "name": "POST /flows/{flow_id}/publish — Yayınla",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/flows/{{flow_id}}/publish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows",
+                "{{flow_id}}",
+                "publish"
+              ]
+            },
+            "description": "Kapsam: flows:write. Yayınlanan form değiştirilemez."
+          }
+        },
+        {
+          "name": "POST /flows/{flow_id}/deprecate — Kullanımdan kaldır",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/flows/{{flow_id}}/deprecate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows",
+                "{{flow_id}}",
+                "deprecate"
+              ]
+            },
+            "description": "Kapsam: flows:write."
+          }
+        },
+        {
+          "name": "DELETE /flows/{flow_id} — Taslağı sil",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/flows/{{flow_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows",
+                "{{flow_id}}"
+              ]
+            },
+            "description": "Kapsam: flows:write. Yalnız DRAFT."
+          }
+        },
+        {
+          "name": "GET /flows/{flow_id}/preview — Önizleme",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/flows/{{flow_id}}/preview?invalidate=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows",
+                "{{flow_id}}",
+                "preview"
+              ],
+              "query": [
+                {
+                  "key": "invalidate",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Kapsam: flows:read. preview_url + expires_at."
+          }
+        },
+        {
+          "name": "GET /flows/{flow_id}/metrics — Metrikler",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/flows/{{flow_id}}/metrics?from=2026-10-01&to=2026-10-07&metric=ENDPOINT_REQUEST_COUNT&granularity=DAY",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "flows",
+                "{{flow_id}}",
+                "metrics"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-10-07"
+                },
+                {
+                  "key": "metric",
+                  "value": "ENDPOINT_REQUEST_COUNT"
+                },
+                {
+                  "key": "granularity",
+                  "value": "DAY"
+                }
+              ]
+            },
+            "description": "Kapsam: flows:read. Meta yanıtı aynen (yalnız Endpoint'li formlar)."
+          }
+        },
+        {
+          "name": "POST /messages — Form mesajı (type: flow)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"flow\",\n  \"flow\": {\n    \"flow_id\": \"{{flow_id}}\",\n    \"flow_token\": \"crm-basvuru-42\",\n    \"cta\": \"Formu Aç\",\n    \"body\": \"Başvurunuzu 1 dakikada tamamlayın.\",\n    \"screen\": \"WELCOME\",\n    \"data\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: messages:send. 1 kredi, 24 saat pencere. mode: draft ile yayınlanmamış formu deneyin. Yanıtta flow.flow_token döner. (Bu öğe /messages ucunun örneğidir; uç sayısına eklenmez.)"
           }
         }
       ]
