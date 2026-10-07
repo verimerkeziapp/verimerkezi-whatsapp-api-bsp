@@ -11,6 +11,8 @@
  *
  * v1.0 — 2026-05-27
  * v1.9.0 — 2026-09-23 — şablon yönetimi + webhook aboneliği + kredi olayları
+ * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı: hesap ayarları, KVKK saklama/silme,
+ *   sandbox gelen mesaj, webhook secret döndürme
  * https://verimerkezi.app/panel/api/dokuman
  */
 
@@ -18,6 +20,8 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
+ public const VERSION = '2.19.1';
+
  private string $apiKey;
  private string $baseUrl;
  private int $timeout;
@@ -206,7 +210,7 @@ class VeriMerkeziClient
  curl_setopt_array($ch, [
  CURLOPT_HTTPHEADER => [
  'Authorization: Bearer ' . $this->apiKey,
- 'User-Agent: VeriMerkezi-PHP-SDK/1.9.0',
+ 'User-Agent: VeriMerkezi-PHP-SDK/' . self::VERSION,
  ],
  CURLOPT_TIMEOUT => 300,
  ]);
@@ -243,7 +247,7 @@ class VeriMerkeziClient
  curl_setopt_array($ch, [
  CURLOPT_RETURNTRANSFER => true,
  CURLOPT_POST => true,
- CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $this->apiKey, 'User-Agent: VeriMerkezi-PHP-SDK/1.9.0'],
+ CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $this->apiKey, 'User-Agent: VeriMerkezi-PHP-SDK/' . self::VERSION],
  CURLOPT_POSTFIELDS => ['phone_number_id' => $phoneNumberId, 'file' => new \CURLFile($filePath, $mime, basename($filePath))],
  CURLOPT_TIMEOUT => 300,
  ]);
@@ -265,6 +269,27 @@ class VeriMerkeziClient
  public function startHistoryImport(string $phoneNumberId): array { return $this->post('/numbers/' . rawurlencode($phoneNumberId) . '/history-import', []); }
  public function numberSettings(string $phoneNumberId, array $settings): array { return $this->patch('/numbers/' . rawurlencode($phoneNumberId) . '/settings', $settings); }
  public function health(): array { return $this->get('/health'); }
+
+ // ── Hesap ayarları + KVKK (2026-09-25) ───────────────────────────────
+ /** $settings: revoke_edit_clean, automation_enabled, opt_out_autoreply_enabled (tüm numaralar), default_automation_enabled, default_opt_out_autoreply_enabled (yeni numaralar) — bool, en az bir alan. */
+ public function accountSettings(array $settings): array { return $this->patch('/account/settings', $settings); }
+
+ /** $retention: messages_days (1-3650), media_days (1-3650), webhook_deliveries_days (1-365) — en az bir alan. */
+ public function updateRetention(array $retention): array { return $this->patch('/account/retention', $retention); }
+
+ /** KVKK silme/unutulma — waId (telefon) veya userId (BSUID) zorunlu. 202 + privacy.erasure_completed olayı. */
+ public function privacyErasure(?string $waId = null, ?string $userId = null, ?string $phoneNumberId = null): array
+ {
+ $body = array_filter(['wa_id' => $waId, 'user_id' => $userId, 'phone_number_id' => $phoneNumberId], fn ($v) => $v !== null);
+ return $this->post('/privacy/erasure', $body);
+ }
+
+ // ── Sandbox (yalnız vmk_test_ anahtarı) ────────────────────────────────
+ /** Sahte gelen mesaj enjekte eder (type: text|revoke|edit) → imzalı olaylar aboneliklere gider. $opts: from, text, original_message_id. */
+ public function testInbound(string $phoneNumberId, string $type = 'text', array $opts = []): array
+ {
+ return $this->post('/test/inbound', ['phone_number_id' => $phoneNumberId, 'type' => $type] + $opts);
+ }
 
  // ── Şablon yönetimi (2026-09-23) ───────────────────────────────────────
  // Şablonların oluşturulması, doğrulanması, güncellenmesi ve silinmesi.
@@ -321,6 +346,12 @@ class VeriMerkeziClient
 
  /** Aboneliğe anında bir test.ping teslimatı dener. */
  public function testWebhook(int $id): array { return $this->post('/webhooks/' . $id . '/test', []); }
+
+ /** Secret'ı yerinde döndürür; yeni secret YALNIZCA bu yanıtta döner. $graceSeconds (0-604800, vars. 86400) boyunca eski secret ikinci imza olarak gönderilir. */
+ public function rotateWebhookSecret(int $id, ?int $graceSeconds = null): array
+ {
+ return $this->post('/webhooks/' . $id . '/rotate-secret', $graceSeconds !== null ? ['grace_seconds' => $graceSeconds] : []);
+ }
 
  // ── Arama (Calling) — 2026-10-08 ─────────────────────────────────────
  // Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
@@ -395,7 +426,7 @@ class VeriMerkeziClient
  'Authorization: Bearer ' . $this->apiKey,
  'Content-Type: application/json',
  'Accept: application/json',
- 'User-Agent: VeriMerkezi-PHP-SDK/1.9.0',
+ 'User-Agent: VeriMerkezi-PHP-SDK/' . self::VERSION,
  ];
  if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
  $headers[] = 'Idempotency-Key: ' . $idempotencyKey;

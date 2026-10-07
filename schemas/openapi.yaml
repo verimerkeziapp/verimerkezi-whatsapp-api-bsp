@@ -7,7 +7,9 @@ info:
 
     Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
     (the returned wamid is a fake `test.<hex>` id).
-  version: "2.2.0"
+
+    API version 2.19.1 (2026-10-08) - 50 endpoints; docs, OpenAPI, SDKs and Postman share this version.
+  version: "2.19.1"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -123,13 +125,52 @@ components:
         submitted_at: { type: string, nullable: true }
         status_updated_at: { type: string, nullable: true }
 
+    WebhookEvent:
+      type: string
+      description: |
+        28 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
+        account.alert). The other 16 (message.revoked/edited/history/sent, number.status_changed,
+        number.name_changed, credit.low/exhausted, privacy.erasure_completed, contact.opt_out_changed,
+        template.category_changed/quality_changed, call.connect/status/terminate/permission_reply)
+        must be selected explicitly.
+      enum:
+        - "*"
+        - "message.received"
+        - "message.echo"
+        - "message.status.sent"
+        - "message.status.delivered"
+        - "message.status.read"
+        - "message.status.failed"
+        - "template.approved"
+        - "template.rejected"
+        - "template.flagged"
+        - "template.paused"
+        - "quality.changed"
+        - "account.alert"
+        - "message.revoked"
+        - "message.edited"
+        - "message.history"
+        - "message.sent"
+        - "number.status_changed"
+        - "credit.low"
+        - "credit.exhausted"
+        - "privacy.erasure_completed"
+        - "contact.opt_out_changed"
+        - "template.category_changed"
+        - "template.quality_changed"
+        - "number.name_changed"
+        - "call.connect"
+        - "call.status"
+        - "call.terminate"
+        - "call.permission_reply"
+
     WebhookSubscription:
       type: object
       properties:
         id: { type: integer }
         name: { type: string, nullable: true }
         url: { type: string, format: uri }
-        events: { type: array, items: { type: string } }
+        events: { type: array, items: { $ref: "#/components/schemas/WebhookEvent" } }
         active: { type: boolean }
         secret_prefix: { type: string, nullable: true }
         last_success_at: { type: string, nullable: true }
@@ -183,7 +224,7 @@ paths:
     get:
       summary: List connected WhatsApp numbers
       tags: [Numbers]
-      security: [{ BearerAuth: [profile:read] }]
+      security: [{ BearerAuth: ["profile:read"] }]
       responses:
         '200':
           description: OK
@@ -203,7 +244,7 @@ paths:
         Live mode consumes 1 credit. Test mode is free.
         Media (image/video/audio/document) is free-form and only deliverable within the 24h customer service window; otherwise use a template. 1 credit. Provide media by public https `link` (or Meta media `id`). Limits: image ≤5MB, video ≤16MB, audio ≤16MB, document ≤100MB.
       tags: [Messages]
-      security: [{ BearerAuth: [messages:send] }]
+      security: [{ BearerAuth: ["messages:send"] }]
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -324,7 +365,7 @@ paths:
       description: Read-only; does not consume credit or the send rate bucket. Ascending by time, cursor paginated.
       tags: [Messages]
       operationId: listMessages
-      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      security: [{ BearerAuth: ["messages:read"] }, { BearerAuth: ["inbox:read"] }]
       parameters:
         - { name: phone_number_id, in: query, required: true, schema: { type: string } }
         - { name: since, in: query, schema: { type: string }, description: "ISO 8601, up to 90 days back" }
@@ -339,7 +380,7 @@ paths:
       summary: Mark an incoming message as read + optional typing indicator
       description: "Marks the incoming message as read (blue tick). typing:true shows a ~25s 'typing…' indicator. No credit."
       tags: [Messages]
-      security: [{ BearerAuth: [messages:send] }]
+      security: [{ BearerAuth: ["messages:send"] }]
       requestBody:
         required: true
         content:
@@ -367,7 +408,7 @@ paths:
     get:
       summary: List contacts (cursor pagination)
       tags: [Contacts]
-      security: [{ BearerAuth: [contacts:read] }]
+      security: [{ BearerAuth: ["contacts:read"] }]
       parameters:
         - in: query
           name: cursor
@@ -399,7 +440,7 @@ paths:
     post:
       summary: Create a single contact
       tags: [Contacts]
-      security: [{ BearerAuth: [contacts:write] }]
+      security: [{ BearerAuth: ["contacts:write"] }]
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -431,7 +472,7 @@ paths:
         Contacts whose opted_out flag is true, ordered by id desc. Use `since` for incremental sync
         together with the `contact.opt_out_changed` webhook event. Added in 2.16.0.
       tags: [Contacts]
-      security: [{ BearerAuth: [contacts:read] }]
+      security: [{ BearerAuth: ["contacts:read"] }]
       parameters:
         - in: query
           name: limit
@@ -467,7 +508,7 @@ paths:
                   next_cursor: { type: string, nullable: true }
                   has_more: { type: boolean }
         '401': { description: Invalid or missing API key }
-        '403': { description: Missing contacts:read scope }
+        '403': { description: "Missing contacts:read scope" }
         '422':
           description: Invalid `since` (error.field = "since")
           content:
@@ -479,7 +520,7 @@ paths:
     post:
       summary: Bulk insert contacts (max 1000)
       tags: [Contacts]
-      security: [{ BearerAuth: [contacts:write] }]
+      security: [{ BearerAuth: ["contacts:write"] }]
       requestBody:
         required: true
         content:
@@ -519,7 +560,7 @@ paths:
       summary: List templates (filterable, cursor-paginated)
       tags: [Templates]
       operationId: listTemplates
-      security: [{ BearerAuth: [templates:read] }]
+      security: [{ BearerAuth: ["templates:read"] }]
       parameters:
         - { name: status, in: query, required: false, schema: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, PAUSED, DISABLED] } }
         - { name: category, in: query, required: false, schema: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] } }
@@ -544,7 +585,7 @@ paths:
       summary: Create a template and submit it to Meta
       tags: [Templates]
       operationId: createTemplate
-      security: [{ BearerAuth: [templates:write] }]
+      security: [{ BearerAuth: ["templates:write"] }]
       requestBody:
         required: true
         content:
@@ -579,7 +620,7 @@ paths:
       summary: Validate template components without sending to Meta
       tags: [Templates]
       operationId: validateTemplate
-      security: [{ BearerAuth: [templates:read] }]
+      security: [{ BearerAuth: ["templates:read"] }]
       requestBody:
         required: true
         content:
@@ -612,7 +653,7 @@ paths:
       summary: Template detail
       tags: [Templates]
       operationId: getTemplate
-      security: [{ BearerAuth: [templates:read] }]
+      security: [{ BearerAuth: ["templates:read"] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
@@ -626,7 +667,7 @@ paths:
       summary: Edit a template (re-submits, status PENDING)
       tags: [Templates]
       operationId: updateTemplate
-      security: [{ BearerAuth: [templates:write] }]
+      security: [{ BearerAuth: ["templates:write"] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       requestBody:
@@ -651,7 +692,7 @@ paths:
       summary: Delete a template
       tags: [Templates]
       operationId: deleteTemplate
-      security: [{ BearerAuth: [templates:write] }]
+      security: [{ BearerAuth: ["templates:write"] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
@@ -671,7 +712,7 @@ paths:
     get:
       summary: Read WhatsApp Business Profile
       tags: [Profile]
-      security: [{ BearerAuth: [profile:read] }]
+      security: [{ BearerAuth: ["profile:read"] }]
       parameters:
         - in: path
           name: phone_number_id
@@ -687,7 +728,7 @@ paths:
     patch:
       summary: Update WhatsApp Business Profile
       tags: [Profile]
-      security: [{ BearerAuth: [profile:write] }]
+      security: [{ BearerAuth: ["profile:write"] }]
       parameters:
         - in: path
           name: phone_number_id
@@ -713,7 +754,7 @@ paths:
     get:
       summary: Report summary
       tags: [Reports]
-      security: [{ BearerAuth: [reports:read] }]
+      security: [{ BearerAuth: ["reports:read"] }]
       parameters:
         - in: query
           name: period
@@ -772,7 +813,7 @@ paths:
     get:
       summary: Credit usage over a window
       tags: [Credit]
-      security: [{ BearerAuth: [reports:read] }]
+      security: [{ BearerAuth: ["reports:read"] }]
       parameters:
         - in: query
           name: days
@@ -793,7 +834,7 @@ paths:
     get:
       summary: List credit transactions (cursor pagination)
       tags: [Credit]
-      security: [{ BearerAuth: [reports:read] }]
+      security: [{ BearerAuth: ["reports:read"] }]
       parameters:
         - in: query
           name: limit
@@ -828,7 +869,7 @@ paths:
         Returns media belonging to the authenticated account, newest first.
         Only your own records are visible.
       tags: [Media]
-      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      security: [{ BearerAuth: ["messages:read"] }, { BearerAuth: ["inbox:read"] }]
       parameters:
         - { name: limit,  in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
         - { name: cursor, in: query, schema: { type: integer }, description: Return records with id lower than this }
@@ -862,7 +903,7 @@ paths:
         Different from GET /media/{media_id}, which downloads inbound media from storage. Counts in the media rate bucket.
       tags: [Media]
       operationId: uploadMedia
-      security: [{ BearerAuth: [messages:send] }]
+      security: [{ BearerAuth: ["messages:send"] }]
       requestBody:
         required: true
         content:
@@ -905,7 +946,7 @@ paths:
 
         Rate limit: 60 requests per minute (separate bucket from other endpoints).
       tags: [Media]
-      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      security: [{ BearerAuth: ["messages:read"] }, { BearerAuth: ["inbox:read"] }]
       parameters:
         - { name: media_id, in: path,  required: true, schema: { type: integer } }
         - { name: meta,     in: query, schema: { type: integer, enum: [0, 1] }, description: "1 returns JSON metadata" }
@@ -946,7 +987,7 @@ paths:
       summary: Media headers without the body
       description: Returns Content-Length and Content-Type without transferring the file.
       tags: [Media]
-      security: [{ BearerAuth: [messages:read] }, { BearerAuth: [inbox:read] }]
+      security: [{ BearerAuth: ["messages:read"] }, { BearerAuth: ["inbox:read"] }]
       parameters:
         - { name: media_id, in: path, required: true, schema: { type: integer } }
       responses:
@@ -957,7 +998,7 @@ paths:
       summary: Requeue dead-letter webhook deliveries
       tags: [Webhooks]
       operationId: redeliverWebhooks
-      security: [{ BearerAuth: [webhooks:write] }, { BearerAuth: [messages:read] }]
+      security: [{ BearerAuth: ["webhooks:write"] }, { BearerAuth: ["messages:read"] }]
       requestBody:
         required: true
         content:
@@ -976,7 +1017,7 @@ paths:
       summary: List webhook subscriptions
       tags: [Webhooks]
       operationId: listWebhooks
-      security: [{ BearerAuth: [webhooks:read] }]
+      security: [{ BearerAuth: ["webhooks:read"] }]
       responses:
         '200':
           description: OK
@@ -992,7 +1033,7 @@ paths:
       summary: Create a webhook subscription (secret returned once)
       tags: [Webhooks]
       operationId: createWebhook
-      security: [{ BearerAuth: [webhooks:write] }]
+      security: [{ BearerAuth: ["webhooks:write"] }]
       requestBody:
         required: true
         content:
@@ -1002,7 +1043,7 @@ paths:
               required: [url]
               properties:
                 url: { type: string, format: uri, description: "Public https endpoint" }
-                events: { type: array, items: { type: string }, description: "Defaults to ['*']" }
+                events: { type: array, items: { $ref: "#/components/schemas/WebhookEvent" }, description: "Defaults to ['*'] (covers the 12 classic events only)" }
                 description: { type: string }
       responses:
         '201':
@@ -1014,7 +1055,7 @@ paths:
                 properties:
                   id: { type: integer }
                   url: { type: string }
-                  events: { type: array, items: { type: string } }
+                  events: { type: array, items: { $ref: "#/components/schemas/WebhookEvent" } }
                   active: { type: boolean }
                   secret: { type: string, description: "Returned ONCE at creation" }
                   secret_prefix: { type: string }
@@ -1026,7 +1067,7 @@ paths:
       summary: Update a webhook subscription
       tags: [Webhooks]
       operationId: updateWebhook
-      security: [{ BearerAuth: [webhooks:write] }]
+      security: [{ BearerAuth: ["webhooks:write"] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       requestBody:
@@ -1037,7 +1078,7 @@ paths:
               type: object
               properties:
                 url: { type: string, format: uri }
-                events: { type: array, items: { type: string } }
+                events: { type: array, items: { $ref: "#/components/schemas/WebhookEvent" } }
                 active: { type: boolean }
                 description: { type: string }
       responses:
@@ -1052,7 +1093,7 @@ paths:
       summary: Delete a webhook subscription
       tags: [Webhooks]
       operationId: deleteWebhook
-      security: [{ BearerAuth: [webhooks:write] }]
+      security: [{ BearerAuth: ["webhooks:write"] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
@@ -1073,7 +1114,7 @@ paths:
       summary: Send a test.ping delivery to a subscription
       tags: [Webhooks]
       operationId: testWebhook
-      security: [{ BearerAuth: [webhooks:write] }]
+      security: [{ BearerAuth: ["webhooks:write"] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
@@ -1088,12 +1129,48 @@ paths:
                   result: { type: string, example: delivered }
         '404': { description: webhook_not_found }
 
+  /webhooks/{id}/rotate-secret:
+    post:
+      summary: Rotate the subscription secret in place (new secret returned once)
+      description: |
+        Subscription id, stats and history are kept. During grace_seconds the old secret is still sent
+        as a second signature in the X-VeriMerkezi-Signature-256-Previous header.
+      tags: [Webhooks]
+      operationId: rotateWebhookSecret
+      security: [{ BearerAuth: ["webhooks:write"] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grace_seconds: { type: integer, minimum: 0, maximum: 604800, default: 86400 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: integer }
+                  secret: { type: string, description: "Returned ONLY now - store securely" }
+                  secret_prefix: { type: string }
+                  previous_valid_until: { type: [string, "null"], description: "Old secret stays valid (second signature) until this time" }
+        '400': { description: invalid_request }
+        '404': { description: webhook_not_found }
+        '422': { description: invalid_request (grace_seconds out of range) }
+
   /numbers/{phone_number_id}/history-import:
     get:
       summary: Coexistence history-import status
       tags: [Numbers]
       operationId: historyImportStatus
-      security: [{ BearerAuth: [profile:read] }]
+      security: [{ BearerAuth: ["profile:read"] }]
       parameters:
         - { name: phone_number_id, in: path, required: true, schema: { type: string } }
       responses:
@@ -1103,7 +1180,7 @@ paths:
       summary: Start history import manually (if auto-start was missed)
       tags: [Numbers]
       operationId: startHistoryImport
-      security: [{ BearerAuth: [profile:write] }]
+      security: [{ BearerAuth: ["profile:write"] }]
       parameters:
         - { name: phone_number_id, in: path, required: true, schema: { type: string } }
       responses:
@@ -1116,7 +1193,7 @@ paths:
       summary: Per-number automation / opt-out auto-reply toggle
       tags: [Numbers]
       operationId: numberSettings
-      security: [{ BearerAuth: [profile:write] }]
+      security: [{ BearerAuth: ["profile:write"] }]
       parameters:
         - { name: phone_number_id, in: path, required: true, schema: { type: string } }
       requestBody:
@@ -1142,13 +1219,173 @@ paths:
       responses:
         '200': { description: OK }
 
+  /account/settings:
+    patch:
+      summary: Account-level settings (applied to all numbers + defaults for new numbers)
+      tags: [Account]
+      operationId: accountSettings
+      security: [{ BearerAuth: ["profile:write"] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              description: At least one field. All values must be JSON booleans.
+              properties:
+                revoke_edit_clean: { type: boolean, description: "Applied to ALL existing numbers" }
+                automation_enabled: { type: boolean, description: "Applied to ALL existing numbers" }
+                opt_out_autoreply_enabled: { type: boolean, description: "Applied to ALL existing numbers" }
+                default_automation_enabled: { type: boolean, description: "Default for numbers connected later" }
+                default_opt_out_autoreply_enabled: { type: boolean, description: "Default for numbers connected later" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  numbers_updated: { type: integer }
+                  numbers_total: { type: integer }
+                  settings:
+                    type: object
+                    properties:
+                      revoke_edit_clean: { type: boolean, description: "true when enabled on every number" }
+                      automation_enabled: { type: boolean }
+                      opt_out_autoreply_enabled: { type: boolean }
+                      default_automation_enabled: { type: [boolean, "null"] }
+                      default_opt_out_autoreply_enabled: { type: [boolean, "null"] }
+        '403': { description: insufficient_scope }
+        '422': { description: invalid_request (no field / non-boolean value) }
+
+  /account/retention:
+    patch:
+      summary: KVKK data retention periods (days); expired data is purged periodically
+      tags: [Account]
+      operationId: updateRetention
+      security: [{ BearerAuth: ["profile:write"] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                messages_days: { type: integer, minimum: 1, maximum: 3650 }
+                media_days: { type: integer, minimum: 1, maximum: 3650 }
+                webhook_deliveries_days: { type: integer, minimum: 1, maximum: 365 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  retention:
+                    type: object
+                    properties:
+                      messages_days: { type: [integer, "null"] }
+                      media_days: { type: [integer, "null"] }
+                      webhook_deliveries_days: { type: [integer, "null"] }
+                  note: { type: string }
+        '403': { description: insufficient_scope }
+        '422': { description: invalid_request (no field / out of range / not an integer) }
+
+  /privacy/erasure:
+    post:
+      summary: KVKK erasure (right to be forgotten) for one end user; emits privacy.erasure_completed
+      description: |
+        Deletes messages, conversations, media, webhook delivery bodies and idempotency records for the
+        given end user. Idempotent. Either wa_id or user_id is required.
+      tags: [Account]
+      operationId: privacyErasure
+      security: [{ BearerAuth: ["profile:write"] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wa_id: { type: string, description: "End-user phone (E.164 digits, 8-15)", example: "905550000000" }
+                user_id: { type: string, description: "End-user BSUID (alternative to wa_id)" }
+                phone_number_id: { type: string, description: "Optional; must belong to your account", example: "1234567890" }
+      responses:
+        '202':
+          description: Completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  status: { type: string, example: completed }
+                  erasure_id: { type: string, example: "ers_0123456789abcdef01234567" }
+                  phone_number_id: { type: [string, "null"] }
+                  wa_id: { type: [string, "null"] }
+                  user_id: { type: [string, "null"] }
+                  completed_at: { type: string, format: date-time }
+                  erased: { type: object, description: "Per-table deletion counts" }
+        '403': { description: insufficient_scope }
+        '404': { description: number_not_found }
+        '422': { description: invalid_request }
+        '500': { description: erasure_failed }
+
+  /test/inbound:
+    post:
+      summary: "Sandbox: inject a synthetic inbound message (test keys only)"
+      description: |
+        Only with a vmk_test_ key. The synthetic message goes through the real inbound pipeline and
+        signed message.received / message.revoked / message.edited events are delivered to your active
+        webhook subscriptions. Nothing is sent to Meta.
+      tags: [Messages]
+      operationId: testInbound
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number_id]
+              properties:
+                phone_number_id: { type: string, example: "1234567890" }
+                type: { type: string, enum: [text, revoke, edit], default: text }
+                from: { type: string, description: "Sender phone, 8-15 digits", default: "905550000000" }
+                text: { type: string, maxLength: 4096, description: "Required for text and edit" }
+                original_message_id: { type: string, description: "Target message for revoke/edit" }
+      responses:
+        '202':
+          description: Injected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  mode: { type: string, example: test }
+                  simulated: { type: boolean }
+                  phone_number_id: { type: string }
+                  injected: { type: object }
+                  note: { type: string }
+        '403': { description: test_only (live key) }
+        '404': { description: number_not_found }
+        '422': { description: invalid_request }
+        '500': { description: test_inbound_failed }
+
   # ── Calling (WhatsApp Cloud API) — 2026-10-08. No credits charged; Meta bills business-initiated calls directly.
   /numbers/{phone_number_id}/calling:
     get:
       summary: Calling settings of a number
       tags: [Calling]
       operationId: getCallingSettings
-      security: [{ BearerAuth: [calls:read] }]
+      security: [{ BearerAuth: ["calls:read"] }]
       parameters:
         - { name: phone_number_id, in: path, required: true, schema: { type: string } }
         - { name: raw, in: query, required: false, schema: { type: boolean }, description: "Include Meta's raw calling object (SIP config stripped)" }
@@ -1163,7 +1400,7 @@ paths:
       summary: Update calling settings (only provided fields change)
       tags: [Calling]
       operationId: updateCallingSettings
-      security: [{ BearerAuth: [calls:write] }]
+      security: [{ BearerAuth: ["calls:write"] }]
       parameters:
         - { name: phone_number_id, in: path, required: true, schema: { type: string } }
       requestBody:
@@ -1200,7 +1437,7 @@ paths:
       summary: Call history (newest first)
       tags: [Calling]
       operationId: listCalls
-      security: [{ BearerAuth: [calls:read] }]
+      security: [{ BearerAuth: ["calls:read"] }]
       parameters:
         - { name: phone_number_id, in: query, required: false, schema: { type: string } }
         - { name: from, in: query, required: false, schema: { type: string, format: date-time } }
@@ -1224,7 +1461,7 @@ paths:
       summary: Start a business-initiated call (requires the user's call permission)
       tags: [Calling]
       operationId: startCall
-      security: [{ BearerAuth: [calls:write] }]
+      security: [{ BearerAuth: ["calls:write"] }]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1260,7 +1497,7 @@ paths:
       summary: Pre-accept an incoming call (idempotent per call_id + action)
       tags: [Calling]
       operationId: preAcceptCall
-      security: [{ BearerAuth: [calls:write] }]
+      security: [{ BearerAuth: ["calls:write"] }]
       parameters:
         - { name: call_id, in: path, required: true, schema: { type: string }, description: "URL-encoded; if it contains '/', use '_' and send body.call_id" }
       requestBody:
@@ -1278,7 +1515,7 @@ paths:
       summary: Accept an incoming call
       tags: [Calling]
       operationId: acceptCall
-      security: [{ BearerAuth: [calls:write] }]
+      security: [{ BearerAuth: ["calls:write"] }]
       parameters:
         - { name: call_id, in: path, required: true, schema: { type: string } }
       requestBody:
@@ -1296,7 +1533,7 @@ paths:
       summary: Reject an incoming call
       tags: [Calling]
       operationId: rejectCall
-      security: [{ BearerAuth: [calls:write] }]
+      security: [{ BearerAuth: ["calls:write"] }]
       parameters:
         - { name: call_id, in: path, required: true, schema: { type: string } }
       responses:
@@ -1308,7 +1545,7 @@ paths:
       summary: Terminate a call (the only action for business-initiated calls)
       tags: [Calling]
       operationId: terminateCall
-      security: [{ BearerAuth: [calls:write] }]
+      security: [{ BearerAuth: ["calls:write"] }]
       parameters:
         - { name: call_id, in: path, required: true, schema: { type: string } }
       responses:
@@ -1320,7 +1557,7 @@ paths:
       summary: Ask the user for call permission (interactive call_permission_request message)
       tags: [Calling]
       operationId: requestCallPermission
-      security: [{ BearerAuth: [calls:write] }]
+      security: [{ BearerAuth: ["calls:write"] }]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1344,7 +1581,7 @@ paths:
       summary: Call permission status for a user
       tags: [Calling]
       operationId: getCallPermission
-      security: [{ BearerAuth: [calls:read] }]
+      security: [{ BearerAuth: ["calls:read"] }]
       parameters:
         - { name: phone_number_id, in: query, required: true, schema: { type: string } }
         - { name: to, in: query, required: true, schema: { type: string } }

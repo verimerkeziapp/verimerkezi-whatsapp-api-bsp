@@ -138,8 +138,8 @@ GET /wa/calls?phone_number_id=1234567890&from=2026-10-01T00:00:00%2B03:00&limit=
 ## Gizlilik (SDP + KVKK)
 
 - SDP (IP/ICE bilgisi) `call.connect` olayının **ilk teslimatında tam** gider; teslimat başarılı olunca, en geç 1 saat sonra kayıtlarda `"[sdp N bytes]"` olarak maskelenir. Bu yüzden `/wa/webhooks/redeliver` ile yeniden gönderilen `call.connect`'te SDP yoktur — SDP'yi ilk teslimatta işleyin.
-- Kişisel veri silme talebinde arama kayıtlarındaki kişi numarası da silinir; süre / durum bilgisi anonim kalır.
-- Arama kayıtları, hesabınızın mesaj saklama süresi dolunca silinir.
+- `POST /wa/privacy/erasure` (KVKK silme talebi) arama kayıtlarındaki kişi numarasını da siler (`erased.calls`); süre / durum bilgisi anonim kalır.
+- Arama kayıtları `PATCH /wa/account/retention` → `messages_days` süresi dolunca silinir.
 
 ## Hata kodları
 

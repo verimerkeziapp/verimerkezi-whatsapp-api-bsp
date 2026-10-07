@@ -119,6 +119,7 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | `number.name_changed` ⁿ | Numaranın görünen adı için Meta kararı geldi (v2.17.0) |
 | `credit.low` ⁿ | Mesaj kredisi bakiyesi eşiğin altına düştü (eşik hesap ayarından — varsayılan panelde tanımlı) |
 | `credit.exhausted` ⁿ | Mesaj kredisi tükendi — gönderim engellendi |
+| `privacy.erasure_completed` ⁿ | KVKK silme talebi (`POST /wa/privacy/erasure`) tamamlandı |
 | `call.connect` ⁿ | Gelen arama çalıyor (SDP offer) ya da başlattığınız aramada Meta yanıtı (SDP answer) — bkz. [12-arama.md](12-arama.md) (v2.19.0) |
 | `call.status` ⁿ | Arama durumu: `ringing` / `accepted` / `rejected` / `missed` / `failed` (v2.19.0) |
 | `call.terminate` ⁿ | Arama bitti (süre, `billable_pulses`, hatalar) (v2.19.0) |
@@ -275,6 +276,7 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_id` (bizdeki kimlik — `GET /wa/templates/{id}` için), `meta_template_id`, `name`, `template_name` (eşanlamlı), `language`, `category`, `waba_id`, `status` (Meta'dan gelen olay değeri — ör. `template.flagged`'da `"FLAGGED"`; bu bir geçici uyarıdır, şablonun kalıcı durumu `PAUSED`/`DISABLED` olur), `reason` (Meta'nın bildirdiği ret sebebi; onayda `null`). **Not:** Yalnız bu dört şablon olayı yayınlanır; Meta'nın diğer şablon olayları (ör. `DISABLED`, `PENDING_DELETION`, `REINSTATED`, `IN_APPEAL`) şu an webhook olarak iletilmez — güncel durumu `GET /wa/templates` ile okuyun |
 | `credit.low` | `balance` (kalan mesaj kredisi), `threshold` (uyarı eşiği), `unit` (`messages`), `occurred_at` |
 | `credit.exhausted` | `balance` (`0`), `unit` (`messages`), `occurred_at` |
+| `privacy.erasure_completed` | `erasure_id`, `erased` (silinen kayıt sayıları; ör. `calls`) |
 | `quality.changed` | `phone` (numaranız), `quality` (`GREEN` / `YELLOW` / `RED`) |
 | `contact.opt_out_changed` | `contact_id` (int\|null), `phone` (E.164, `+90…`), `opted_out` (bool), `previous_opted_out` (bool\|null — kişi kaydı yoksa `null`), `source` (`whatsapp_ret`/`whatsapp_onay`/`admin_override`/`automation`/`panel`/`panel_bulk`), `phone_number_id` (string\|null — yalnız WhatsApp RET/ONAY'da dolu), `changed_at` (ISO 8601). Yalnız bayrak gerçekten değiştiğinde gönderilir |
 | `template.category_changed` | `template_id` (int), `meta_template_id` (str\|null), `name`, `language`, `waba_id`, `previous_category` (str\|null), `new_category` (`UTILITY`/`MARKETING`/`AUTHENTICATION`), `correct_category` (str\|null), `occurred_at`. Şablonun `category` alanı kendiliğinden güncellenir (`GET /wa/templates` yeni değeri döner) |

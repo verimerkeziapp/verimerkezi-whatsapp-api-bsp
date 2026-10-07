@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v1.9.0)
+VeriMerkezi WhatsApp API — Python SDK (v2.19.1)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -14,6 +14,9 @@ Bağımlılık: pip install requests
 import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
+
+__version__ = '2.19.1'
+VERSION = __version__
 
 
 class VeriMerkeziException(Exception):
@@ -170,7 +173,7 @@ class VeriMerkeziClient:
         url = self.base_url + '/media/' + str(int(media_id))
         headers = {
             'Authorization': f'Bearer {self.api_key}',
-            'User-Agent': 'VeriMerkezi-Python-SDK/1.9.0',
+            'User-Agent': 'VeriMerkezi-Python-SDK/' + __version__,
         }
         resp = requests.get(url, headers=headers, timeout=self.timeout, stream=True)
         if resp.status_code != 200:
@@ -205,7 +208,7 @@ class VeriMerkeziClient:
         with open(file_path, 'rb') as f:
             files = {'file': (os.path.basename(file_path), f, mime_type) if mime_type else (os.path.basename(file_path), f)}
             resp = requests.post(self.base_url + '/media', headers={'Authorization': f'Bearer {self.api_key}',
-                                 'User-Agent': 'VeriMerkezi-Python-SDK/1.9.0'},
+                                 'User-Agent': 'VeriMerkezi-Python-SDK/' + __version__},
                                  data={'phone_number_id': str(phone_id)}, files=files, timeout=self.timeout)
         j = resp.json() if resp.content else {}
         if resp.status_code // 100 != 2:
@@ -225,6 +228,35 @@ class VeriMerkeziClient:
     def start_history_import(self, phone_id) -> dict: return self._post('/numbers/' + quote(str(phone_id)) + '/history-import', {})
     def number_settings(self, phone_id, settings) -> dict: return self._patch('/numbers/' + quote(str(phone_id)) + '/settings', settings)
     def health(self) -> dict: return self._get('/health')
+
+    # ── Hesap ayarları + KVKK (2026-09-25) ───────────────────────────
+    def account_settings(self, settings) -> dict:
+        """settings: revoke_edit_clean, automation_enabled, opt_out_autoreply_enabled (tüm numaralar),
+        default_automation_enabled, default_opt_out_autoreply_enabled (yeni numaralar) — bool, en az bir alan."""
+        return self._patch('/account/settings', settings)
+
+    def update_retention(self, messages_days=None, media_days=None, webhook_deliveries_days=None) -> dict:
+        """KVKK saklama süreleri (gün): messages/media 1-3650, webhook_deliveries 1-365. En az bir alan."""
+        body = {k: v for k, v in {'messages_days': messages_days, 'media_days': media_days,
+                                  'webhook_deliveries_days': webhook_deliveries_days}.items() if v is not None}
+        return self._patch('/account/retention', body)
+
+    def privacy_erasure(self, wa_id=None, user_id=None, phone_id=None) -> dict:
+        """KVKK silme/unutulma — wa_id (telefon) veya user_id (BSUID) zorunlu. 202 + privacy.erasure_completed."""
+        body = {}
+        if wa_id is not None: body['wa_id'] = str(wa_id)
+        if user_id is not None: body['user_id'] = str(user_id)
+        if phone_id is not None: body['phone_number_id'] = str(phone_id)
+        return self._post('/privacy/erasure', body)
+
+    # ── Sandbox (yalnız vmk_test_ anahtarı) ──────────────────────────
+    def test_inbound(self, phone_id, type='text', from_=None, text=None, original_message_id=None) -> dict:
+        """Sahte gelen mesaj enjekte eder (type: text|revoke|edit); imzalı olaylar aboneliklere gider."""
+        body = {'phone_number_id': str(phone_id), 'type': type}
+        if from_ is not None: body['from'] = str(from_)
+        if text is not None: body['text'] = text
+        if original_message_id is not None: body['original_message_id'] = original_message_id
+        return self._post('/test/inbound', body)
 
     # ── Webhook aboneliği yönetimi (2026-09-23) ──────────────────────
     # Webhook'lar artık API üzerinden yönetilebilir (panelden de yapılabilir).
@@ -255,6 +287,12 @@ class VeriMerkeziClient:
     def test_webhook(self, webhook_id) -> dict:
         """Aboneliğe anında test.ping teslimatı dener. {'ok': True, 'result': 'delivered'} döner."""
         return self._post('/webhooks/' + str(int(webhook_id)) + '/test', {})
+
+    def rotate_webhook_secret(self, webhook_id, grace_seconds=None) -> dict:
+        """Secret'ı yerinde döndürür; yeni secret YALNIZCA bu yanıtta döner. grace_seconds (0-604800,
+        vars. 86400) boyunca eski secret X-VeriMerkezi-Signature-256-Previous ile ikinci imza olarak gönderilir."""
+        body = {} if grace_seconds is None else {'grace_seconds': int(grace_seconds)}
+        return self._post('/webhooks/' + str(int(webhook_id)) + '/rotate-secret', body)
 
     # ── Arama (Calling) — 2026-10-08 ─────────────────────────────────
     # Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
@@ -317,7 +355,7 @@ class VeriMerkeziClient:
                 'Authorization': f'Bearer {self.api_key}',
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': 'VeriMerkezi-Python-SDK/1.9.0',
+                'User-Agent': 'VeriMerkezi-Python-SDK/' + __version__,
             }
             if method in ('POST', 'PUT', 'PATCH', 'DELETE'):
                 headers['Idempotency-Key'] = idempotency_key

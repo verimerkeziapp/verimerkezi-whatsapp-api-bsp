@@ -1,8 +1,9 @@
 {
   "info": {
+    "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi BSP altyapısı için tüm endpoint'ler.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Environment oluşturun:\n   - `api_key`: vmk_live_xxx\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız (905551112233)\n3. Hazırsınız!\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa",
-    "version": "1.0.0",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.19.1 (2026-10-08).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 50 uç, 9 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n28 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "version": "2.19.1",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -22,7 +23,7 @@
     },
     {
       "key": "api_key",
-      "value": "vmk_live_REPLACE_ME"
+      "value": ""
     },
     {
       "key": "phone_number_id",
@@ -30,28 +31,32 @@
     },
     {
       "key": "test_recipient",
-      "value": "905551112233"
-    },
-    {
-      "key": "media_id",
-      "value": "12345"
+      "value": "905550000000"
     },
     {
       "key": "waba_id",
-      "value": "1029384756"
+      "value": "1234567890"
+    },
+    {
+      "key": "media_id",
+      "value": "1234567890"
     },
     {
       "key": "template_id",
-      "value": "512"
+      "value": "1234567890"
     },
     {
       "key": "webhook_id",
-      "value": "17"
+      "value": "1234567890"
+    },
+    {
+      "key": "call_id",
+      "value": "wacid.1234567890"
     }
   ],
   "item": [
     {
-      "name": "1. Hesap",
+      "name": "1. Hesap & Ayarlar",
       "item": [
         {
           "name": "GET /me",
@@ -70,18 +75,123 @@
           }
         },
         {
-          "name": "GET /numbers",
+          "name": "GET /reports/summary",
           "request": {
             "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/numbers",
+              "raw": "{{base_url}}/reports/summary?period=30d",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "numbers"
+                "reports",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "30d"
+                }
               ]
-            }
+            },
+            "description": "Kapsam: reports:read. period: 7d | 30d | 90d."
+          }
+        },
+        {
+          "name": "PATCH /account/settings — Hesap ayarları",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/account/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "account",
+                "settings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"revoke_edit_clean\": true,\n  \"automation_enabled\": true,\n  \"opt_out_autoreply_enabled\": true,\n  \"default_automation_enabled\": true,\n  \"default_opt_out_autoreply_enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: profile:write. İlk üç alan TÜM mevcut numaralara, default_* alanları sonradan bağlanacak numaralara uygulanır. Değerler boolean; en az bir alan."
+          }
+        },
+        {
+          "name": "PATCH /account/retention — KVKK saklama süreleri",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/account/retention",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "account",
+                "retention"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages_days\": 365,\n  \"media_days\": 180,\n  \"webhook_deliveries_days\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: profile:write. messages_days/media_days 1-3650, webhook_deliveries_days 1-365 (gün). En az bir alan."
+          }
+        },
+        {
+          "name": "POST /privacy/erasure — KVKK silme/unutulma",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/privacy/erasure",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "privacy",
+                "erasure"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"wa_id\": \"{{test_recipient}}\",\n  \"phone_number_id\": \"{{phone_number_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: profile:write. wa_id (telefon) veya user_id (BSUID) zorunlu. 202 döner ve privacy.erasure_completed olayı yayınlanır. İdempotent."
           }
         }
       ]
@@ -312,6 +422,38 @@
             },
             "description": "Okuma — kredi/kota tüketmez."
           }
+        },
+        {
+          "name": "POST /test/inbound — Sandbox sahte gelen mesaj",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/inbound",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "inbound"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"type\": \"text\",\n  \"from\": \"{{test_recipient}}\",\n  \"text\": \"Merhaba, bu bir test mesajıdır.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "YALNIZ test anahtarı (vmk_test_). type: text | revoke | edit (revoke/edit için original_message_id). İmzalı message.received / message.revoked / message.edited olayları aboneliklerinize gider; Meta'ya istek gitmez. 202 döner."
+          }
         }
       ]
     },
@@ -512,7 +654,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phone\": \"905551234567\",\n  \"name\": \"Ayşe Müşteri\",\n  \"email\": \"ayse@firma.com\",\n  \"tags\": [\"vip\", \"istanbul\"]\n}"
+              "raw": "{\n  \"phone\": \"905550000001\",\n  \"name\": \"Ayşe Müşteri\",\n  \"email\": \"ayse@firma.com\",\n  \"tags\": [\"vip\", \"istanbul\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/contacts",
@@ -537,7 +679,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contacts\": [\n    { \"phone\": \"905551234567\", \"name\": \"Ayşe Müşteri\", \"email\": \"ayse@firma.com\", \"tags\": [\"vip\"] },\n    { \"phone\": \"905559876543\", \"name\": \"Mehmet Yılmaz\", \"company\": \"Yılmaz Ltd.\" }\n  ],\n  \"skip_duplicates\": true,\n  \"country_code\": \"90\"\n}"
+              "raw": "{\n  \"contacts\": [\n    { \"phone\": \"905550000001\", \"name\": \"Ayşe Müşteri\", \"email\": \"ayse@firma.com\", \"tags\": [\"vip\"] },\n    { \"phone\": \"905550000002\", \"name\": \"Mehmet Yılmaz\", \"company\": \"Yılmaz Ltd.\" }\n  ],\n  \"skip_duplicates\": true,\n  \"country_code\": \"90\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/contacts/bulk",
@@ -549,6 +691,30 @@
                 "bulk"
               ]
             }
+          }
+        },
+        {
+          "name": "GET /contacts/opted-out — Abonelikten çıkanlar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contacts/opted-out?limit=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "opted-out"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Kapsam: contacts:read. limit 1-200, cursor ile sayfalama."
           }
         }
       ]
@@ -651,7 +817,6 @@
     },
     {
       "name": "6. Medya",
-      "description": "Gelen medyayı indirme. Webhook'taki data.media.media_id değerini {{media_id}} değişkenine yazın. Gerekli scope: messages:read (panelde \"Mesaj Okuma\") veya Tam Yetki.",
       "item": [
         {
           "name": "POST /media — Dosya yükle (→ media_id)",
@@ -778,9 +943,23 @@
       ]
     },
     {
-      "name": "7. Numaralar & Sistem",
-      "description": "Geçmiş aktarımı, ayarlar, sağlık, yeniden teslim (22.09.2026).",
+      "name": "7. Numaralar & Profil",
       "item": [
+        {
+          "name": "GET /numbers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/numbers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers"
+              ]
+            }
+          }
+        },
         {
           "name": "GET /numbers/{id}/history-import — Durum",
           "request": {
@@ -854,25 +1033,27 @@
           }
         },
         {
-          "name": "GET /health — Teslimat sağlığı",
+          "name": "GET /profile/{phone_number_id}",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/health",
+              "raw": "{{base_url}}/profile/{{phone_number_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "health"
+                "profile",
+                "{{phone_number_id}}"
               ]
-            }
+            },
+            "description": "Kapsam: profile:read."
           }
         },
         {
-          "name": "POST /webhooks/redeliver — Dead-letter yeniden teslim",
+          "name": "PATCH /profile/{phone_number_id} — Profili güncelle",
           "request": {
-            "method": "POST",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
@@ -880,19 +1061,25 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/webhooks/redeliver",
+              "raw": "{{base_url}}/profile/{{phone_number_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "webhooks",
-                "redeliver"
+                "profile",
+                "{{phone_number_id}}"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"since\": \"2026-09-22T00:00:00Z\"\n}"
-            }
+              "raw": "{\n  \"about\": \"Hafta içi 09:00-18:00\",\n  \"description\": \"İşletme açıklaması\",\n  \"email\": \"info@example.com\",\n  \"websites\": [\n    \"https://example.com\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: profile:write. Alanlar: about (≤139), description (≤512), address (≤256), email, vertical, websites (≤2). Coexistence numaralarda desteklenmez."
           }
         }
       ]
@@ -997,6 +1184,413 @@
                 "test"
               ]
             }
+          }
+        },
+        {
+          "name": "POST /webhooks/{id}/rotate-secret — Secret döndür",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/{{webhook_id}}/rotate-secret",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}",
+                "rotate-secret"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grace_seconds\": 86400\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: webhooks:write. Yeni secret YALNIZCA bu yanıtta döner. grace_seconds (0-604800, vars. 86400) boyunca eski secret X-VeriMerkezi-Signature-256-Previous başlığıyla ikinci imza olarak gönderilir."
+          }
+        },
+        {
+          "name": "GET /health — Teslimat sağlığı",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /webhooks/redeliver — Dead-letter yeniden teslim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/redeliver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "redeliver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"since\": \"2026-09-22T00:00:00Z\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Arama (Calling)",
+      "description": "WhatsApp Cloud API Calling. Kapsam: calls:read / calls:write. Ses WebRTC ile Meta ile sizin uç arasında akar; API yalnız SDP iletir. Olaylar: call.connect, call.status, call.terminate, call.permission_reply ('*' kapsamaz — açıkça seçin).",
+      "item": [
+        {
+          "name": "GET /numbers/{phone_number_id}/calling — Arama ayarları",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/numbers/{{phone_number_id}}/calling",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers",
+                "{{phone_number_id}}",
+                "calling"
+              ]
+            },
+            "description": "Kapsam: calls:read. ?raw=1 Meta ham yanıtını ekler."
+          }
+        },
+        {
+          "name": "PATCH /numbers/{phone_number_id}/calling — Ayarları güncelle",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/numbers/{{phone_number_id}}/calling",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers",
+                "{{phone_number_id}}",
+                "calling"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"callback_permission\": true,\n  \"call_icon_visibility\": \"DEFAULT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: calls:write. Yalnız verilen alanlar değişir (enabled, callback_permission, call_icon_visibility: DEFAULT | DISABLE_ALL, call_hours)."
+          }
+        },
+        {
+          "name": "GET /calls — Arama geçmişi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/calls?phone_number_id={{phone_number_id}}&limit=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls"
+              ],
+              "query": [
+                {
+                  "key": "phone_number_id",
+                  "value": "{{phone_number_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Kapsam: calls:read. Filtreler: phone_number_id, from, to (ISO 8601), peer, cursor, limit."
+          }
+        },
+        {
+          "name": "POST /calls — İşletme başlatmalı arama",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"sdp_offer\": \"v=0\\r\\no=- 0 0 IN IP4 127.0.0.1\\r\\n...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: calls:write. Kullanıcının arama izni gerekir. sdp_offer: WebRTC SDP (RFC 8866). biz_opaque opsiyonel (≤512). 201 + call_id."
+          }
+        },
+        {
+          "name": "GET /calls/permission — Arama izni durumu",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/calls/permission?phone_number_id={{phone_number_id}}&to={{test_recipient}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "permission"
+              ],
+              "query": [
+                {
+                  "key": "phone_number_id",
+                  "value": "{{phone_number_id}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{test_recipient}}"
+                }
+              ]
+            },
+            "description": "Kapsam: calls:read. status: no_permission | temporary | permanent."
+          }
+        },
+        {
+          "name": "POST /calls/permission-request — Arama izni iste",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/permission-request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "permission-request"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"body\": \"Sizi arayabilmemiz için izin verir misiniz?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: calls:write. 24 saatlik hizmet penceresi içinde etkileşimli izin isteği gönderir (mesaj olarak 1 kredi)."
+          }
+        },
+        {
+          "name": "POST /calls/{call_id}/pre_accept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/{{call_id}}/pre_accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "{{call_id}}",
+                "pre_accept"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sdp_answer\": \"v=0\\r\\n...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: calls:write. Gelen aramada medya bağlantısını önceden kurar."
+          }
+        },
+        {
+          "name": "POST /calls/{call_id}/accept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/{{call_id}}/accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "{{call_id}}",
+                "accept"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sdp_answer\": \"v=0\\r\\n...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: calls:write. Gelen aramayı kabul eder."
+          }
+        },
+        {
+          "name": "POST /calls/{call_id}/reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/{{call_id}}/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "{{call_id}}",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: calls:write."
+          }
+        },
+        {
+          "name": "POST /calls/{call_id}/terminate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/{{call_id}}/terminate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "{{call_id}}",
+                "terminate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: calls:write. İşletme başlatmalı aramalar için tek eylem."
           }
         }
       ]

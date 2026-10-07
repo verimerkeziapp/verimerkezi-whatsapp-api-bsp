@@ -8,11 +8,14 @@
  * { type: 'body', parameters: [{ type: 'text', text: 'Ahmet' }] }
  * ]);
  *
- * v1.9.0 — 2026-09-23
+ * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı (hesap ayarları, KVKK saklama/silme,
+ * sandbox gelen mesaj, webhook secret döndürme)
  * https://verimerkezi.app/panel/api/dokuman
  */
 
 const crypto = require('crypto');
+
+const VERSION = '2.19.1';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {
@@ -170,7 +173,7 @@ class VeriMerkeziClient {
  const res = await fetch(url, {
  headers: {
  'Authorization': 'Bearer ' + this.apiKey,
- 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.9.0',
+ 'User-Agent': 'VeriMerkezi-NodeJS-SDK/' + VERSION,
  },
  });
  if (!res.ok) {
@@ -211,7 +214,7 @@ class VeriMerkeziClient {
  fd.set('file', new Blob([buf], contentType ? { type: contentType } : undefined), name);
  const res = await fetch(this.baseUrl + '/media', {
  method: 'POST',
- headers: { 'Authorization': 'Bearer ' + this.apiKey, 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.9.0' },
+ headers: { 'Authorization': 'Bearer ' + this.apiKey, 'User-Agent': 'VeriMerkezi-NodeJS-SDK/' + VERSION },
  body: fd,
  });
  const txt = await res.text();
@@ -233,6 +236,32 @@ class VeriMerkeziClient {
  numberSettings(phoneNumberId, settings) { return this._patch('/numbers/' + encodeURIComponent(phoneNumberId) + '/settings', settings); }
  health() { return this._get('/health'); }
 
+ // ── Hesap ayarları + KVKK (2026-09-25) ───────────────────────────────
+ // settings: revoke_edit_clean, automation_enabled, opt_out_autoreply_enabled (tüm numaralara),
+ // default_automation_enabled, default_opt_out_autoreply_enabled (yeni numaralar) — boolean, en az bir alan.
+ accountSettings(settings) { return this._patch('/account/settings', settings); }
+ // retention: { messages_days (1-3650), media_days (1-3650), webhook_deliveries_days (1-365) } — en az bir alan.
+ updateRetention(retention) { return this._patch('/account/retention', retention); }
+ // KVKK silme/unutulma — waId (telefon) veya userId (BSUID) zorunlu. 202 + privacy.erasure_completed olayı.
+ privacyErasure({ waId, userId, phoneNumberId } = {}) {
+ const body = {};
+ if (waId != null) body.wa_id = waId;
+ if (userId != null) body.user_id = userId;
+ if (phoneNumberId != null) body.phone_number_id = phoneNumberId;
+ return this._post('/privacy/erasure', body);
+ }
+
+ // ── Sandbox (yalnız vmk_test_ anahtarı) ────────────────────────────────
+ // Sahte gelen mesaj enjekte eder → imzalı message.received / message.revoked / message.edited
+ // olayları aboneliklerinize gider. type: 'text' | 'revoke' | 'edit'. Meta'ya istek gitmez.
+ testInbound(phoneNumberId, { type = 'text', from, text, originalMessageId } = {}) {
+ const body = { phone_number_id: phoneNumberId, type };
+ if (from != null) body.from = from;
+ if (text != null) body.text = text;
+ if (originalMessageId != null) body.original_message_id = originalMessageId;
+ return this._post('/test/inbound', body);
+ }
+
  // ── Webhooks ───────────────────────────────────────────────────────────
  // Webhook abonelikleri v1.9.0 ile programatik olarak yönetilebilir (aşağıdaki metotlar).
  // secret YALNIZCA createWebhook yanıtında bir kez döner — güvenli saklayın.
@@ -248,6 +277,13 @@ class VeriMerkeziClient {
  updateWebhook(id, fields) { return this._patch('/webhooks/' + encodeURIComponent(id), fields); }
  deleteWebhook(id) { return this._delete('/webhooks/' + encodeURIComponent(id)); }
  testWebhook(id) { return this._post('/webhooks/' + encodeURIComponent(id) + '/test', {}); }
+ // Secret'ı yerinde döndürür; yeni secret YALNIZCA bu yanıtta döner. graceSeconds (0-604800, vars. 86400)
+ // boyunca eski secret X-VeriMerkezi-Signature-256-Previous başlığıyla ikinci imza olarak gönderilir.
+ rotateWebhookSecret(id, graceSeconds = null) {
+ const body = {};
+ if (graceSeconds != null) body.grace_seconds = graceSeconds;
+ return this._post('/webhooks/' + encodeURIComponent(id) + '/rotate-secret', body);
+ }
 
  // ── Arama (Calling) — 2026-10-08 ─────────────────────────────────────
  // Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
@@ -311,7 +347,7 @@ class VeriMerkeziClient {
  'Authorization': 'Bearer ' + this.apiKey,
  'Content-Type': 'application/json',
  'Accept': 'application/json',
- 'User-Agent': 'VeriMerkezi-NodeJS-SDK/1.9.0',
+ 'User-Agent': 'VeriMerkezi-NodeJS-SDK/' + VERSION,
  };
  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
  headers['Idempotency-Key'] = idempotencyKey;
@@ -385,4 +421,6 @@ class VeriMerkeziClient {
  }
 }
 
-module.exports = { VeriMerkeziClient, VeriMerkeziException };
+VeriMerkeziClient.VERSION = VERSION;
+
+module.exports = { VeriMerkeziClient, VeriMerkeziException, VERSION };

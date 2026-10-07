@@ -2,6 +2,19 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.19.1] — 2026-10-08
+
+> Belgeler, OpenAPI, SDK ve Postman tek sürümde hizalandı. **API davranışı değişmedi.**
+
+### Belgeleme
+- Eksik 5 uç belgelendi: `PATCH /account/settings`, `PATCH /account/retention`, `POST /privacy/erasure`, `POST /test/inbound`, `POST /webhooks/{id}/rotate-secret` (bkz. [docs/11-gelismis.md](docs/11-gelismis.md)).
+- `privacy.erasure_completed` olayı olay listesine eklendi (28 olay).
+- OpenAPI `info.version` 2.19.1: 50 uç, olay şeması 28 olayın tamamını listeler.
+
+### Eklenenler
+- **Postman koleksiyonu** güncellendi (57 istek, Arama klasörü dahil): `postman/VeriMerkezi.postman_collection.json`.
+- **SDK'lar:** `VERSION` sabiti (2.19.1) ve 5 yeni metot; paket sürümleri (`package.json`, `setup.py`, `__init__.py`) 2.19.1.
+
 ## [2.19.0] — 2026-10-08
 
 > WhatsApp Arama (Calling). Tamamen additive; mevcut uçlar, olaylar ve `*` abonelikleri etkilenmez. Ayrıntı: [docs/12-arama.md](docs/12-arama.md).

@@ -198,7 +198,7 @@ await vm.deleteWebhook(hook.id);
 > `message.history`, `message.sent`, `number.status_changed`, `credit.low`,
 > `credit.exhausted`, `contact.opt_out_changed`, `template.category_changed`,
 > `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`,
-> `call.terminate`, `call.permission_reply`) — bunları almak için olay listesine açıkça ekleyin.
+> `call.terminate`, `call.permission_reply`, `privacy.erasure_completed`) — bunları almak için olay listesine açıkça ekleyin.
 
 ## Hata Yönetimi
 
