@@ -7,7 +7,7 @@ info:
 
     Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
     (the returned wamid is a fake `test.<hex>` id).
-  version: "2.1.0"
+  version: "2.2.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -68,6 +68,42 @@ components:
         opted_out: { type: boolean }
         opted_out_at: { type: string, format: date-time, nullable: true }
         created_at: { type: string, format: date-time }
+
+    CallingSettings:
+      type: object
+      properties:
+        ok: { type: boolean }
+        phone_number_id: { type: string }
+        enabled: { type: boolean }
+        callback_permission: { type: [boolean, "null"] }
+        call_icon_visibility: { type: [string, "null"] }
+        call_hours: { type: [object, "null"] }
+        messaging_limit_tier: { type: [string, "null"] }
+        messaging_limit_ok: { type: [boolean, "null"], description: "Calling requires a messaging limit of at least 2000" }
+        raw: { type: object }
+    Call:
+      type: object
+      properties:
+        call_id: { type: string }
+        phone_number_id: { type: string }
+        direction: { type: string, enum: [user_initiated, business_initiated] }
+        from: { type: [string, "null"] }
+        to: { type: [string, "null"] }
+        status: { type: string, enum: [initiated, ringing, pre_accepted, accepted, terminating, rejected, missed, failed, completed] }
+        started_at: { type: [string, "null"], format: date-time }
+        ended_at: { type: [string, "null"], format: date-time }
+        duration_sec: { type: [integer, "null"] }
+        billable_pulses: { type: [integer, "null"], description: "ceil(duration/6), business-initiated only; informational (Meta bills directly)" }
+        last_action: { type: [string, "null"] }
+        errors: { type: [array, "null"] }
+        is_test: { type: boolean }
+        created_at: { type: string, format: date-time }
+    CallAnswer:
+      type: object
+      required: [sdp_answer]
+      properties:
+        sdp_answer: { type: string, description: "WebRTC SDP answer (RFC 8866)" }
+        call_id: { type: string, description: "Only when the path segment is '_'" }
 
     Template:
       type: object
@@ -1105,3 +1141,224 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: OK }
+
+  # ── Calling (WhatsApp Cloud API) — 2026-10-08. No credits charged; Meta bills business-initiated calls directly.
+  /numbers/{phone_number_id}/calling:
+    get:
+      summary: Calling settings of a number
+      tags: [Calling]
+      operationId: getCallingSettings
+      security: [{ BearerAuth: [calls:read] }]
+      parameters:
+        - { name: phone_number_id, in: path, required: true, schema: { type: string } }
+        - { name: raw, in: query, required: false, schema: { type: boolean }, description: "Include Meta's raw calling object (SIP config stripped)" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CallingSettings' }
+        '404': { description: number_not_found }
+    patch:
+      summary: Update calling settings (only provided fields change)
+      tags: [Calling]
+      operationId: updateCallingSettings
+      security: [{ BearerAuth: [calls:write] }]
+      parameters:
+        - { name: phone_number_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+                callback_permission: { type: boolean }
+                call_icon_visibility: { type: string, enum: [DEFAULT, DISABLE_ALL] }
+                call_hours:
+                  type: object
+                  properties:
+                    status: { type: string, enum: [ENABLED, DISABLED] }
+                    timezone_id: { type: string, example: Europe/Istanbul }
+                    weekly_operating_hours:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          day_of_week: { type: string, enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY] }
+                          open_time: { type: string, example: "0900" }
+                          close_time: { type: string, example: "1800" }
+                    holiday_schedule: { type: array, items: { type: object } }
+      responses:
+        '200': { description: Updated settings }
+        '404': { description: number_not_found }
+        '422': { description: invalid_request }
+
+  /calls:
+    get:
+      summary: Call history (newest first)
+      tags: [Calling]
+      operationId: listCalls
+      security: [{ BearerAuth: [calls:read] }]
+      parameters:
+        - { name: phone_number_id, in: query, required: false, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: peer, in: query, required: false, schema: { type: string }, description: "Other party's number" }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  calls: { type: array, items: { $ref: '#/components/schemas/Call' } }
+                  has_more: { type: boolean }
+                  next_cursor: { type: [string, "null"] }
+    post:
+      summary: Start a business-initiated call (requires the user's call permission)
+      tags: [Calling]
+      operationId: startCall
+      security: [{ BearerAuth: [calls:write] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number_id, to, sdp_offer]
+              properties:
+                phone_number_id: { type: string }
+                to: { type: string, example: "905551234567" }
+                sdp_offer: { type: string, description: "WebRTC SDP offer (RFC 8866)" }
+                biz_opaque: { type: string, maxLength: 512 }
+      responses:
+        '201':
+          description: Call initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  call_id: { type: string }
+                  status: { type: string, example: initiated }
+                  direction: { type: string, example: business_initiated }
+        '403': { description: call_permission_required }
+        '409': { description: calling_not_enabled / meta_outcome_unknown }
+        '422': { description: invalid_sdp / invalid_phone / calling_not_available_in_country }
+
+  /calls/{call_id}/pre_accept:
+    post:
+      summary: Pre-accept an incoming call (idempotent per call_id + action)
+      tags: [Calling]
+      operationId: preAcceptCall
+      security: [{ BearerAuth: [calls:write] }]
+      parameters:
+        - { name: call_id, in: path, required: true, schema: { type: string }, description: "URL-encoded; if it contains '/', use '_' and send body.call_id" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CallAnswer' }
+      responses:
+        '200': { description: OK (a repeat returns the first result with Idempotent-Replay header) }
+        '404': { description: call_not_found }
+        '409': { description: call_ended / call_action_conflict / action_in_progress }
+
+  /calls/{call_id}/accept:
+    post:
+      summary: Accept an incoming call
+      tags: [Calling]
+      operationId: acceptCall
+      security: [{ BearerAuth: [calls:write] }]
+      parameters:
+        - { name: call_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CallAnswer' }
+      responses:
+        '200': { description: OK }
+        '404': { description: call_not_found }
+        '409': { description: call_ended / call_action_conflict }
+
+  /calls/{call_id}/reject:
+    post:
+      summary: Reject an incoming call
+      tags: [Calling]
+      operationId: rejectCall
+      security: [{ BearerAuth: [calls:write] }]
+      parameters:
+        - { name: call_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: call_not_found }
+
+  /calls/{call_id}/terminate:
+    post:
+      summary: Terminate a call (the only action for business-initiated calls)
+      tags: [Calling]
+      operationId: terminateCall
+      security: [{ BearerAuth: [calls:write] }]
+      parameters:
+        - { name: call_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: call_not_found }
+
+  /calls/permission-request:
+    post:
+      summary: Ask the user for call permission (interactive call_permission_request message)
+      tags: [Calling]
+      operationId: requestCallPermission
+      security: [{ BearerAuth: [calls:write] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number_id, to]
+              properties:
+                phone_number_id: { type: string }
+                to: { type: string }
+                body: { type: string, maxLength: 1024 }
+      responses:
+        '201': { description: "Sent: { ok, message_id, to }" }
+        '422': { description: outside_service_window / invalid_phone }
+        '429': { description: permission_request_limited }
+
+  /calls/permission:
+    get:
+      summary: Call permission status for a user
+      tags: [Calling]
+      operationId: getCallPermission
+      security: [{ BearerAuth: [calls:read] }]
+      parameters:
+        - { name: phone_number_id, in: query, required: true, schema: { type: string } }
+        - { name: to, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  status: { type: string, enum: [no_permission, temporary, permanent] }
+                  expires_at: { type: [string, "null"], format: date-time }
+                  can_request: { type: [boolean, "null"] }
+                  can_call: { type: boolean }
+                  actions: { type: array, items: { type: object } }

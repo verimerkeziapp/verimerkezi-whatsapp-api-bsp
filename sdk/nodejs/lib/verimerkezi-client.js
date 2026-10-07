@@ -249,6 +249,53 @@ class VeriMerkeziClient {
  deleteWebhook(id) { return this._delete('/webhooks/' + encodeURIComponent(id)); }
  testWebhook(id) { return this._post('/webhooks/' + encodeURIComponent(id) + '/test', {}); }
 
+ // ── Arama (Calling) — 2026-10-08 ─────────────────────────────────────
+ // Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
+ // Olaylar: call.connect / call.status / call.terminate / call.permission_reply ('*' kapsamaz — açıkça ekleyin).
+ getCallingSettings(phoneNumberId, raw = false) {
+ return this._get('/numbers/' + encodeURIComponent(phoneNumberId) + '/calling' + (raw ? '?raw=1' : ''));
+ }
+ // settings: { enabled, callback_permission, call_icon_visibility, call_hours } — yalnız verilen alanlar değişir
+ updateCallingSettings(phoneNumberId, settings) {
+ return this._patch('/numbers/' + encodeURIComponent(phoneNumberId) + '/calling', settings);
+ }
+ // İşletme başlatmalı arama — kullanıcının arama izni gerekir. Dönen call_id ile terminateCall.
+ startCall(phoneNumberId, to, sdpOffer, bizOpaque = null) {
+ const body = { phone_number_id: phoneNumberId, to, sdp_offer: sdpOffer };
+ if (bizOpaque != null) body.biz_opaque = bizOpaque;
+ return this._post('/calls', body);
+ }
+ preAcceptCall(callId, sdpAnswer) { return this._callAction(callId, 'pre_accept', { sdp_answer: sdpAnswer }); }
+ acceptCall(callId, sdpAnswer) { return this._callAction(callId, 'accept', { sdp_answer: sdpAnswer }); }
+ rejectCall(callId) { return this._callAction(callId, 'reject', {}); }
+ terminateCall(callId) { return this._callAction(callId, 'terminate', {}); }
+ requestCallPermission(phoneNumberId, to, body = null) {
+ const payload = { phone_number_id: phoneNumberId, to };
+ if (body != null) payload.body = body;
+ return this._post('/calls/permission-request', payload);
+ }
+ getCallPermission(phoneNumberId, to) {
+ return this._get('/calls/permission?phone_number_id=' + encodeURIComponent(phoneNumberId) + '&to=' + encodeURIComponent(to));
+ }
+ // from/to: ISO 8601 tarih aralığı; peer: karşı taraf numarası
+ listCalls({ phoneNumberId, from, to, peer, cursor, limit } = {}) {
+ const params = new URLSearchParams();
+ if (phoneNumberId) params.set('phone_number_id', phoneNumberId);
+ if (from) params.set('from', from);
+ if (to) params.set('to', to);
+ if (peer) params.set('peer', peer);
+ if (cursor) params.set('cursor', String(cursor));
+ if (limit != null) params.set('limit', String(limit));
+ const qs = params.toString();
+ return this._get('/calls' + (qs ? '?' + qs : ''));
+ }
+ // call_id '/' içerirse yol yerine '_' + gövdede call_id gönderilir.
+ _callAction(callId, action, body) {
+ const id = String(callId);
+ if (id.includes('/')) return this._post('/calls/_/' + action, { ...body, call_id: id });
+ return this._post('/calls/' + encodeURIComponent(id) + '/' + action, body);
+ }
+
  _get(path) { return this._request('GET', path); }
  _post(path, body) { return this._request('POST', path, body); }
  _patch(path, body) { return this._request('PATCH', path, body); }

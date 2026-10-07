@@ -322,6 +322,61 @@ class VeriMerkeziClient
  /** Aboneliğe anında bir test.ping teslimatı dener. */
  public function testWebhook(int $id): array { return $this->post('/webhooks/' . $id . '/test', []); }
 
+ // ── Arama (Calling) — 2026-10-08 ─────────────────────────────────────
+ // Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
+ // Olaylar: call.connect / call.status / call.terminate / call.permission_reply ('*' kapsamaz — açıkça ekleyin).
+ public function getCallingSettings(string $phoneNumberId, bool $raw = false): array
+ {
+ return $this->get('/numbers/' . rawurlencode($phoneNumberId) . '/calling' . ($raw ? '?raw=1' : ''));
+ }
+
+ /** $settings: enabled, callback_permission, call_icon_visibility, call_hours — yalnız verilenler değişir. */
+ public function updateCallingSettings(string $phoneNumberId, array $settings): array
+ {
+ return $this->patch('/numbers/' . rawurlencode($phoneNumberId) . '/calling', $settings);
+ }
+
+ /** İşletme başlatmalı arama (kullanıcının arama izni gerekir). ['call_id' => ...] döner. */
+ public function startCall(string $phoneNumberId, string $to, string $sdpOffer, ?string $bizOpaque = null): array
+ {
+ $body = ['phone_number_id' => $phoneNumberId, 'to' => $to, 'sdp_offer' => $sdpOffer];
+ if ($bizOpaque !== null) $body['biz_opaque'] = $bizOpaque;
+ return $this->post('/calls', $body);
+ }
+
+ public function preAcceptCall(string $callId, string $sdpAnswer): array { return $this->callAction($callId, 'pre_accept', ['sdp_answer' => $sdpAnswer]); }
+ public function acceptCall(string $callId, string $sdpAnswer): array { return $this->callAction($callId, 'accept', ['sdp_answer' => $sdpAnswer]); }
+ public function rejectCall(string $callId): array { return $this->callAction($callId, 'reject', []); }
+ public function terminateCall(string $callId): array { return $this->callAction($callId, 'terminate', []); }
+
+ public function requestCallPermission(string $phoneNumberId, string $to, ?string $body = null): array
+ {
+ $payload = ['phone_number_id' => $phoneNumberId, 'to' => $to];
+ if ($body !== null) $payload['body'] = $body;
+ return $this->post('/calls/permission-request', $payload);
+ }
+
+ public function getCallPermission(string $phoneNumberId, string $to): array
+ {
+ return $this->get('/calls/permission?' . http_build_query(['phone_number_id' => $phoneNumberId, 'to' => $to]));
+ }
+
+ /** $filtre: phone_number_id, from, to (ISO 8601), peer, cursor, limit */
+ public function listCalls(array $filtre = []): array
+ {
+ $q = http_build_query(array_filter($filtre, fn ($v) => $v !== null && $v !== ''));
+ return $this->get('/calls' . ($q !== '' ? '?' . $q : ''));
+ }
+
+ /** call_id '/' içerirse yol yerine '_' + gövdede call_id gönderilir. */
+ private function callAction(string $callId, string $action, array $body): array
+ {
+ if (str_contains($callId, '/')) {
+ return $this->post('/calls/_/' . $action, $body + ['call_id' => $callId]);
+ }
+ return $this->post('/calls/' . rawurlencode($callId) . '/' . $action, $body);
+ }
+
  private function get(string $path): array { return $this->request('GET', $path); }
  private function post(string $path, array $body): array { return $this->request('POST', $path, $body); }
  private function patch(string $path, array $body): array { return $this->request('PATCH', $path, $body); }

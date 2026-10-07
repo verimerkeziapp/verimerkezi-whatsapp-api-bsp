@@ -256,6 +256,53 @@ class VeriMerkeziClient:
         """Aboneliğe anında test.ping teslimatı dener. {'ok': True, 'result': 'delivered'} döner."""
         return self._post('/webhooks/' + str(int(webhook_id)) + '/test', {})
 
+    # ── Arama (Calling) — 2026-10-08 ─────────────────────────────────
+    # Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
+    # Olaylar: call.connect / call.status / call.terminate / call.permission_reply ('*' kapsamaz).
+    def get_calling_settings(self, phone_id, raw=False) -> dict:
+        return self._get('/numbers/' + quote(str(phone_id)) + '/calling' + ('?raw=1' if raw else ''))
+
+    def update_calling_settings(self, phone_id, settings) -> dict:
+        """settings: enabled, callback_permission, call_icon_visibility, call_hours — yalnız verilenler değişir."""
+        return self._patch('/numbers/' + quote(str(phone_id)) + '/calling', settings)
+
+    def start_call(self, phone_id, to, sdp_offer, biz_opaque=None) -> dict:
+        """İşletme başlatmalı arama (kullanıcının arama izni gerekir). {'call_id': ...} döner."""
+        body = {'phone_number_id': str(phone_id), 'to': to, 'sdp_offer': sdp_offer}
+        if biz_opaque is not None:
+            body['biz_opaque'] = biz_opaque
+        return self._post('/calls', body)
+
+    def pre_accept_call(self, call_id, sdp_answer) -> dict: return self._call_action(call_id, 'pre_accept', {'sdp_answer': sdp_answer})
+    def accept_call(self, call_id, sdp_answer) -> dict: return self._call_action(call_id, 'accept', {'sdp_answer': sdp_answer})
+    def reject_call(self, call_id) -> dict: return self._call_action(call_id, 'reject', {})
+    def terminate_call(self, call_id) -> dict: return self._call_action(call_id, 'terminate', {})
+
+    def request_call_permission(self, phone_id, to, body=None) -> dict:
+        payload = {'phone_number_id': str(phone_id), 'to': to}
+        if body is not None:
+            payload['body'] = body
+        return self._post('/calls/permission-request', payload)
+
+    def get_call_permission(self, phone_id, to) -> dict:
+        return self._get('/calls/permission?phone_number_id=' + quote(str(phone_id)) + '&to=' + quote(str(to)))
+
+    def list_calls(self, phone_id=None, date_from=None, date_to=None, peer=None, cursor=None, limit=50) -> dict:
+        """date_from/date_to: ISO 8601; peer: karşı taraf numarası."""
+        q = ['limit=' + str(int(limit))]
+        if phone_id: q.append('phone_number_id=' + quote(str(phone_id)))
+        if date_from: q.append('from=' + quote(date_from))
+        if date_to: q.append('to=' + quote(date_to))
+        if peer: q.append('peer=' + quote(str(peer)))
+        if cursor: q.append('cursor=' + quote(str(cursor)))
+        return self._get('/calls?' + '&'.join(q))
+
+    def _call_action(self, call_id, action, body):
+        cid = str(call_id)
+        if '/' in cid:  # '/' içeren kimlik: yol yerine '_' + gövdede call_id
+            return self._post('/calls/_/' + action, dict(body, call_id=cid))
+        return self._post('/calls/' + quote(cid, safe='') + '/' + action, body)
+
     def _get(self, path): return self._request('GET', path)
     def _post(self, path, body): return self._request('POST', path, body)
     def _patch(self, path, body): return self._request('PATCH', path, body)

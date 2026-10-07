@@ -197,7 +197,8 @@ await vm.deleteWebhook(hook.id);
 > `*` (joker) joker-**dışı** yeni olayları kapsamaz (`message.revoked`, `message.edited`,
 > `message.history`, `message.sent`, `number.status_changed`, `credit.low`,
 > `credit.exhausted`, `contact.opt_out_changed`, `template.category_changed`,
-> `template.quality_changed`, `number.name_changed`) — bunları almak için olay listesine açıkça ekleyin.
+> `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`,
+> `call.terminate`, `call.permission_reply`) — bunları almak için olay listesine açıkça ekleyin.
 
 ## Hata Yönetimi
 

@@ -54,7 +54,8 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 │ ├── 08-pagination.md # Cursor pagination
 │ ├── 09-errors.md # Hata kodları + Meta kod referansı
 │ ├── 10-media.md # Gelen medyayı indirme (media_id → dosya)
-│ └── 11-gelismis.md # Yükleme, alıntılı cevap, uzlaştırma, geçmiş, ayarlar, sağlık
+│ ├── 11-gelismis.md # Yükleme, alıntılı cevap, uzlaştırma, geçmiş, ayarlar, sağlık
+│ └── 12-arama.md # Arama (Calling): ayarlar, gelen/giden arama, izin, geçmiş
 ├── examples/
 │ ├── php/ # Örnek kullanımlar
 │ ├── nodejs/
@@ -122,8 +123,9 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
 | **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
-| **23 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`) | Evet |
-| **Idempotency-Key** (24h TTL, replay safe) | Evet — yalnızca `POST /messages` |
+| **27 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`, `call.terminate`, `call.permission_reply`) | Evet |
+| **Arama (Calling)** (gelen aramayı kabul/ret, izinli müşteriyi arama, arama izni, ayarlar, geçmiş — WebRTC) | Evet — `/numbers/{id}/calling`, `/calls`, `/calls/{call_id}/*`, `/calls/permission*` |
+| **Idempotency-Key** (24h TTL, replay safe) | Evet — `POST /messages`, `POST /calls` |
 | **Rate limit** (fixed-window, `X-RateLimit-*` header'ları) | Evet — 120/dk (mesaj gönderimi ve `/messages/read` ayrı sayaçlarda 120/dk; medya indirme ayrı sayaç: 60/dk) |
 | **Cursor pagination** (stateless) | Evet — `/contacts`, `/credit/transactions` (opak cursor), `/templates`, `/messages`, `/media` (tamsayı cursor) — yanıt zarfı uca göre değişir, bkz. [08](docs/08-pagination.md) |
 | **Tier auto-sync** (TIER_50 -> 250 -> 1K -> 10K -> 100K -> UNLIMITED) | Evet |
@@ -159,6 +161,7 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 | [09-errors.md](docs/09-errors.md) | HTTP + Meta hata kodları |
 | [10-media.md](docs/10-media.md) | Gelen medyayı indirme (webhook `media_id` → dosya) |
 | [11-gelismis.md](docs/11-gelismis.md) | Dosya yükleme, alıntılı cevap, uzlaştırma, geçmiş aktarımı, numara ayarları, sağlık |
+| [12-arama.md](docs/12-arama.md) | WhatsApp Arama (Calling): ayarlar, gelen/giden arama, arama izni, geçmiş, ücret, gizlilik |
 
 ---
 

@@ -174,7 +174,8 @@ yalnızca `createWebhook` yanıtında bir kez döner** — güvenli saklayın.
 
 `*` (joker) yalnızca eski olayları kapsar; `credit.low`, `credit.exhausted`,
 `message.revoked/edited/history/sent`, `number.status_changed`, `contact.opt_out_changed`, `template.category_changed`,
-`template.quality_changed`, `number.name_changed` gibi yeni olayları
+`template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`,
+`call.terminate`, `call.permission_reply` gibi yeni olayları
 almak için bunları `events` listesine açıkça ekleyin.
 
 ```php

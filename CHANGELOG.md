@@ -2,6 +2,21 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.19.0] — 2026-10-08
+
+> WhatsApp Arama (Calling). Tamamen additive; mevcut uçlar, olaylar ve `*` abonelikleri etkilenmez. Ayrıntı: [docs/12-arama.md](docs/12-arama.md).
+
+### Eklenenler — Arama (Calling)
+- **10 yeni uç:** `GET`/`PATCH /numbers/{phone_number_id}/calling` (ayarlar), `POST /calls` (işletme başlatmalı arama, `Idempotency-Key` destekli), `POST /calls/{call_id}/pre_accept` · `/accept` · `/reject` · `/terminate`, `POST /calls/permission-request` (1 mesaj kredisi), `GET /calls/permission`, `GET /calls` (geçmiş; `peer` süzgeci).
+- **Yeni scope'lar:** `calls:read`, `calls:write`.
+- **4 yeni webhook olayı:** `call.connect`, `call.status`, `call.terminate`, `call.permission_reply` — **`*` joker aboneliğine dahil değildir**; açıkça ekleyin.
+- **SDK'lar** (Node.js / PHP / Python): `getCallingSettings`, `updateCallingSettings`, `startCall`, `preAcceptCall`, `acceptCall`, `rejectCall`, `terminateCall`, `requestCallPermission`, `getCallPermission`, `listCalls` (Python'da snake_case).
+- **OpenAPI** 2.2.0: `CallingSettings`, `Call`, `CallAnswer` şemaları ve arama uçları.
+
+### Ücret ve gizlilik
+- Kullanıcının başlattığı arama ücretsiz. İşletme başlatmalı aramayı Meta doğrudan faturalar (6 sn dilim); Veri Merkezi arama için kredi düşmez. `billable_pulses` yalnız bilgi amaçlı.
+- Ses tarayıcı/uygulama ile Meta arasında doğrudan akar (WebRTC); Veri Merkezi yalnız SDP taşır. SDP kayıtlarda maskelenir (yalnız ilk teslimatta tam).
+
 ## [2.18.0] — 2026-10-02
 
 > Sesli not desteği + OGG/Opus düzeltmesi. Geriye dönük uyumlu; mp3/m4a/aac/amr gönderimleri eskisi gibi çalışır.

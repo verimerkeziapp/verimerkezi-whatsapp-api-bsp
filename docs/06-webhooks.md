@@ -119,6 +119,10 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | `number.name_changed` ⁿ | Numaranın görünen adı için Meta kararı geldi (v2.17.0) |
 | `credit.low` ⁿ | Mesaj kredisi bakiyesi eşiğin altına düştü (eşik hesap ayarından — varsayılan panelde tanımlı) |
 | `credit.exhausted` ⁿ | Mesaj kredisi tükendi — gönderim engellendi |
+| `call.connect` ⁿ | Gelen arama çalıyor (SDP offer) ya da başlattığınız aramada Meta yanıtı (SDP answer) — bkz. [12-arama.md](12-arama.md) (v2.19.0) |
+| `call.status` ⁿ | Arama durumu: `ringing` / `accepted` / `rejected` / `missed` / `failed` (v2.19.0) |
+| `call.terminate` ⁿ | Arama bitti (süre, `billable_pulses`, hatalar) (v2.19.0) |
+| `call.permission_reply` ⁿ | Müşteri arama izni isteğinizi yanıtladı (v2.19.0) |
 | `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
 
 > **ⁿ = yeni olay (22–23 Eylül 2026).** Bu olaylar `*` aboneliğine **dahil DEĞİLDİR** — mevcut `*` aboneleri beklemedikleri trafik almaz. Yeni bir olayı almak için abonelik oluştururken/güncellerken listeye **açıkça ekleyin** (API'de `events` dizisine, panelde işaret kutusuyla). `*` seçtiğinizde `POST /wa/webhooks` yanıtındaki `note` alanı, joker kapsamı dışında kalan bu olayları size hatırlatır.
@@ -276,6 +280,10 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `template.category_changed` | `template_id` (int), `meta_template_id` (str\|null), `name`, `language`, `waba_id`, `previous_category` (str\|null), `new_category` (`UTILITY`/`MARKETING`/`AUTHENTICATION`), `correct_category` (str\|null), `occurred_at`. Şablonun `category` alanı kendiliğinden güncellenir (`GET /wa/templates` yeni değeri döner) |
 | `template.quality_changed` | `template_id`, `meta_template_id`, `name`, `language`, `category`, `waba_id`, `previous_quality_score`, `new_quality_score` (`GREEN`/`YELLOW`/`RED`/`UNKNOWN`), `occurred_at`. Yalnız puan gerçekten değiştiğinde gönderilir |
 | `number.name_changed` | `phone_number_id`, `display_phone_number`, `decision` (`APPROVED`/`REJECTED`/`DEFERRED`/`null`), `requested_name` (str\|null), `rejection_reason` (str\|null), `occurred_at` |
+| `call.connect` | `call_id`, `phone_number_id`, `from`, `to`, `direction` (`user_initiated`/`business_initiated`), `name`, `sdp_offer` (gelen aramada), `sdp_answer` (sizin başlattığınızda), `timestamp`, `biz_opaque_callback_data`. **SDP yalnız ilk teslimatta tam gelir**; `redeliver` ile yeniden gönderimde yoktur |
+| `call.status` | `call_id`, `phone_number_id`, `status` (`ringing`/`accepted`/`rejected`/`missed`/`failed`), `recipient`, `timestamp`, `biz_opaque_callback_data` |
+| `call.terminate` | `call_id`, `phone_number_id`, `direction`, `from`, `to`, `status` (`completed`/`failed`), `duration_sec`, `start_time`, `end_time` (ISO 8601), `billable_pulses` (yalnız işletme başlatmalı; diğerinde `null`), `errors`, `timestamp` |
+| `call.permission_reply` | `phone_number_id`, `from`, `user_id`, `granted` (bool), `response`, `permanent` (bool), `expires_at` (ISO 8601 / `null`), `response_source`, `wamid`, `timestamp` |
 | `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
 
 `errors` başarılı durumlarda `null`, `message.status.failed`'da Meta'nın hata listesidir:
