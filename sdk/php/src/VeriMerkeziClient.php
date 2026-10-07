@@ -20,7 +20,7 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.19.1';
+ public const VERSION = '2.19.2';
 
  private string $apiKey;
  private string $baseUrl;

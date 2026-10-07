@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.19.1)
+VeriMerkezi WhatsApp API — Python SDK (v2.19.2)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -15,7 +15,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.19.1'
+__version__ = '2.19.2'
 VERSION = __version__
 
 

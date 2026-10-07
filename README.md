@@ -1,7 +1,7 @@
 # Veri Merkezi — WhatsApp Business API SDK & Dokümantasyon
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![API](https://img.shields.io/badge/API-v2.19.1-emerald.svg)](https://api.verimerkezi.app)
+[![API](https://img.shields.io/badge/API-v2.19.2-emerald.svg)](https://api.verimerkezi.app)
 [![Status](https://img.shields.io/badge/Status-Production-success.svg)](https://verimerkezi.app)
 
 > Türkiye'nin **Meta onaylı WhatsApp Business Tech Provider**'ı — Veri Merkezi BSP altyapısı için resmî SDK, OpenAPI şeması ve dokümantasyon deposu.

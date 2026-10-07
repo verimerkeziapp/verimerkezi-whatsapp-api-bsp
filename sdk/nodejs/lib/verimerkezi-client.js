@@ -15,7 +15,7 @@
 
 const crypto = require('crypto');
 
-const VERSION = '2.19.1';
+const VERSION = '2.19.2';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {

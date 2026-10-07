@@ -8,8 +8,8 @@ info:
     Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
     (the returned wamid is a fake `test.<hex>` id).
 
-    API version 2.19.1 (2026-10-08) - 50 endpoints; docs, OpenAPI, SDKs and Postman share this version.
-  version: "2.19.1"
+    API version 2.19.2 (2026-10-08) - 50 endpoints; docs, OpenAPI, SDKs and Postman share this version.
+  version: "2.19.2"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -1263,7 +1263,7 @@ paths:
 
   /account/retention:
     patch:
-      summary: "KVKK data retention periods (days). Stored per account; currently enforced for call records only (message and media purge not yet active)"
+      summary: KVKK data retention periods (days). Stored per account; currently enforced for call records only (message and media purge not yet active)
       tags: [Account]
       operationId: updateRetention
       security: [{ BearerAuth: ["profile:write"] }]
