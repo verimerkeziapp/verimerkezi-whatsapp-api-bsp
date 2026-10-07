@@ -76,7 +76,7 @@ Hatalar şu yapıyı izler:
 | `invalid_media_id` | 400 | `media_id` yalnızca rakamlardan oluşmalı |
 | `invalid_media` | 422 | Medya nesnesi geçersiz (ör. `audio.voice` boolean değil — `field: "audio.voice"`) |
 
-> **Arama (Calling) hata kodları** (`call_permission_required`, `calling_not_enabled`, `calling_not_available_in_country`, `call_not_found`, `call_ended`, `invalid_action_for_direction`, `call_action_conflict`, `action_in_progress`, `permission_request_limited`, `call_rate_limited`, `invalid_sdp`, `meta_outcome_unknown`) için bkz. [12-arama.md](12-arama.md#hata-kodları).
+> **Arama (Calling) hata kodları** (`call_permission_required`, `calling_not_enabled`, `calling_not_available_in_country`, `call_not_found`, `call_ended`, `invalid_action_for_direction`, `call_action_conflict`, `action_in_progress`, `permission_request_limited`, `call_rate_limited`, `invalid_sdp`, `meta_outcome_unknown`, `calling_not_supported_for_number`, `calling_messaging_limit_too_low`, `calling_prerequisites_unmet`, `calling_outbound_unavailable`, `calling_disabled_quality`) için bkz. [12-arama.md](12-arama.md#hata-kodları).
 
 > **Form (WhatsApp Flows) hata kodları** (`invalid_flow`, `invalid_flow_json`, `invalid_template_flow_button`, `flow_not_found`, `flow_not_draft`, `meta_flow_failed`, `test_mode_unsupported`) için bkz. [13-formlar.md](13-formlar.md#hata-kodları).
 | `media_not_found` | 404 | Medya kaydı yok ya da sizin hesabınıza ait değil |

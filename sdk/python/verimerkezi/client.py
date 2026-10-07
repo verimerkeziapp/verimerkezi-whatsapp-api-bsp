@@ -297,6 +297,7 @@ class VeriMerkeziClient:
     # ── Arama (Calling) — 2026-10-08 ─────────────────────────────────
     # Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
     # Olaylar: call.connect / call.status / call.terminate / call.permission_reply ('*' kapsamaz).
+    # Yanıtta 'eligibility': eligible_inbound / eligible_outbound / checks[] (key, ok, title_tr, detail_tr, how_to_fix_tr).
     def get_calling_settings(self, phone_id, raw=False) -> dict:
         return self._get('/numbers/' + quote(str(phone_id)) + '/calling' + ('?raw=1' if raw else ''))
 

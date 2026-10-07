@@ -83,6 +83,24 @@ components:
         messaging_limit_tier: { type: [string, "null"] }
         messaging_limit_ok: { type: [boolean, "null"], description: "Calling requires a messaging limit of at least 2000" }
         raw: { type: object }
+        eligibility: { $ref: '#/components/schemas/CallingEligibility' }
+    CallingEligibility:
+      type: object
+      description: "Calling eligibility from stored number data (messaging limit is read from Meta once only when the stored tier is below 2000). ok/eligible_*: true = ok, false = blocked, null = unknown. Also returned in error bodies of GET/PATCH /numbers/{id}/calling."
+      properties:
+        eligible_inbound: { type: [boolean, "null"], description: "Customers can call this number" }
+        eligible_outbound: { type: [boolean, "null"], description: "Business can call customers (business-initiated)" }
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string, enum: [cloud_api_only, messaging_limit, calls_webhook, payment_method, country] }
+              ok: { type: [boolean, "null"] }
+              applies_to: { type: array, items: { type: string, enum: [inbound, outbound] } }
+              title_tr: { type: string }
+              detail_tr: { type: string }
+              how_to_fix_tr: { type: [string, "null"] }
     Call:
       type: object
       properties:
@@ -1464,9 +1482,9 @@ paths:
                           close_time: { type: string, example: "1800" }
                     holiday_schedule: { type: array, items: { type: object } }
       responses:
-        '200': { description: Updated settings }
+        '200': { description: Updated settings (includes eligibility) }
         '404': { description: number_not_found }
-        '422': { description: invalid_request }
+        '422': { description: "invalid_request / calling_not_supported_for_number / calling_messaging_limit_too_low / calling_prerequisites_unmet / calling_outbound_unavailable / calling_disabled_quality (error.eligibility included; coexistence or a messaging limit read from Meta below 2000 blocks enabled:true without changing Meta settings)" }
 
   /calls:
     get:

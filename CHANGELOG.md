@@ -14,6 +14,10 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - **Hazır örnek:** [examples/flows/teklif-formu.flow.json](examples/flows/teklif-formu.flow.json) — canlıda denenmiş tek ekranlı statik teklif formu.
 - **SDK'lar** 2.20.0: `listFlows`, `createFlow`, `getFlow`, `updateFlowJson`, `publishFlow`, `deprecateFlow`, `deleteFlow`, `getFlowPreview`, `getFlowMetrics`, `sendFlow` (Python'da snake_case). **OpenAPI** 2.20.0 (59 uç), **Postman** "10. Formlar" klasörü.
 
+### Eklenenler — Arama uygunluk kontrolü
+- `GET`/`PATCH /numbers/{phone_number_id}/calling` yanıtında yeni `eligibility` alanı (`eligible_inbound`, `eligible_outbound`, `checks[]` — Türkçe açıklamalı). OpenAPI `CallingEligibility` şeması. Belgeye "Aramayı açmak için şartlar" listesi eklendi ([docs/12-arama.md](docs/12-arama.md)).
+- 5 yeni hata kodu: `calling_not_supported_for_number` (Meta 141000), `calling_messaging_limit_too_low` (138015), `calling_prerequisites_unmet` (138018), `calling_outbound_unavailable` (138013), `calling_disabled_quality` (138014, yeniden denenebilir). Meta kaynaklı arama hatalarında `error.meta_message` da döner.
+
 ### Kapsam notu
 - **Statik** formlar desteklenir. Meta'nın Endpoint (`data_exchange`) özelliğini kullanan formlarda şifreli Endpoint trafiğini Veri Merkezi karşılamaz.
 

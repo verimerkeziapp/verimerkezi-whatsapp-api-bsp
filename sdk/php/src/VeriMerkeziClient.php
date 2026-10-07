@@ -356,6 +356,7 @@ class VeriMerkeziClient
  // ── Arama (Calling) — 2026-10-08 ─────────────────────────────────────
  // Ses WebRTC ile Meta <-> sizin uç arasında akar; API yalnız SDP iletir. Kredi düşmez.
  // Olaylar: call.connect / call.status / call.terminate / call.permission_reply ('*' kapsamaz — açıkça ekleyin).
+ // Yanıtta 'eligibility': eligible_inbound / eligible_outbound / checks[] (key, ok, title_tr, detail_tr, how_to_fix_tr).
  public function getCallingSettings(string $phoneNumberId, bool $raw = false): array
  {
  return $this->get('/numbers/' . rawurlencode($phoneNumberId) . '/calling' . ($raw ? '?raw=1' : ''));

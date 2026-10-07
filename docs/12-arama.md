@@ -4,12 +4,39 @@ WhatsApp Cloud API ile müşterilerinizden **sesli arama alabilir** ve izin vere
 
 **Gerekli scope'lar:** `calls:read` (ayarları, izin durumunu ve geçmişi okuma) · `calls:write` (ayar değiştirme, arama başlatma / yanıtlama, izin isteme).
 
-## Önkoşullar
+## Aramayı açmak için şartlar
 
-- Numara Cloud API ile bağlı ve `active` olmalı.
-- Numaranın mesajlaşma limiti en az **2.000** olmalı (`GET /wa/numbers/{id}/calling` → `messaging_limit_ok`).
-- Meta uygulamasında `calls` webhook alanı abone olmalı (Veri Merkezi tarafında açılır).
-- Arama numara bazında açılır: `PATCH /wa/numbers/{id}/calling` ile `"enabled": true`.
+- **Numara yalnız API'ye bağlı olmalı.** Telefondaki WhatsApp Business uygulamasıyla birlikte kullanılan (coexistence) numaralarda Meta aramayı desteklemez ([Meta](https://developers.facebook.com/docs/whatsapp/embedded-signup/custom-flows/onboarding-business-app-users)). Çözüm: aramayı ayrı bir API numarasında açın ya da numarayı uygulamadan ayırın.
+- **Günlük mesaj limiti en az 2.000 farklı kişi olmalı.** Limit işletme portföyü düzeyindedir, tüm numaralar paylaşır. 2.000'e çıkmanın yolları: işletme doğrulaması, çözüm ortağı üzerinden doğrulama ya da 30 günde kaliteli şablonlarla 2.000 farklı kişiye ulaşan mesaj ([Meta](https://developers.facebook.com/docs/whatsapp/messaging-limits)).
+- Meta uygulamasında `calls` webhook alanı abone olmalı (Veri Merkezi tarafında açıktır).
+- **Müşteriyi aramak için** (işletme başlatmalı) WhatsApp hesabında geçerli ödeme yöntemi olmalı: Meta Business Suite > WhatsApp hesabı > Ödeme yöntemi. Müşterinin sizi araması ücretsizdir, ödeme yöntemi gerekmez.
+- İşletme başlatmalı arama ABD, Kanada (+1), Mısır (+20), Vietnam (+84), Nijerya (+234) ülke kodlu işletme numaralarında kullanılamaz.
+- Arama numara bazında açılır: `PATCH /wa/numbers/{id}/calling` ile `"enabled": true` ([Meta Calling](https://developers.facebook.com/docs/whatsapp/cloud-api/calling)).
+
+### Uygunluk kontrolü (`eligibility`)
+
+`GET /wa/numbers/{id}/calling` (ve `PATCH` yanıtı) içindeki `eligibility` alanı yukarıdaki şartları kayıtlı numara bilgisiyle kontrol eder (kayıtlı limit 2.000'in altında görünüyorsa limit Meta'dan bir kez okunur). Meta okuması hata verse bile (ör. coexistence numara) `eligibility` hata gövdesinde döner.
+
+```json
+"eligibility": {
+ "eligible_inbound": false,
+ "eligible_outbound": false,
+ "checks": [
+ { "key": "cloud_api_only", "ok": false, "applies_to": ["inbound","outbound"],
+ "title_tr": "Numara yalnız API'ye bağlı olmalı",
+ "detail_tr": "Bu numara telefondaki WhatsApp Business uygulamasıyla birlikte kullanılıyor. ...",
+ "how_to_fix_tr": "Aramayı ayrı bir API numarasında açın ya da ..." },
+ { "key": "messaging_limit", "ok": true },
+ { "key": "calls_webhook", "ok": true },
+ { "key": "payment_method", "ok": null, "applies_to": ["outbound"] },
+ { "key": "country", "ok": true, "applies_to": ["outbound"] }
+ ]
+}
+```
+
+- `eligible_inbound`: müşteri sizi arayabilir mi · `eligible_outbound`: siz müşteriyi arayabilir misiniz (`true` / `false` / `null` = bilinmiyor).
+- Kontroller: `cloud_api_only`, `messaging_limit`, `calls_webhook`, `payment_method` (yalnız müşteriyi arama), `country` (yalnız müşteriyi arama). `ok: null` bilginin kayıtlı olmadığını ya da Meta'dan okunamadığını gösterir; son kararı Meta verir.
+- `"enabled": true` isteğinde numara coexistence ise ya da Meta'dan okunan limit 2.000'in altındaysa istek Meta'ya gönderilmeden `422` döner (`error.eligibility` ve `error.checked_locally: true` ile). Limit okunamazsa istek Meta'ya iletilir; Meta reddederse `calling_messaging_limit_too_low` döner.
 
 ## Uçlar
 
@@ -47,7 +74,7 @@ PATCH /wa/numbers/1234567890/calling
 ```json
 { "ok": true, "updated": true, "phone_number_id": "1234567890", "enabled": true,
  "callback_permission": true, "call_icon_visibility": "DEFAULT", "call_hours": { "...": "..." },
- "messaging_limit_tier": "TIER_2K", "messaging_limit_ok": true }
+ "messaging_limit_tier": "TIER_2K", "messaging_limit_ok": true, "eligibility": { "...": "..." } }
 ```
 
 - `callback_permission` açıkken müşteri sizi aradığında WhatsApp ona geri arama izni vermeyi önerir.
@@ -88,7 +115,7 @@ Idempotency-Key: 7d3c1c2e-...
 
 Ardından `call.status` (`ringing` → `accepted` / `rejected`) ve Meta'nın answer'ı ile `call.connect` (`sdp_answer`) gelir. Kapatmak için `POST /wa/calls/{call_id}/terminate`. Bu aramalarda yalnız `terminate` kullanılabilir.
 
-> **Ülke kısıtı:** Meta, işletme başlatmalı aramayı bazı ülkelerde sunmaz (Meta'nın listesi değişebilir; ör. ABD, Kanada, Mısır, Vietnam, Nijerya). Bu durumda `422 calling_not_available_in_country` döner. Hedef ülkenizde kullanılabilirliği ilk gerçek aramayla doğrulayın.
+> **Ülke kısıtı:** İşletme başlatmalı arama ABD, Kanada (+1), Mısır (+20), Vietnam (+84), Nijerya (+234) ülke kodlu işletme numaralarında kullanılamaz (Meta'nın listesi değişebilir). Alıcının ülkesinde kullanılamıyorsa `422 calling_not_available_in_country`, bu numara/ülke için kapalıysa `422 calling_outbound_unavailable` döner.
 
 ## Arama izni
 
@@ -156,6 +183,13 @@ GET /wa/calls?phone_number_id=1234567890&from=2026-10-01T00:00:00%2B03:00&limit=
 | `invalid_sdp` | 422 | SDP boş veya geçersiz |
 | `meta_outcome_unknown` | 409 | Meta'ya iletildi, sonuç belirsiz — tekrar göndermeyin, `call.*` olayını bekleyin |
 | `insufficient_credits` | 402 | İzin isteği için mesaj kredisi yetersiz |
+| `calling_not_supported_for_number` | 422 | Numara WhatsApp Business uygulamasıyla birlikte kullanılıyor (coexistence) ya da Cloud API numarası değil; arama açılamaz (Meta 141000) |
+| `calling_messaging_limit_too_low` | 422 | Günlük mesaj limiti 2.000'in altında; arama açılamaz (Meta 138015 ya da yerel kontrol) |
+| `calling_prerequisites_unmet` | 422 | Numaranın teknik önkoşulları karşılanmıyor (Meta 138018) |
+| `calling_outbound_unavailable` | 422 | İşletmenin başlattığı arama bu numara/ülke için kullanılamıyor (Meta 138013) |
+| `calling_disabled_quality` | 422 | Meta, kalite nedeniyle aramayı geçici olarak kapattı; bir süre sonra tekrar deneyin (Meta 138014, `retryable: true`) |
+
+> Meta kaynaklı arama hatalarında gövdede Meta'nın özgün açıklaması `error.meta_message` alanında da döner.
 
 > Test anahtarı (`vmk_test_`) ile tüm arama eylemleri Meta'ya gitmeden simüle edilir (`"simulated": true`).
 
