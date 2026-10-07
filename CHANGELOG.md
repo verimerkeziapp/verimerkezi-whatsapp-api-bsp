@@ -18,6 +18,9 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 - `GET`/`PATCH /numbers/{phone_number_id}/calling` yanıtında yeni `eligibility` alanı (`eligible_inbound`, `eligible_outbound`, `checks[]` — Türkçe açıklamalı). OpenAPI `CallingEligibility` şeması. Belgeye "Aramayı açmak için şartlar" listesi eklendi ([docs/12-arama.md](docs/12-arama.md)).
 - 5 yeni hata kodu: `calling_not_supported_for_number` (Meta 141000), `calling_messaging_limit_too_low` (138015), `calling_prerequisites_unmet` (138018), `calling_outbound_unavailable` (138013), `calling_disabled_quality` (138014, yeniden denenebilir). Meta kaynaklı arama hatalarında `error.meta_message` da döner.
 
+### Belgeleme — Hata zarfı
+- `docs/09`: çekirdek zarf (`ok`, `error.code`, `error.message`, `error.field?`) ve isteğe bağlı `meta_code`, `meta_subcode`, `meta_message`, `retryable`, `eligibility` / `checked_locally` alanları belgelendi. Önceki "meta_* gönderilmez" notu kaldırıldı.
+
 ### Kapsam notu
 - **Statik** formlar desteklenir. Meta'nın Endpoint (`data_exchange`) özelliğini kullanan formlarda şifreli Endpoint trafiğini Veri Merkezi karşılamaz.
 

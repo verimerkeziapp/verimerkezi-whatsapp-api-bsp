@@ -44,7 +44,19 @@ Hatalar şu yapıyı izler:
 - `message` — Türkçe açıklama
 - `field` — **opsiyonel**; validasyon hatalarında hangi alanın sorunlu olduğunu belirtir (örn. `to`, `phone`). Hata alana özgü değilse bulunmaz.
 
-> **Not:** Sunucu hata zarfı yalnızca `code`, `message` ve opsiyonel `field` alanlarını döner. Eski dokümanlarda görülebilen `meta_code` / `meta_subcode` / `details` alanları **standart zarfın parçası değildir** ve API tarafından gönderilmez.
+### İsteğe bağlı alanlar
+
+Çekirdek zarf (`ok: false`, `error.code`, `error.message`, opsiyonel `error.field`) her hatada aynıdır. Bazı uçlarda `error` içinde ek alanlar da gelebilir:
+
+| Alan | Ne zaman gelir | Açıklama |
+|---|---|---|
+| `meta_code` | Meta kaynaklı hatalarda: arama, formlar, mesaj gönderimi (`meta_send_failed` vb.) | Meta'nın hata kodu |
+| `meta_subcode` | Meta bir alt kod döndürdüyse | Meta'nın alt kodu |
+| `meta_message` | Bugün arama ve form hatalarında | Meta'nın ham açıklaması (en fazla 300 karakter) |
+| `retryable` | Arama ve form hatalarında | `true` / `false` — isteğin tekrar denenip denenemeyeceği |
+| `eligibility`, `checked_locally` | Yalnız `PATCH /wa/numbers/{id}/calling`, uygunluk engelinde | Bkz. [12-arama.md](12-arama.md) |
+
+> **Öneri:** İstemciniz bilmediği alanları yok saymalı. `code` ve `message` dışındaki alanlara bağımlı mantık kurmayın; `meta_*` alanları bilgi ve gösterim amaçlıdır. `details` alanı zarfın parçası değildir.
 
 ## API Hata Kodları (`error.code`)
 
