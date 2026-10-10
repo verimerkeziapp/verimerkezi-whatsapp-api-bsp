@@ -17,7 +17,7 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 |---|---|---|
 | `phone_number_id` | string | Hangi WhatsApp numaranızdan gönderileceği |
 | `to` | string | Alıcı E.164 formatında (örn. `905551234567`, başında + olmaz) |
-| `type` | string | `text`, `image`, `document`, `video`, `audio`, `sticker`, `location`, `contacts`, `template`, `reaction` |
+| `type` | string | `text`, `image`, `document`, `video`, `audio`, `sticker`, `template`, `reaction`, `flow` · `location`, `contacts` — **2.21.0 ile geliyor, şu an `422` döner** · etkileşimli düğme/liste (`button` / `list`) **henüz desteklenmiyor** |
 | `context` | object | (opsiyonel) Alıntılı cevap: `{ "message_id": "wamid..." }` — bkz. [11-gelismis.md](11-gelismis.md) |
 
 ## Mesaj Tipleri
@@ -142,6 +142,8 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 ```
 
 ### 7) Konum
+
+> **2.21.0 ile geliyor — şu an `422` döner.** Aşağıdaki örnek yayından sonra geçerli olacaktır.
 
 ```json
 {
