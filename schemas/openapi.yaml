@@ -8,7 +8,7 @@ info:
     Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
     (the returned wamid is a fake `test.<hex>` id).
 
-    API version 2.20.0 (2026-10-08) - 59 endpoints; docs, OpenAPI, SDKs and Postman share this version.
+    API version 2.20.0 (2026-10-08) - 61 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
   version: "2.20.0"
   contact:
     name: Veri Merkezi
@@ -175,11 +175,11 @@ components:
     WebhookEvent:
       type: string
       description: |
-        30 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
-        account.alert). The other 18 (message.revoked/edited/history/sent, number.status_changed,
+        32 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
+        account.alert). The other 20 (message.revoked/edited/history/sent, number.status_changed,
         number.name_changed, credit.low/exhausted, privacy.erasure_completed, contact.opt_out_changed,
         template.category_changed/quality_changed, call.connect/status/terminate/permission_reply,
-        flow.completed, flow.status_changed)
+        flow.completed, flow.status_changed, number.detached, number.purged)
         must be selected explicitly.
       enum:
         - "*"
@@ -213,6 +213,8 @@ components:
         - "call.permission_reply"
         - "flow.completed"
         - "flow.status_changed"
+        - "number.detached"
+        - "number.purged"
 
     WebhookSubscription:
       type: object
@@ -622,6 +624,7 @@ paths:
         - { name: q, in: query, required: false, schema: { type: string }, description: "Search in template name" }
         - { name: cursor, in: query, required: false, schema: { type: string } }
         - { name: limit, in: query, required: false, schema: { type: integer, default: 50 } }
+        - { name: refresh, in: query, required: false, schema: { type: boolean }, description: "1/true → sync from Meta before reading (same 1/min per WABA limit as POST /templates/sync; when limited returns cached list with refreshed=false)" }
       responses:
         '200':
           description: OK
@@ -701,6 +704,38 @@ paths:
                   valid: { type: boolean }
                   message: { type: string }
         '422': { description: template_invalid }
+
+  /templates/sync:
+    post:
+      summary: Sync templates from Meta now (1 call per minute per WABA)
+      tags: [Templates]
+      operationId: syncTemplates
+      security: [{ BearerAuth: ["templates:read"] }, { BearerAuth: ["templates:write"] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_number_id: { type: string, description: "Only sync this number's WABA; omit for all active WABAs" }
+      responses:
+        '200':
+          description: synced
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  synced: { type: object, additionalProperties: { type: integer }, description: "waba_id → templates processed" }
+                  templates_changed: { type: integer }
+                  at: { type: string, format: date-time }
+                  rate_limited: { type: object, additionalProperties: { type: integer }, description: "Partial: skipped waba_id → retry_after seconds" }
+                  errors: { type: object, additionalProperties: { type: string } }
+        '404': { description: number_not_found }
+        '429': { description: "sync_rate_limited (error.retry_after seconds, Retry-After header)" }
+        '502': { description: sync_failed }
 
   /templates/{id}:
     get:
@@ -1263,6 +1298,62 @@ paths:
         '200': { description: OK }
         '404': { description: number_not_found }
         '422': { description: invalid_request }
+
+  /numbers/{phone_number_id}/detach:
+    post:
+      summary: Detach the number from this account (stays registered in Meta/WABA); optional scheduled purge
+      description: |
+        Breaks only the Veri Merkezi link; the number stays registered in Meta and in the WABA (no deregister;
+        deregister_meta=true -> 422 deregister_not_supported). purge_messages is REQUIRED.
+        false: records are kept. true: message contents, media files/rows, conversations, flow sends, raw webhook
+        logs of this number, call peer data, API log bodies and webhook delivery bodies are purged by a scheduled
+        job within 24 hours - IRREVERSIBLE. Credit/billing rows, consent/opt-out evidence and counters are kept.
+        Queued outbound messages are cancelled (error_code number_detached). Afterwards send/template/flow/call
+        endpoints return 409 number_detached and inbound events are no longer forwarded. Events: number.detached,
+        number.purged. Repeat call -> already=true, purge is not rescheduled. Re-connecting the number in the
+        panel re-activates it (a not-yet-started purge is cancelled). Idempotency-Key supported. Live keys only.
+      tags: [Numbers]
+      operationId: detachNumber
+      security: [{ BearerAuth: ["profile:write"] }]
+      parameters:
+        - { name: phone_number_id, in: path, required: true, schema: { type: string } }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, minLength: 8, maxLength: 128 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purge_messages]
+              properties:
+                purge_messages: { type: boolean, description: "true = scheduled purge within 24h (irreversible)" }
+                reason: { type: string, maxLength: 100 }
+                deregister_meta: { type: boolean, description: "Not supported in this version (true -> 422)" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  phone_number_id: { type: string }
+                  detached_at: { type: string, format: date-time }
+                  already: { type: boolean }
+                  cancelled_outbound: { type: integer }
+                  purge:
+                    type: object
+                    nullable: true
+                    properties:
+                      status: { type: string, enum: [scheduled, running, done] }
+                      scheduled_at: { type: string, format: date-time }
+                      due_by: { type: string, format: date-time }
+                      done_at: { type: string, format: date-time }
+        '403': { description: insufficient_scope or test_mode_unsupported }
+        '404': { description: number_not_found }
+        '409': { description: idempotency_in_progress }
+        '422': { description: invalid_request (purge_messages / reason), deregister_not_supported, idempotency_key_conflict }
 
   /health:
     get:

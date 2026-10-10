@@ -176,6 +176,21 @@ curl "https://api.verimerkezi.app/wa/templates?status=APPROVED&category=UTILITY&
 
 > **WABA ayrımı:** Şablonlar Meta'da **numaraya değil WABA'ya** bağlıdır — aynı WABA'daki tüm numaralar aynı onaylı şablonu kullanabilir. Her şablonda `waba_id`, her numarada (`GET /wa/numbers`) `waba_id` döndüğü için "bu şablon şu numaralarda kullanılabilir" eşleştirmesini doğru kurabilirsiniz.
 
+## Şablon Senkronu — `POST /wa/templates/sync`
+
+Şablon listesini Meta'dan hemen çekip yerel kopyayı günceller (durum, kategori, kalite puanı, red nedeni, bileşenler; 100'den fazla şablonda sayfalanır). Gövde boşsa hesabınızın tüm aktif WABA'ları, `phone_number_id` verilirse yalnız o numaranın WABA'sı senkronlanır. Meta'da hiçbir şeyi değiştirmez. Yetki: `templates:read` veya `templates:write`.
+
+**Hız sınırı:** WABA başına dakikada 1. Tüm hedef WABA'lar sınırdaysa `429 sync_rate_limited` + `Retry-After` başlığı ve `error.retry_after` (saniye) döner; yalnız bazıları sınırdaysa `200` yanıtında `rate_limited` alanında listelenir. Arka planda ayrıca her 15 dakikada bir otomatik senkron çalışır; durum değişiklikleri webhook ile zaten anında işlenir.
+
+```http
+POST /wa/templates/sync
+{ "phone_number_id": "1234567890" }   // opsiyonel
+→ 200 { "ok": true, "synced": { "1029384756": 42 }, "templates_changed": 3, "at": "2026-10-08T12:00:00+03:00" }
+→ 429 { "ok": false, "error": { "code": "sync_rate_limited", "message": "...", "retry_after": 37, "rate_limited": { "1029384756": 37 } } }
+```
+
+**Kısayol:** `GET /wa/templates?refresh=1` listeyi okumadan önce aynı senkronu (aynı sınırla) dener. Sınırdaysa hata vermez; yerel liste `"refreshed": false` (ve `refresh_retry_after`) ile döner. Yanıt başlığı: `X-Templates-Refreshed: true|false`.
+
 ## Şablon Ayrıntısı — `GET /wa/templates/{id}`
 
 Listeye ek olarak `quality_score`, `status_updated_at`, `submitted_at`, tam `components` ve `display_phone_number` döner. Reddedilen bir şablonun **sebebini** (`rejected_reason`) buradan gösterebilirsiniz.

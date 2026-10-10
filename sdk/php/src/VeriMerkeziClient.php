@@ -268,6 +268,9 @@ class VeriMerkeziClient
  public function historyImportStatus(string $phoneNumberId): array { return $this->get('/numbers/' . rawurlencode($phoneNumberId) . '/history-import'); }
  public function startHistoryImport(string $phoneNumberId): array { return $this->post('/numbers/' . rawurlencode($phoneNumberId) . '/history-import', []); }
  public function numberSettings(string $phoneNumberId, array $settings): array { return $this->patch('/numbers/' . rawurlencode($phoneNumberId) . '/settings', $settings); }
+ // Numarayı hesaptan ayır (2026-10-08). $purgeMessages ZORUNLU: true = kayıtlar ≤24 saatte silinir (GERİ ALINAMAZ).
+ // Olaylar: number.detached / number.purged ('*' kapsamaz). Numara Meta/WABA'da kayıtlı kalır.
+ public function detachNumber(string $phoneNumberId, bool $purgeMessages, ?string $reason = null): array { $b = ['purge_messages' => $purgeMessages]; if ($reason !== null && $reason !== '') { $b['reason'] = $reason; } return $this->post('/numbers/' . rawurlencode($phoneNumberId) . '/detach', $b); }
  public function health(): array { return $this->get('/health'); }
 
  // ── Hesap ayarları + KVKK (2026-09-25) ───────────────────────────────
@@ -302,6 +305,9 @@ class VeriMerkeziClient
 
  /** Şablonu Meta'ya GÖNDERMEDEN doğrular (components + waba_id/phone_number_id zorunlu). */
  public function validateTemplate(array $data): array { return $this->post('/templates/validate', $data); }
+
+ /** Şablonları Meta'dan ŞİMDİ senkronlar (WABA başına dakikada 1; sınırda 429 sync_rate_limited). phone_number_id opsiyonel. */
+ public function syncTemplates(?string $phoneNumberId = null): array { return $this->post('/templates/sync', $phoneNumberId ? ['phone_number_id' => $phoneNumberId] : []); }
 
  /** Tek bir şablonu bileşenleriyle birlikte döner. */
  public function getTemplate(int $id): array { return $this->get('/templates/' . $id); }

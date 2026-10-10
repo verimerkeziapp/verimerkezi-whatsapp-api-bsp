@@ -233,3 +233,27 @@ Ayrıntılı istek/yanıt şemaları için bkz. [schemas/openapi.yaml](../schema
 | `POST` | `/wa/webhooks/{id}/rotate-secret` | `webhooks:write` | Webhook secret'ını yerinde döndürür (geçiş süresi + çift imza) — bkz. [06-webhooks.md](06-webhooks.md) ve CHANGELOG 2.11.0 |
 
 > **`revoke_edit_clean`:** açıkken silme/düzenlemede yalnız `message.revoked` / `message.edited` gönderilir; `message.received` gönderilmez, 24 saatlik pencere uzamaz, otomasyon/opt-out tetiklenmez. Varsayılan kapalı.
+
+## Numara ayırma — `POST /wa/numbers/{phone_number_id}/detach`
+
+Numarayı Veri Merkezi hesabınızdan ayırır. **Yalnızca bizim bağımız kopar:** numara Meta'da ve WABA'nızda kayıtlı kalır (Meta'dan kaldırma bu sürümde yok; `deregister_meta: true` → `422 deregister_not_supported`). Kapsam: `profile:write` · yalnız `vmk_live_` anahtarı · `Idempotency-Key` desteklenir.
+
+```http
+POST /wa/numbers/1234567890/detach
+{ "purge_messages": false, "reason": "Numara başka sisteme taşındı" }
+→ 200 { "ok": true, "phone_number_id": "1234567890", "detached_at": "2026-10-08T14:05:00+03:00",
+ "already": false, "cancelled_outbound": 3, "purge": null }
+
+POST /wa/numbers/1234567890/detach
+{ "purge_messages": true }
+→ 200 { "ok": true, "...": "...", "purge": { "status": "scheduled", "scheduled_at": "2026-10-08T14:05:00+03:00",
+ "due_by": "2026-10-09T14:05:00+03:00" } }
+```
+
+- `purge_messages` **zorunludur** (`true` / `false`; yoksa `422 invalid_request`). `reason` isteğe bağlı, en fazla 100 karakter.
+- `false` — yalnız bağ kopar; mesaj, medya ve arama kayıtlarınız kalır (`GET /messages`, `GET /media`, `GET /calls` ile okunmaya devam eder; saklama kuralları değişmez).
+- `true` — kayıtlar zamanlanmış olarak silinir (yanıt beklemez; en geç 24 saat). **Bu işlem geri alınamaz.** Silinenler: mesaj içerikleri, medya dosyaları ve kayıtları, konuşma kayıtları, form gönderim kayıtları, bu numaraya ait ham webhook kayıtları; arama kayıtlarında karşı taraf ve ayrıntılar; API günlüğü ve giden webhook teslim gövdeleri. Kalanlar (yasal/muhasebe): kredi hareketleri, fatura/ödeme, opt-out/izin kanıtları, mesaj satırının durum/ücret alanları ve sayaçlar. Bitince `number.purged` olayı gelir.
+- Ayrılan numara için gelen mesaj ve durum olayları size yönlendirilmez; gönderim, şablon, form ve arama uçları `409 number_detached` döner. Kuyrukta bekleyen giden mesajlar iptal edilir (`error_code: number_detached`, kredi düşülmez) ve sayısı `cancelled_outbound`'da döner.
+- Tekrar çağrı → `200` `already: true`, `cancelled_outbound: 0`; zamanlanmış silme yeniden zamanlanmaz, mevcut durumu döner.
+- **Yeniden bağlama:** numarayı panelden (Bağlantı) tekrar bağlayınca etkinleşir; henüz başlamamış silme iptal olur. `GET /numbers?status=all` ayrılan numarayı `status: "disconnected"` + `detached_at` ile gösterir.
+- Olaylar: `number.detached`, `number.purged` — **`*` joker aboneliğine dahil değildir**; açıkça ekleyin.

@@ -21,6 +21,13 @@ Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](ht
 ### Belgeleme — Hata zarfı
 - `docs/09`: çekirdek zarf (`ok`, `error.code`, `error.message`, `error.field?`) ve isteğe bağlı `meta_code`, `meta_subcode`, `meta_message`, `retryable`, `eligibility` / `checked_locally` alanları belgelendi. Önceki "meta_* gönderilmez" notu kaldırıldı.
 
+### Eklenenler — Numara ayırma ve şablon senkronu
+- **`POST /numbers/{phone_number_id}/detach`** (`profile:write`, `Idempotency-Key` destekli, yalnız canlı anahtar): numarayı hesabınızdan ayırır; numara Meta/WABA'da kalır. `purge_messages` zorunlu — `true` ise kayıtlar en geç 24 saatte silinir, **geri alınamaz**. Hatalar: `409 number_detached`, `422 deregister_not_supported`, `422 invalid_request`. Ayrıntı: [docs/11-gelismis.md](docs/11-gelismis.md).
+- **2 yeni webhook olayı:** `number.detached`, `number.purged` — `*` aboneliğine dahil değildir (toplam 32 olay).
+- **`POST /templates/sync`** ve **`GET /templates?refresh=1`**: Meta'dan anlık şablon senkronu (WABA başına dakikada 1; sınırda `429 sync_rate_limited`). Otomatik senkron 15 dakikada bir. Ayrıntı: [docs/04-templates.md](docs/04-templates.md).
+- **Olay alanları:** `message.status.*` olaylarına `user_id` ve `direction` (`inbound`/`outbound`); `message.received`'a `interactive` (`{type, name}`; form yanıtında `nfm_reply` / `flow`).
+- Uç sayısı: **61** (+ `HEAD /media/{media_id}`).
+
 ### Kapsam notu
 - **Statik** formlar desteklenir. Meta'nın Endpoint (`data_exchange`) özelliğini kullanan formlarda şifreli Endpoint trafiğini Veri Merkezi karşılamaz.
 

@@ -124,7 +124,9 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
 | **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
-| **30 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `privacy.erasure_completed`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`, `call.terminate`, `call.permission_reply`, `flow.completed`, `flow.status_changed`) | Evet |
+| **32 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `privacy.erasure_completed`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`, `call.terminate`, `call.permission_reply`, `flow.completed`, `flow.status_changed`, `number.detached`, `number.purged`) | Evet |
+| **Numara ayırma** (numarayı hesaptan ayır; isteğe bağlı, **geri alınamaz** kayıt silme) | Evet — `POST /numbers/{id}/detach` |
+| **Şablon senkronu** (Meta'dan anlık senkron) | Evet — `POST /templates/sync`, `GET /templates?refresh=1` |
 | **Arama (Calling)** (gelen aramayı kabul/ret, izinli müşteriyi arama, arama izni, ayarlar, geçmiş — WebRTC) | Evet — `/numbers/{id}/calling`, `/calls`, `/calls/{call_id}/*`, `/calls/permission*` |
 | **Formlar (WhatsApp Flows)** (statik formlar: oluştur / yayınla / gönder, yanıt `flow.completed`) | Evet — `/flows`, `/flows/{flow_id}/*`, `POST /messages` `type: flow` |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — `POST /messages`, `POST /calls` |

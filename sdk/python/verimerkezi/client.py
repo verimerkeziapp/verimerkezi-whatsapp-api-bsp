@@ -129,6 +129,10 @@ class VeriMerkeziClient:
         """Şablonu Meta'ya GÖNDERMEDEN doğrular. {'ok': True, 'valid': True, ...} döner."""
         return self._post('/templates/validate', data)
 
+    def sync_templates(self, phone_number_id=None) -> dict:
+        """Şablonları Meta'dan ŞİMDİ senkronlar (WABA başına dakikada 1; sınırda 429 sync_rate_limited)."""
+        return self._post('/templates/sync', {'phone_number_id': phone_number_id} if phone_number_id else {})
+
     def get_template(self, template_id) -> dict:
         """Tek şablonun tüm ayrıntısını (components dahil) döner. Yoksa template_not_found."""
         return self._get('/templates/' + str(int(template_id)))
@@ -227,6 +231,13 @@ class VeriMerkeziClient:
     def history_import_status(self, phone_id) -> dict: return self._get('/numbers/' + quote(str(phone_id)) + '/history-import')
     def start_history_import(self, phone_id) -> dict: return self._post('/numbers/' + quote(str(phone_id)) + '/history-import', {})
     def number_settings(self, phone_id, settings) -> dict: return self._patch('/numbers/' + quote(str(phone_id)) + '/settings', settings)
+    # Numarayı hesaptan ayır (2026-10-08). purge_messages ZORUNLU: True = kayıtlar ≤24 saatte silinir (GERİ ALINAMAZ).
+    # Olaylar: number.detached / number.purged ('*' kapsamaz). Numara Meta/WABA'da kayıtlı kalır.
+    def detach_number(self, phone_id, purge_messages: bool, reason=None) -> dict:
+        body = {'purge_messages': bool(purge_messages)}
+        if reason:
+            body['reason'] = reason
+        return self._post('/numbers/' + quote(str(phone_id)) + '/detach', body)
     def health(self) -> dict: return self._get('/health')
 
     # ── Hesap ayarları + KVKK (2026-09-25) ───────────────────────────

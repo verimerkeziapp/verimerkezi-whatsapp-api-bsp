@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.20.0 (2026-10-08).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 59 uç, 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n30 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.20.0 (2026-10-08).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 60 uç, 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n32 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
     "version": "2.20.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -563,6 +563,33 @@
           }
         },
         {
+          "name": "POST /templates/sync — Meta'dan senkronla",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/sync",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "sync"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\"\n}"
+            },
+            "description": "WABA başına dakikada 1. Sınırda 429 sync_rate_limited + retry_after. phone_number_id opsiyonel (yoksa tüm aktif WABA'lar)."
+          }
+        },
+        {
           "name": "GET /templates/{id} — Ayrıntı",
           "request": {
             "method": "GET",
@@ -1034,6 +1061,43 @@
               "mode": "raw",
               "raw": "{\n  \"automation_enabled\": false,\n  \"opt_out_autoreply_enabled\": false\n}"
             }
+          }
+        },
+        {
+          "name": "POST /numbers/{id}/detach — Numarayı ayır",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/numbers/{{phone_number_id}}/detach",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers",
+                "{{phone_number_id}}",
+                "detach"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"purge_messages\": false,\n  \"reason\": \"Numara başka sisteme taşındı\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kapsam: profile:write (yalnız vmk_live_). Numara Meta/WABA’da kayıtlı kalır; yalnız hesabınızdan ayrılır. purge_messages ZORUNLU: false = kayıtlar kalır; true = mesaj içerikleri, medya, konuşma/form/ham webhook kayıtları en geç 24 saatte silinir — GERİ ALINAMAZ (kredi/fatura/izin kayıtları kalır). deregister_meta:true → 422 deregister_not_supported. Sonrasında gönderim/şablon/form/arama uçları 409 number_detached. Olaylar: number.detached, number.purged ('*' kapsamaz). Tekrar çağrı → already:true, silme yeniden zamanlanmaz. Yeniden bağlama: panel /panel/wa/baglan."
           }
         },
         {

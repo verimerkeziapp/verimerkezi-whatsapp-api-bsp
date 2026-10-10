@@ -134,6 +134,9 @@ class VeriMerkeziClient {
  // Şablonu Meta'ya GÖNDERMEDEN doğrular (aynı gövde şeması; components + waba_id/phone_number_id zorunlu).
  validateTemplate(data) { return this._post('/templates/validate', data); }
 
+ // Şablonları Meta'dan ŞİMDİ senkronlar (WABA başına dakikada 1; sınırda 429 sync_rate_limited). phoneNumberId opsiyonel.
+ syncTemplates(phoneNumberId) { return this._post('/templates/sync', phoneNumberId ? { phone_number_id: phoneNumberId } : {}); }
+
  getTemplate(id) { return this._get('/templates/' + encodeURIComponent(id)); }
 
  // Onaylı/reddedilmiş şablonu düzenler (durum PENDING olur). opts.category opsiyonel.
@@ -234,6 +237,9 @@ class VeriMerkeziClient {
  historyImportStatus(phoneNumberId) { return this._get('/numbers/' + encodeURIComponent(phoneNumberId) + '/history-import'); }
  startHistoryImport(phoneNumberId) { return this._post('/numbers/' + encodeURIComponent(phoneNumberId) + '/history-import', {}); }
  numberSettings(phoneNumberId, settings) { return this._patch('/numbers/' + encodeURIComponent(phoneNumberId) + '/settings', settings); }
+ // Numarayı hesaptan ayır (2026-10-08). purgeMessages ZORUNLU: true = kayıtlar ≤24 saatte silinir (GERİ ALINAMAZ).
+ // Olaylar: number.detached / number.purged ('*' kapsamaz). Numara Meta/WABA'da kayıtlı kalır.
+ detachNumber(phoneNumberId, purgeMessages, reason) { const b = { purge_messages: purgeMessages === true }; if (reason) b.reason = reason; return this._post('/numbers/' + encodeURIComponent(phoneNumberId) + '/detach', b); }
  health() { return this._get('/health'); }
 
  // ── Hesap ayarları + KVKK (2026-09-25) ───────────────────────────────

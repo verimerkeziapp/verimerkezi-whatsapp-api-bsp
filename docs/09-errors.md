@@ -87,6 +87,9 @@ Hatalar şu yapıyı izler:
 | `media_invalid_format` | 422 | Desteklenmeyen MIME |
 | `invalid_media_id` | 400 | `media_id` yalnızca rakamlardan oluşmalı |
 | `invalid_media` | 422 | Medya nesnesi geçersiz (ör. `audio.voice` boolean değil — `field: "audio.voice"`) |
+| `number_detached` | 409 | Numara hesabınızdan ayrıldı (detach); gönderim / şablon / form / arama / profil uçları reddeder — panelden yeniden bağlayın |
+| `deregister_not_supported` | 422 | `detach` isteğinde `deregister_meta: true` — Meta'dan kaldırma bu sürümde yok |
+| `sync_rate_limited` | 429 | `POST /templates/sync` WABA başına dakikada 1 sınırı (`error.retry_after` saniye + `Retry-After`) |
 
 > **Arama (Calling) hata kodları** (`call_permission_required`, `calling_not_enabled`, `calling_not_available_in_country`, `call_not_found`, `call_ended`, `invalid_action_for_direction`, `call_action_conflict`, `action_in_progress`, `permission_request_limited`, `call_rate_limited`, `invalid_sdp`, `meta_outcome_unknown`, `calling_not_supported_for_number`, `calling_messaging_limit_too_low`, `calling_prerequisites_unmet`, `calling_outbound_unavailable`, `calling_disabled_quality`) için bkz. [12-arama.md](12-arama.md#hata-kodları).
 

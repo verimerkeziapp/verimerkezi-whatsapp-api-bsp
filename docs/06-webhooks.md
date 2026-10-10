@@ -126,6 +126,8 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | `call.permission_reply` ⁿ | Müşteri arama izni isteğinizi yanıtladı (v2.19.0) |
 | `flow.completed` ⁿ | Müşteri bir formu (WhatsApp Flow) gönderdi — bkz. [13-formlar.md](13-formlar.md) (v2.20.0) |
 | `flow.status_changed` ⁿ | Formun Meta durumu değişti (`PUBLISHED` / `THROTTLED` / `BLOCKED` …) (v2.20.0) |
+| `number.detached` ⁿ | Numara hesabınızdan ayrıldı (`POST /wa/numbers/{id}/detach`) — bkz. [11-gelismis.md](11-gelismis.md) (v2.20.0) |
+| `number.purged` ⁿ | Ayrılan numaranın zamanlanmış kayıt silmesi tamamlandı (`purge_messages: true`) (v2.20.0) |
 | `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
 
 > **ⁿ = yeni olay (22–23 Eylül 2026).** Bu olaylar `*` aboneliğine **dahil DEĞİLDİR** — mevcut `*` aboneleri beklemedikleri trafik almaz. Yeni bir olayı almak için abonelik oluştururken/güncellerken listeye **açıkça ekleyin** (API'de `events` dizisine, panelde işaret kutusuyla). `*` seçtiğinizde `POST /wa/webhooks` yanıtındaki `note` alanı, joker kapsamı dışında kalan bu olayları size hatırlatır.
@@ -216,6 +218,7 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 | `username` | WhatsApp kullanıcı adı (Meta `profile.username`); kullanıcı adı olmayan göndericide `null`. Meta kullanıcı adlarını kademeli açtığı için şu an çoğunlukla `null` gelir — eşleştirmede telefon / `user_id`'yi esas alın. Aynı değer `contact.username`'de de bulunur |
 | `name` | Kişinin WhatsApp profil adı |
 | `type` | `text` · `image` · `video` · `audio` · `document` · `sticker` · `button` · `interactive` … |
+| `interactive` | `type: interactive` mesajlarda `{ "type": "...", "name": "..." }`; form (WhatsApp Flow) yanıtında `type: "nfm_reply"`, `name: "flow"` (yanıtın kendisi `flow.completed` olayıyla gelir). Diğer tiplerde `null` |
 | `text` | Mesaj metni; medyada açıklama (caption), açıklama yoksa boş |
 | `media` | Medyalı mesajlarda dolu, diğerlerinde `null` — aşağıya bakın |
 | `timestamp` | Meta'nın mesaj zamanı (Unix saniye, string) |
@@ -274,7 +277,7 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `message.sent` | `wamid`, `source` (`vm_panel`/`automation`/`campaign`/`opt_out`/`system`), `from`, `to`, `user_id`, `type`, `text`, `media`, `template_name`, `campaign_id`, `phone_number_id`, `timestamp` |
 | `number.status_changed` | `phone_number_id`, `display_phone_number`, `status` (`connected`/`disconnected`/`flagged`/`restricted`/`pending`), `event`, `reason`, `initiated_by`, `occurred_at` |
 | `message.history` | Normal mesaj alanları + `history: true`, `thread_id`, `phase`, `chunk_order`, `progress` ([11-gelismis.md](11-gelismis.md)) |
-| `message.status.sent` · `.delivered` · `.read` · `.failed` | `wamid`, `recipient` (alıcının telefonu), `timestamp`, `errors` |
+| `message.status.sent` · `.delivered` · `.read` · `.failed` | `wamid`, `recipient` (alıcının telefonu), `user_id` (alıcı BSUID; yoksa `null`), `direction` (`inbound` / `outbound`), `timestamp`, `errors`, `phone_number_id`, `conversation` (Meta konuşma nesnesi; yoksa `null`), `pricing` (ücretlendirme; yoksa `null`), `biz_opaque_callback_data` (gönderirken verdiyseniz aynen döner; yoksa `null`) |
 | `template.approved` · `.rejected` · `.flagged` · `.paused` | `template_id` (bizdeki kimlik — `GET /wa/templates/{id}` için), `meta_template_id`, `name`, `template_name` (eşanlamlı), `language`, `category`, `waba_id`, `status` (Meta'dan gelen olay değeri — ör. `template.flagged`'da `"FLAGGED"`; bu bir geçici uyarıdır, şablonun kalıcı durumu `PAUSED`/`DISABLED` olur), `reason` (Meta'nın bildirdiği ret sebebi; onayda `null`). **Not:** Yalnız bu dört şablon olayı yayınlanır; Meta'nın diğer şablon olayları (ör. `DISABLED`, `PENDING_DELETION`, `REINSTATED`, `IN_APPEAL`) şu an webhook olarak iletilmez — güncel durumu `GET /wa/templates` ile okuyun |
 | `credit.low` | `balance` (kalan mesaj kredisi), `threshold` (uyarı eşiği), `unit` (`messages`), `occurred_at` |
 | `credit.exhausted` | `balance` (`0`), `unit` (`messages`), `occurred_at` |
@@ -290,6 +293,8 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `call.permission_reply` | `phone_number_id`, `from`, `user_id`, `granted` (bool), `response`, `permanent` (bool), `expires_at` (ISO 8601 / `null`), `response_source`, `wamid`, `timestamp` |
 | `flow.completed` | `event_id` (yanıt için sabit), `phone_number_id`, `from`, `user_id`, `contact_name`, `message_id`, `context_message_id`, `flow_token`, `flow_id` (yalnız API'den gönderildiyse), `response` (ayrıştırılmış form yanıtı), `response_raw`, `media[]` (`field`, `media_id` → `GET /wa/media/{media_id}`, `mime_type`, `sha256`, `file_name`, `meta_media_id`), `timestamp` |
 | `flow.status_changed` | `flow_id`, `waba_id`, `old_status`, `new_status`, `reason`, `occurred_at` |
+| `number.detached` | `phone_number_id`, `display_phone_number`, `reason`, `detached_at` (ISO 8601), `cancelled_outbound` |
+| `number.purged` | `phone_number_id`, `purged_at` (ISO 8601), `counts` (`messages`, `media_files`, `media_rows`, `conversations`, `calls`, `flow_sends`, `webhook_log`, `api_log`, `campaign_recipients`, `webhook_deliveries`, `deferred_jobs`) |
 | `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
 
 `errors` başarılı durumlarda `null`, `message.status.failed`'da Meta'nın hata listesidir:
