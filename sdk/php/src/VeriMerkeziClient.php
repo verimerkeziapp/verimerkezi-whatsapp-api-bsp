@@ -20,7 +20,7 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.20.0';
+ public const VERSION = '2.21.0';
 
  private string $apiKey;
  private string $baseUrl;
@@ -466,6 +466,25 @@ class VeriMerkeziClient
  public function sendFlow(string $phoneNumberId, string $to, array $flow): array
  {
  return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'type' => 'flow', 'flow' => $flow]);
+ }
+
+ /**
+ * Konum mesajı (v2.21.0). latitude -90..90, longitude -180..180; name/address isteğe bağlı (≤1000). Serbest mesaj, 1 kredi.
+ */
+ public function sendLocation(string $phoneNumberId, string $to, float $latitude, float $longitude, ?string $name = null, ?string $address = null): array
+ {
+ $location = ['latitude' => $latitude, 'longitude' => $longitude];
+ if ($name !== null && $name !== '') $location['name'] = $name;
+ if ($address !== null && $address !== '') $location['address'] = $address;
+ return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'type' => 'location', 'location' => $location]);
+ }
+
+ /**
+ * Kişi kartı mesajı (v2.21.0). $contacts: [['name' => ['formatted_name' => '...'], 'phones' => [['phone' => '+905550000000', 'wa_id' => '905550000000']], ...]] — 1..20 kart.
+ */
+ public function sendContacts(string $phoneNumberId, string $to, array $contacts): array
+ {
+ return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'type' => 'contacts', 'contacts' => array_values($contacts)]);
  }
 
  private function flowPath(string $flowId, string $suffix, ?string $phoneNumberId): string

@@ -15,7 +15,7 @@
 
 const crypto = require('crypto');
 
-const VERSION = '2.20.0';
+const VERSION = '2.21.0';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {
@@ -381,6 +381,17 @@ class VeriMerkeziClient {
  // Yanıttaki flow.flow_token, flow.completed olayında aynen döner.
  sendFlow(phoneNumberId, to, flow) {
  return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'flow', flow });
+ }
+ // Konum (v2.21.0): latitude -90..90, longitude -180..180; name/address isteğe bağlı (≤1000). Serbest mesaj, 1 kredi.
+ sendLocation(phoneNumberId, to, latitude, longitude, name = null, address = null) {
+ const location = { latitude, longitude };
+ if (name) location.name = name;
+ if (address) location.address = address;
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'location', location });
+ }
+ // Kişi kartı (v2.21.0): contacts = [{ name: { formatted_name }, phones?: [{ phone, type?, wa_id? }], emails?, org?, urls?, addresses?, birthday? }] — 1..20 kart.
+ sendContacts(phoneNumberId, to, contacts) {
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'contacts', contacts });
  }
  _flowPath(flowId, suffix, phoneNumberId) {
  return '/flows/' + encodeURIComponent(flowId) + suffix + (phoneNumberId ? '?phone_number_id=' + encodeURIComponent(phoneNumberId) : '');

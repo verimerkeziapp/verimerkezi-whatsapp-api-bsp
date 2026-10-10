@@ -8,8 +8,8 @@ info:
     Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
     (the returned wamid is a fake `test.<hex>` id).
 
-    API version 2.20.0 (2026-10-08) - 61 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
-  version: "2.20.0"
+    API version 2.21.0 (2026-10-10) - 61 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
+  version: "2.21.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -154,6 +154,80 @@ components:
         screen: { type: string, description: "Entry screen id (required for navigate)" }
         data: { type: object, description: "Initial screen data (navigate only)" }
 
+    LocationMessage:
+      type: object
+      description: "Location message (type=location). Free-form: 24h window, 1 credit. Invalid -> 422 invalid_location (since 2.21.0)."
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90, example: 41.0082 }
+        longitude: { type: number, minimum: -180, maximum: 180, example: 28.9784 }
+        name: { type: string, maxLength: 1000, example: "Merkez Ofis" }
+        address: { type: string, maxLength: 1000, example: "Ornek Mah. Ornek Cad. No:1, Istanbul" }
+
+    ContactsMessage:
+      type: array
+      description: "Contact cards (type=contacts), Meta format. 1-20 cards; name.formatted_name required; unknown fields are dropped. Invalid -> 422 invalid_contacts (since 2.21.0)."
+      minItems: 1
+      maxItems: 20
+      items:
+        type: object
+        required: [name]
+        properties:
+          name:
+            type: object
+            required: [formatted_name]
+            properties:
+              formatted_name: { type: string, maxLength: 1000 }
+              first_name: { type: string }
+              last_name: { type: string }
+              middle_name: { type: string }
+              prefix: { type: string }
+              suffix: { type: string }
+          phones:
+            type: array
+            items:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, example: "+905550000000" }
+                type: { type: string, example: WORK }
+                wa_id: { type: string, pattern: '^[0-9]{6,20}$', example: "905550000000", description: "If set, recipient sees Message / Save contact buttons" }
+          emails:
+            type: array
+            items:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string }
+                type: { type: string }
+          urls:
+            type: array
+            items:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string }
+                type: { type: string }
+          org:
+            type: object
+            properties:
+              company: { type: string }
+              department: { type: string }
+              title: { type: string }
+          addresses:
+            type: array
+            items:
+              type: object
+              properties:
+                street: { type: string }
+                city: { type: string }
+                state: { type: string }
+                zip: { type: string }
+                country: { type: string }
+                country_code: { type: string }
+                type: { type: string }
+          birthday: { type: string, format: date, example: "1990-01-31" }
+
     Template:
       type: object
       properties:
@@ -291,10 +365,11 @@ paths:
 
   /messages:
     post:
-      summary: Send a template or text message
+      summary: Send a message (template, text, media, reaction, flow, location, contacts)
       description: |
         Live mode consumes 1 credit. Test mode is free.
         Media (image/video/audio/document) is free-form and only deliverable within the 24h customer service window; otherwise use a template. 1 credit. Provide media by public https `link` (or Meta media `id`). Limits: image ≤5MB, video ≤16MB, audio ≤16MB, document ≤100MB.
+        Location (`type: location` + `location`) and contact cards (`type: contacts` + `contacts`) are free-form messages too (24h window, 1 credit; since 2.21.0).
       tags: [Messages]
       security: [{ BearerAuth: ["messages:send"] }]
       parameters:
@@ -311,8 +386,8 @@ paths:
                 to: { type: string, example: "905551234567" }
                 type:
                   type: string
-                  enum: [image, video, audio, document, flow]
-                  description: "Media type for a free-form media message, or `flow` for a WhatsApp Flow message (see `flow`)."
+                  enum: [image, video, audio, document, flow, location, contacts]
+                  description: "Media type for a free-form media message, `flow` for a WhatsApp Flow message (see `flow`), `location` (see `location`) or `contacts` (see `contacts`, since 2.21.0)."
                 template:
                   type: object
                   properties:
@@ -350,6 +425,10 @@ paths:
                       required: [body]
                 flow:
                   $ref: '#/components/schemas/FlowMessage'
+                location:
+                  $ref: '#/components/schemas/LocationMessage'
+                contacts:
+                  $ref: '#/components/schemas/ContactsMessage'
                 image:
                   type: object
                   description: "Image media. Provide a public https link (or Meta media id)."
@@ -393,7 +472,7 @@ paths:
                   id: { type: integer }
                   wamid: { type: string }
                   to: { type: string }
-                  type: { type: string, enum: [template, text, image, video, audio, document] }
+                  type: { type: string, enum: [template, text, image, video, audio, document, flow, location, contacts] }
                   status: { type: string, example: sent }
                   mode: { type: string, enum: [live, test] }
                   simulated: { type: boolean }

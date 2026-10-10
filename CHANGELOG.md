@@ -2,6 +2,19 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.21.0] — 2026-10-10
+
+> Konum ve kişi kartı gönderimi. Tamamen additive; mevcut mesaj türleri etkilenmez.
+
+### Eklenenler
+- **`POST /messages` `type: "location"`:** `{ "location": { latitude, longitude, name?, address? } }`. Hatalı değer → `422 invalid_location`.
+- **`POST /messages` `type: "contacts"`:** `{ "contacts": [ { name: { formatted_name, … }, phones?, emails?, org?, urls?, addresses?, birthday? } ] }`, en çok 20 kişi. Hatalı değer → `422 invalid_contacts` (alan yolu `field`'da).
+- Diğer serbest mesaj türleriyle aynı kurallar: 1 kredi, 24 saat penceresi (`131047` → `meta_send_failed` + kredi iadesi), `Idempotency-Key`, test anahtarı simülasyonu, `recipient` (BSUID), `context`, `biz_opaque_callback_data`. Ayrıntı: [docs/03-messages.md](docs/03-messages.md).
+- **SDK'lar** 2.21.0: `sendLocation`, `sendContacts` (Python'da `send_location`, `send_contacts`). **OpenAPI** 2.21.0, **Postman** iki yeni örnek istek.
+
+### Belgeleme
+- "2.21.0 ile geliyor" notları kaldırıldı. Etkileşimli düğme/liste (`button` / `list`) hâlâ **desteklenmiyor**.
+
 ## [2.20.0] — 2026-10-08
 
 > Formlar (WhatsApp Flows). Tamamen additive; mevcut uçlar, olaylar ve `*` abonelikleri etkilenmez. Ayrıntı: [docs/13-formlar.md](docs/13-formlar.md).

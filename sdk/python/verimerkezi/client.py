@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.20.0)
+VeriMerkezi WhatsApp API — Python SDK (v2.21.0)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -15,7 +15,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.20.0'
+__version__ = '2.21.0'
 VERSION = __version__
 
 
@@ -404,6 +404,17 @@ class VeriMerkeziClient:
         """flow: flow_id | flow_name, flow_token?, cta (≤20), body, header?, footer?, mode (published|draft), action?, screen, data?
         Yanıttaki flow.flow_token, flow.completed olayında aynen döner."""
         return self._post('/messages', {'phone_number_id': str(phone_id), 'to': str(to), 'type': 'flow', 'flow': flow})
+
+    def send_location(self, phone_id, to, latitude, longitude, name=None, address=None) -> dict:
+        """Konum (v2.21.0). latitude -90..90, longitude -180..180; name/address isteğe bağlı (≤1000). Serbest mesaj, 1 kredi."""
+        location = {'latitude': float(latitude), 'longitude': float(longitude)}
+        if name: location['name'] = name
+        if address: location['address'] = address
+        return self._post('/messages', {'phone_number_id': str(phone_id), 'to': str(to), 'type': 'location', 'location': location})
+
+    def send_contacts(self, phone_id, to, contacts) -> dict:
+        """Kişi kartı (v2.21.0). contacts: [{'name': {'formatted_name': '...'}, 'phones': [{'phone': '+905550000000', 'wa_id': '905550000000'}], ...}] — 1..20 kart."""
+        return self._post('/messages', {'phone_number_id': str(phone_id), 'to': str(to), 'type': 'contacts', 'contacts': list(contacts)})
 
     def _flow_path(self, flow_id, suffix, phone_id):
         return '/flows/' + quote(str(flow_id), safe='') + suffix + ('?phone_number_id=' + quote(str(phone_id)) if phone_id else '')

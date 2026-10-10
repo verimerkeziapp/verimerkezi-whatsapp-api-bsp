@@ -2,8 +2,8 @@
   "info": {
     "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.20.0 (2026-10-08).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 60 uç, 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n32 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
-    "version": "2.20.0",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.21.0 (2026-10-10).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 61 uç (HEAD /media/{media_id} dahil), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n32 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "version": "2.21.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -393,6 +393,58 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"reaction\",\n  \"reaction\": {\n    \"message_id\": \"wamid.HBgL...\",\n    \"emoji\": \"👍\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Konum gönder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "v2.21.0 — Serbest mesaj (24 saat pencere, 1 kredi). latitude -90..90, longitude -180..180 zorunlu; name / address isteğe bağlı (≤1000). Hata: 422 invalid_location.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"location\",\n  \"location\": {\n    \"latitude\": 41.0082,\n    \"longitude\": 28.9784,\n    \"name\": \"Merkez Ofis\",\n    \"address\": \"Örnek Mah. Örnek Cad. No:1, İstanbul\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Kişi kartı gönder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "v2.21.0 — Serbest mesaj (24 saat pencere, 1 kredi). 1–20 kart; name.formatted_name zorunlu. phones[].wa_id verilirse alıcıda Mesaj gönder / Kişiyi kaydet düğmeleri çıkar. Hata: 422 invalid_contacts.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"contacts\",\n  \"contacts\": [\n    {\n      \"name\": { \"formatted_name\": \"Destek Hattı\", \"first_name\": \"Destek\", \"last_name\": \"Hattı\" },\n      \"phones\": [ { \"phone\": \"+905550000000\", \"type\": \"WORK\", \"wa_id\": \"905550000000\" } ],\n      \"emails\": [ { \"email\": \"destek@example.com\", \"type\": \"WORK\" } ],\n      \"org\": { \"company\": \"Örnek A.Ş.\", \"title\": \"Müşteri Hizmetleri\" }\n    }\n  ]\n}"
             }
           }
         },

@@ -17,7 +17,7 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 |---|---|---|
 | `phone_number_id` | string | Hangi WhatsApp numaranızdan gönderileceği |
 | `to` | string | Alıcı E.164 formatında (örn. `905551234567`, başında + olmaz) |
-| `type` | string | `text`, `image`, `document`, `video`, `audio`, `sticker`, `template`, `reaction`, `flow` · `location`, `contacts` — **2.21.0 ile geliyor, şu an `422` döner** · etkileşimli düğme/liste (`button` / `list`) **henüz desteklenmiyor** |
+| `type` | string | `text`, `image`, `document`, `video`, `audio`, `sticker`, `template`, `reaction`, `flow`, `location`, `contacts` · etkileşimli düğme/liste (`button` / `list`) **henüz desteklenmiyor** |
 | `context` | object | (opsiyonel) Alıntılı cevap: `{ "message_id": "wamid..." }` — bkz. [11-gelismis.md](11-gelismis.md) |
 
 ## Mesaj Tipleri
@@ -141,23 +141,51 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 }
 ```
 
-### 7) Konum
-
-> **2.21.0 ile geliyor — şu an `422` döner.** Aşağıdaki örnek yayından sonra geçerli olacaktır.
+### 7) Konum (v2.21.0)
 
 ```json
 {
  "phone_number_id": "1234567890",
- "to": "905551112233",
+ "to": "905550000000",
  "type": "location",
  "location": {
- "latitude": 37.871865,
- "longitude": 32.484603,
- "name": "Veri Merkezi Ofis",
- "address": "Çankaya / Ankara"
+ "latitude": 41.0082,
+ "longitude": 28.9784,
+ "name": "Merkez Ofis",
+ "address": "Örnek Mah. Örnek Cad. No:1, İstanbul"
  }
 }
 ```
+
+- `latitude` (−90…90) ve `longitude` (−180…180) zorunlu; sayı ya da sayısal metin.
+- `name`, `address` isteğe bağlı, en fazla 1000 karakter.
+- Hatalı değer → `422 invalid_location` (`field` hatalı alanı gösterir).
+
+### 7b) Kişi Kartı (v2.21.0)
+
+```json
+{
+ "phone_number_id": "1234567890",
+ "to": "905550000000",
+ "type": "contacts",
+ "contacts": [
+ {
+ "name": { "formatted_name": "Destek Hattı", "first_name": "Destek", "last_name": "Hattı" },
+ "phones": [ { "phone": "+905550000000", "type": "WORK", "wa_id": "905550000000" } ],
+ "emails": [ { "email": "destek@example.com", "type": "WORK" } ],
+ "org": { "company": "Örnek A.Ş.", "title": "Müşteri Hizmetleri" },
+ "urls": [ { "url": "https://example.com", "type": "WORK" } ]
+ }
+ ]
+}
+```
+
+- 1–20 kişi kartı (Meta üst sınırı 257; okunabilirlik için 20 ile sınırlıdır). Her kartta `name.formatted_name` zorunlu; diğer alanlar isteğe bağlı.
+- İzinli alanlar (Meta biçimi): `name` (`formatted_name`, `first_name`, `last_name`, `middle_name`, `prefix`, `suffix`), `phones[]` (`phone`, `type`, `wa_id`), `emails[]` (`email`, `type`), `urls[]` (`url`, `type`), `org` (`company`, `department`, `title`), `addresses[]` (`street`, `city`, `state`, `zip`, `country`, `country_code`, `type`), `birthday` (`YYYY-MM-DD`). Bilinmeyen alanlar Meta'ya iletilmez.
+- `phones[].wa_id` verilirse alıcıda **Mesaj gönder** ve **Kişiyi kaydet** düğmeleri, verilmezse **WhatsApp'a davet et** görünür.
+- Hatalı değer → `422 invalid_contacts` (ör. `field: "contacts[0].name.formatted_name"`).
+
+> Konum ve kişi kartı serbest mesajdır: 24 saat penceresi (kapalıysa Meta `131047` → `meta_send_failed`, kredi iade edilir), 1 kredi, `Idempotency-Key`, test anahtarında simülasyon, `recipient` (BSUID), `context` ve `biz_opaque_callback_data` diğer türlerle aynı çalışır. Yanıtta `type` `location` / `contacts` döner; `GET /messages` kaydının `text` alanında okunur bir özet görünür (ör. `📍 Konum: Merkez Ofis — … (41.0082, 28.9784)`). Gelen konum / kişi kartları `message.received` olayında `location` / `contacts` alanlarıyla gelir.
 
 ### 8) Reaction (Emoji tepki)
 

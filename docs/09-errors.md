@@ -87,6 +87,8 @@ Hatalar şu yapıyı izler:
 | `media_invalid_format` | 422 | Desteklenmeyen MIME |
 | `invalid_media_id` | 400 | `media_id` yalnızca rakamlardan oluşmalı |
 | `invalid_media` | 422 | Medya nesnesi geçersiz (ör. `audio.voice` boolean değil — `field: "audio.voice"`) |
+| `invalid_location` | 422 | `location.latitude` / `longitude` eksik ya da aralık dışı, `name` / `address` 1000 karakteri aşıyor (`field` hatalı alanı gösterir) |
+| `invalid_contacts` | 422 | `contacts` boş ya da 20'den fazla, `name.formatted_name` eksik veya alan biçimi hatalı (ör. `field: "contacts[0].name.formatted_name"`) |
 | `number_detached` | 409 | Numara hesabınızdan ayrıldı (detach); gönderim / şablon / form / arama / profil uçları reddeder — panelden yeniden bağlayın |
 | `deregister_not_supported` | 422 | `detach` isteğinde `deregister_meta: true` — Meta'dan kaldırma bu sürümde yok |
 | `sync_rate_limited` | 429 | `POST /templates/sync` WABA başına dakikada 1 sınırı (`error.retry_after` saniye + `Retry-After`) |
