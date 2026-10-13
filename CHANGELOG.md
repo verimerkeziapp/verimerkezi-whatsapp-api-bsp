@@ -2,6 +2,18 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.22.0] — 2026-10-10
+
+> Etkileşimli mesajlar + test anahtarı düzeltmesi. Geriye dönük uyumlu. (Canlıya 10.10'da çıktı; public repoya 13.10'da işlendi.)
+
+### Eklenenler — Etkileşimli mesajlar
+- **`POST /messages` `type: "interactive"`:** `button` (en çok 3 yanıt düğmesi), `list` (en çok 10 satır), `cta_url` (bağlantı düğmesi), `location_request_message` (konum isteği). Meta sınırları gönderimden önce doğrulanır: `422 invalid_interactive` + `field`. Serbest mesaj kuralları aynen geçerli. Ayrıntı: [docs/03-messages.md](docs/03-messages.md).
+- **Gelen seçimler:** `message.received` ve `message.echo` olaylarındaki `data.interactive` nesnesine `reply_id`, `reply_title`, `reply_description` eklendi. Geriye uyumlu; `type`, `name` ve `data.button` değişmedi.
+- **SDK'lar** 2.22.0: `sendButtons`, `sendList`, `sendCtaUrl`, `requestLocation`, `sendInteractive` (PHP, Node.js); Python'da snake_case karşılıkları. OpenAPI ve Postman'e dört örnek eklendi.
+
+### Düzeltmeler — Test anahtarı
+- Şablon, profil, numara/hesap ayarı, saklama süresi, kişi ve `POST /messages/read` uçları artık **simüle edilir**. Webhook aboneliği yazma uçları, `POST /privacy/erasure` ve geçmiş aktarımı başlatma `403 test_mode_unsupported` döner. Simüle edilen ya da engellenen yanıtlarda `X-Test-Mode: 1` başlığı bulunur. Tablo: [docs/02-authentication.md](docs/02-authentication.md#test-anahtarı-davranışı).
+
 ## [2.21.0] — 2026-10-10
 
 > Konum ve kişi kartı gönderimi. Tamamen additive; mevcut mesaj türleri etkilenmez.

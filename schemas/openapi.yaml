@@ -8,8 +8,11 @@ info:
     Per-message credit model. Test mode keys (`vmk_test_...`) are free and never send to Meta
     (the returned wamid is a fake `test.<hex>` id).
 
-    API version 2.21.0 (2026-10-10) - 61 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
-  version: "2.21.0"
+    Test keys never change real data: every write endpoint is either simulated (`simulated: true`,
+    `mode: "test"`) or returns 403 `test_mode_unsupported`; both carry the `X-Test-Mode: 1` header (since 2.22.0).
+
+    API version 2.22.0 (2026-10-10) - 61 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
+  version: "2.22.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -56,6 +59,20 @@ components:
             code: { type: string, example: insufficient_credits }
             message: { type: string }
             field: { type: string, nullable: true }
+            retryable: { type: boolean, description: "Meta-originated and call errors: whether retrying makes sense" }
+            meta_code: { type: integer, description: "Meta error code (e.g. 131047 = outside 24h window)" }
+            meta_subcode: { type: [integer, "null"] }
+            meta_message: { type: string, maxLength: 300, description: "Call errors: Meta's description" }
+            required_scope: { type: string, description: "insufficient_scope (single scope)" }
+            required_scopes: { type: array, items: { type: string }, description: "insufficient_scope where any one of several scopes is enough" }
+            phone_number_id: { type: string, description: "number_detached" }
+            detached_at: { type: string, format: date-time, description: "number_detached" }
+            max_bytes: { type: integer, description: "media_too_large (POST /media)" }
+            type: { type: string, description: "media_too_large: detected media type" }
+            balance: { type: integer, description: "insufficient_credits" }
+            retry_after: { type: integer, description: "Seconds to wait (also Retry-After header)" }
+            base_url: { type: string, description: "endpoint_moved" }
+            docs: { type: string, description: "endpoint_moved" }
 
     Contact:
       type: object
@@ -246,6 +263,121 @@ components:
         submitted_at: { type: string, nullable: true }
         status_updated_at: { type: string, nullable: true }
 
+    InteractiveHeader:
+      type: object
+      description: "Optional header. text (<=60) or image/video/document by https link or Meta media id (list: text only)."
+      required: [type]
+      properties:
+        type: { type: string, enum: [text, image, video, document] }
+        text: { type: string, maxLength: 60 }
+        image: { type: object, properties: { link: { type: string, format: uri }, id: { type: string } } }
+        video: { type: object, properties: { link: { type: string, format: uri }, id: { type: string } } }
+        document: { type: object, properties: { link: { type: string, format: uri }, id: { type: string }, filename: { type: string } } }
+
+    InteractiveButtonsMessage:
+      type: object
+      description: "Reply buttons (interactive.type=button), Meta format. 1-3 buttons; title <=20 (unique), id <=256 (unique). Since 2.22.0. https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages"
+      required: [type, body, action]
+      properties:
+        type: { type: string, enum: [button] }
+        header: { $ref: "#/components/schemas/InteractiveHeader" }
+        body: { type: object, required: [text], properties: { text: { type: string, maxLength: 1024 } } }
+        footer: { type: object, properties: { text: { type: string, maxLength: 60 } } }
+        action:
+          type: object
+          required: [buttons]
+          properties:
+            buttons:
+              type: array
+              minItems: 1
+              maxItems: 3
+              items:
+                type: object
+                required: [type, reply]
+                properties:
+                  type: { type: string, enum: [reply] }
+                  reply:
+                    type: object
+                    required: [id, title]
+                    properties:
+                      id: { type: string, maxLength: 256, example: onay }
+                      title: { type: string, maxLength: 20, example: "Onaylıyorum" }
+
+    InteractiveListMessage:
+      type: object
+      description: "List (interactive.type=list), Meta format. 1-10 sections, 1-10 rows in total; row id <=200 (unique), title <=24, description <=72; section title <=24 (required with >1 section). Since 2.22.0. https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages"
+      required: [type, body, action]
+      properties:
+        type: { type: string, enum: [list] }
+        header: { type: object, required: [type, text], properties: { type: { type: string, enum: [text] }, text: { type: string, maxLength: 60 } } }
+        body: { type: object, required: [text], properties: { text: { type: string, maxLength: 4096 } } }
+        footer: { type: object, properties: { text: { type: string, maxLength: 60 } } }
+        action:
+          type: object
+          required: [button, sections]
+          properties:
+            button: { type: string, maxLength: 20, example: "Şube seç" }
+            sections:
+              type: array
+              minItems: 1
+              maxItems: 10
+              items:
+                type: object
+                required: [rows]
+                properties:
+                  title: { type: string, maxLength: 24 }
+                  rows:
+                    type: array
+                    minItems: 1
+                    maxItems: 10
+                    items:
+                      type: object
+                      required: [id, title]
+                      properties:
+                        id: { type: string, maxLength: 200 }
+                        title: { type: string, maxLength: 24 }
+                        description: { type: string, maxLength: 72 }
+
+    CtaUrlMessage:
+      type: object
+      description: "Call-to-action URL button (interactive.type=cta_url), Meta format. Taps do not produce webhook events. Since 2.22.0. https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-cta-url-messages"
+      required: [type, body, action]
+      properties:
+        type: { type: string, enum: [cta_url] }
+        header: { $ref: "#/components/schemas/InteractiveHeader" }
+        body: { type: object, required: [text], properties: { text: { type: string, maxLength: 1024 } } }
+        footer: { type: object, properties: { text: { type: string, maxLength: 60 } } }
+        action:
+          type: object
+          required: [parameters]
+          properties:
+            name: { type: string, enum: [cta_url] }
+            parameters:
+              type: object
+              required: [display_text, url]
+              properties:
+                display_text: { type: string, maxLength: 20, example: "Kargo takibi" }
+                url: { type: string, format: uri, maxLength: 2000, pattern: '^https?://', example: "https://example.com/takip?no=12345" }
+
+    LocationRequestMessage:
+      type: object
+      description: "Location request (interactive.type=location_request_message), Meta format. Body only (no header/footer). The user's reply arrives as message.received type=location with context.message_id = this message. Since 2.22.0. https://developers.facebook.com/documentation/business-messaging/whatsapp/messages/location-request-messages/"
+      required: [type, body]
+      properties:
+        type: { type: string, enum: [location_request_message] }
+        body: { type: object, required: [text], properties: { text: { type: string, maxLength: 1024 } } }
+        action: { type: object, properties: { name: { type: string, enum: [send_location] } } }
+
+    InboundInteractive:
+      type: [object, "null"]
+      description: "data.interactive in message.received / message.echo (type=interactive messages only; otherwise null). reply_* since 2.22.0 (additive)."
+      properties:
+        type: { type: string, example: list_reply, description: "button_reply | list_reply | nfm_reply | ..." }
+        name: { type: [string, "null"], description: "nfm_reply.name (\"flow\" for form replies)" }
+        reply_id: { type: [string, "null"], description: "Selected button/row id (button_reply, list_reply)" }
+        reply_title: { type: [string, "null"] }
+        reply_description: { type: [string, "null"], description: "list_reply only" }
+
     WebhookEvent:
       type: string
       description: |
@@ -365,11 +497,15 @@ paths:
 
   /messages:
     post:
-      summary: Send a message (template, text, media, reaction, flow, location, contacts)
+      summary: Send a message (template, text, media, reaction, flow, location, contacts, interactive)
       description: |
         Live mode consumes 1 credit. Test mode is free.
         Media (image/video/audio/document) is free-form and only deliverable within the 24h customer service window; otherwise use a template. 1 credit. Provide media by public https `link` (or Meta media `id`). Limits: image ≤5MB, video ≤16MB, audio ≤16MB, document ≤100MB.
         Location (`type: location` + `location`) and contact cards (`type: contacts` + `contacts`) are free-form messages too (24h window, 1 credit; since 2.21.0).
+        Interactive messages (`type: interactive` + `interactive`, since 2.22.0): reply buttons (`button`), list (`list`),
+        CTA URL button (`cta_url`) and location request (`location_request_message`), Meta format. Free-form (24h window;
+        outside it Meta 131047 -> 422 meta_send_failed and the credit is refunded), 1 credit. Invalid -> 422 invalid_interactive
+        with `field`. The customer's choice arrives in message.received as `data.interactive` (see InboundInteractive) and `data.button`.
       tags: [Messages]
       security: [{ BearerAuth: ["messages:send"] }]
       parameters:
@@ -386,8 +522,8 @@ paths:
                 to: { type: string, example: "905551234567" }
                 type:
                   type: string
-                  enum: [image, video, audio, document, flow, location, contacts]
-                  description: "Media type for a free-form media message, `flow` for a WhatsApp Flow message (see `flow`), `location` (see `location`) or `contacts` (see `contacts`, since 2.21.0)."
+                  enum: [image, video, audio, document, sticker, reaction, flow, location, contacts, interactive]
+                  description: "Media type for a free-form media message, `reaction`, `flow` for a WhatsApp Flow message (see `flow`), `location` (see `location`), `contacts` (see `contacts`, since 2.21.0) or `interactive` (see `interactive`, since 2.22.0)."
                 template:
                   type: object
                   properties:
@@ -429,6 +565,26 @@ paths:
                   $ref: '#/components/schemas/LocationMessage'
                 contacts:
                   $ref: '#/components/schemas/ContactsMessage'
+                interactive:
+                  description: "Interactive message (type=interactive, since 2.22.0). For a WhatsApp Flow use type=flow."
+                  oneOf:
+                    - $ref: '#/components/schemas/InteractiveButtonsMessage'
+                    - $ref: '#/components/schemas/InteractiveListMessage'
+                    - $ref: '#/components/schemas/CtaUrlMessage'
+                    - $ref: '#/components/schemas/LocationRequestMessage'
+                  discriminator:
+                    propertyName: type
+                    mapping:
+                      button: '#/components/schemas/InteractiveButtonsMessage'
+                      list: '#/components/schemas/InteractiveListMessage'
+                      cta_url: '#/components/schemas/CtaUrlMessage'
+                      location_request_message: '#/components/schemas/LocationRequestMessage'
+                recipient: { type: string, description: "BSUID recipient instead of `to` (aliases recipient_id / bsuid)" }
+                context:
+                  type: object
+                  properties:
+                    message_id: { type: string, description: "wamid to quote" }
+                biz_opaque_callback_data: { type: string, maxLength: 512, description: "Echoed in message.status.*; defaults to Idempotency-Key" }
                 image:
                   type: object
                   description: "Image media. Provide a public https link (or Meta media id)."

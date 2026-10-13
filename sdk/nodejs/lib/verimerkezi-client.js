@@ -15,7 +15,7 @@
 
 const crypto = require('crypto');
 
-const VERSION = '2.21.0';
+const VERSION = '2.22.0';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {
@@ -392,6 +392,38 @@ class VeriMerkeziClient {
  // Kişi kartı (v2.21.0): contacts = [{ name: { formatted_name }, phones?: [{ phone, type?, wa_id? }], emails?, org?, urls?, addresses?, birthday? }] — 1..20 kart.
  sendContacts(phoneNumberId, to, contacts) {
  return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'contacts', contacts });
+ }
+ // Etkileşimli mesaj (v2.22.0) — Meta biçiminde interactive nesnesi: { type: 'button'|'list'|'cta_url'|'location_request_message', header?, body, footer?, action }.
+ sendInteractive(phoneNumberId, to, interactive) {
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, type: 'interactive', interactive });
+ }
+ // Yanıt düğmeleri (v2.22.0): buttons = [{ id (≤256), title (≤20) }] — 1..3. options: { header?: 'metin' | {type:'image'|'video'|'document'|'text', ...}, footer?: 'metin' (≤60) }. body ≤1024.
+ sendButtons(phoneNumberId, to, bodyText, buttons, options = {}) {
+ const interactive = this._interactiveBase('button', bodyText, options);
+ interactive.action = { buttons: buttons.map((b) => (b.reply ? b : { type: 'reply', reply: { id: b.id, title: b.title } })) };
+ return this.sendInteractive(phoneNumberId, to, interactive);
+ }
+ // Liste (v2.22.0): buttonText ≤20; sections = [{ title?, rows: [{ id (≤200), title (≤24), description? (≤72) }] }] — 1..10 bölüm, toplam ≤10 satır. options: { header?: 'metin' (≤60), footer? }. body ≤4096.
+ sendList(phoneNumberId, to, bodyText, buttonText, sections, options = {}) {
+ const interactive = this._interactiveBase('list', bodyText, options);
+ interactive.action = { button: buttonText, sections };
+ return this.sendInteractive(phoneNumberId, to, interactive);
+ }
+ // Bağlantı düğmesi (v2.22.0): displayText ≤20, url http(s). options: { header?, footer? }. Dokunma webhook olayı üretmez.
+ sendCtaUrl(phoneNumberId, to, bodyText, displayText, url, options = {}) {
+ const interactive = this._interactiveBase('cta_url', bodyText, options);
+ interactive.action = { name: 'cta_url', parameters: { display_text: displayText, url } };
+ return this.sendInteractive(phoneNumberId, to, interactive);
+ }
+ // Konum isteği (v2.22.0): yalnız body (≤1024). Yanıt message.received type:'location' (context.message_id = bu mesaj) olarak gelir.
+ requestLocation(phoneNumberId, to, bodyText) {
+ return this.sendInteractive(phoneNumberId, to, { type: 'location_request_message', body: { text: bodyText }, action: { name: 'send_location' } });
+ }
+ _interactiveBase(type, bodyText, options) {
+ const i = { type, body: { text: bodyText } };
+ if (options.header) i.header = typeof options.header === 'string' ? { type: 'text', text: options.header } : options.header;
+ if (options.footer) i.footer = { text: options.footer };
+ return i;
  }
  _flowPath(flowId, suffix, phoneNumberId) {
  return '/flows/' + encodeURIComponent(flowId) + suffix + (phoneNumberId ? '?phone_number_id=' + encodeURIComponent(phoneNumberId) : '');

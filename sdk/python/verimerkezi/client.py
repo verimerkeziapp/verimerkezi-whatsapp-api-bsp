@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.21.0)
+VeriMerkezi WhatsApp API — Python SDK (v2.22.0)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -15,7 +15,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.21.0'
+__version__ = '2.22.0'
 VERSION = __version__
 
 
@@ -415,6 +415,43 @@ class VeriMerkeziClient:
     def send_contacts(self, phone_id, to, contacts) -> dict:
         """Kişi kartı (v2.21.0). contacts: [{'name': {'formatted_name': '...'}, 'phones': [{'phone': '+905550000000', 'wa_id': '905550000000'}], ...}] — 1..20 kart."""
         return self._post('/messages', {'phone_number_id': str(phone_id), 'to': str(to), 'type': 'contacts', 'contacts': list(contacts)})
+
+    def send_interactive(self, phone_id, to, interactive) -> dict:
+        """Etkileşimli mesaj (v2.22.0) — Meta biçiminde interactive: {'type': 'button'|'list'|'cta_url'|'location_request_message', 'header'?, 'body', 'footer'?, 'action'}."""
+        return self._post('/messages', {'phone_number_id': str(phone_id), 'to': str(to), 'type': 'interactive', 'interactive': interactive})
+
+    def send_buttons(self, phone_id, to, body_text, buttons, header=None, footer=None) -> dict:
+        """Yanıt düğmeleri (v2.22.0). buttons: [{'id': 'onay', 'title': 'Onaylıyorum'}] — 1..3; title ≤20, id ≤256, body ≤1024.
+        header: 'metin' ya da {'type': 'image', 'image': {'link': 'https://...'}}; footer ≤60."""
+        i = self._interactive_base('button', body_text, header, footer)
+        i['action'] = {'buttons': [b if 'reply' in b else {'type': 'reply', 'reply': {'id': str(b['id']), 'title': str(b['title'])}} for b in buttons]}
+        return self.send_interactive(phone_id, to, i)
+
+    def send_list(self, phone_id, to, body_text, button_text, sections, header=None, footer=None) -> dict:
+        """Liste (v2.22.0). button_text ≤20; sections: [{'title': 'İstanbul', 'rows': [{'id': 'ist-1', 'title': 'Kadıköy', 'description': '...'}]}]
+        — 1..10 bölüm, toplam ≤10 satır; row title ≤24, description ≤72; header yalnız metin (≤60); body ≤4096."""
+        i = self._interactive_base('list', body_text, header, footer)
+        i['action'] = {'button': button_text, 'sections': list(sections)}
+        return self.send_interactive(phone_id, to, i)
+
+    def send_cta_url(self, phone_id, to, body_text, display_text, url, header=None, footer=None) -> dict:
+        """Bağlantı düğmesi (v2.22.0). display_text ≤20, url http(s). Dokunma webhook olayı üretmez."""
+        i = self._interactive_base('cta_url', body_text, header, footer)
+        i['action'] = {'name': 'cta_url', 'parameters': {'display_text': display_text, 'url': url}}
+        return self.send_interactive(phone_id, to, i)
+
+    def request_location(self, phone_id, to, body_text) -> dict:
+        """Konum isteği (v2.22.0). Yalnız body (≤1024). Yanıt message.received type 'location' (context.message_id = bu mesaj) olarak gelir."""
+        return self.send_interactive(phone_id, to, {'type': 'location_request_message', 'body': {'text': body_text}, 'action': {'name': 'send_location'}})
+
+    @staticmethod
+    def _interactive_base(kind, body_text, header, footer):
+        i = {'type': kind, 'body': {'text': body_text}}
+        if header:
+            i['header'] = {'type': 'text', 'text': header} if isinstance(header, str) else header
+        if footer:
+            i['footer'] = {'text': footer}
+        return i
 
     def _flow_path(self, flow_id, suffix, phone_id):
         return '/flows/' + quote(str(flow_id), safe='') + suffix + ('?phone_number_id=' + quote(str(phone_id)) if phone_id else '')

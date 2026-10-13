@@ -15,6 +15,21 @@ Authorization: Bearer vmk_live_<32-char>
 | `vmk_live_*` | Production | Gerçek WhatsApp mesajları gönderilir, faturalandırılır |
 | `vmk_test_*` | Test | Mesaj **Meta'ya gönderilmez** (gerçek alıcıya gitmez), ücretsizdir; yanıttaki `wamid` sahtedir (`test.<hex>` biçiminde) |
 
+### Test anahtarı davranışı
+
+Hiçbir yazma ucu test anahtarıyla gerçek veriye ya da Meta'ya dokunmaz. İstek normal doğrulanır (aynı `4xx` hataları döner), sonra ya gerçekçi bir başarı yanıtı simüle edilir (`simulated: true`, `mode: "test"`) ya da `403 test_mode_unsupported` döner. İki durumda da yanıtta **`X-Test-Mode: 1`** başlığı bulunur.
+
+| Uç | Test anahtarıyla |
+|---|---|
+| `POST /messages`, `POST /media`, `POST /messages/read`, arama eylemleri, `POST /calls/permission-request`, `PATCH /numbers/{id}/calling` | Simüle edilir |
+| `POST /templates` (`202`, `PENDING`, `id: 0`), `PATCH /templates/{id}`, `DELETE /templates/{id}` | Simüle edilir; kayıt ve Meta'ya gönderim yok |
+| `PATCH /profile/{id}`, `PATCH /numbers/{id}/settings`, `PATCH /account/settings`, `PATCH /account/retention` | Simüle edilir; istenen değerler mevcutlarla birleştirilip döner, kaydedilmez |
+| `POST /contacts` (`id: 0`), `POST /contacts/bulk` | Simüle edilir; mükerrer kontrolü gerçek rehbere göre yapılır |
+| `POST /webhooks/redeliver` | Simüle edilir; teslimatlar sayılır, kuyruğa alınmaz |
+| `POST` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/rotate-secret` | `403 test_mode_unsupported` — abonelikleri canlı anahtarla yönetin. `POST /webhooks/{id}/test` çalışır |
+| `POST /privacy/erasure` | `403 test_mode_unsupported` (doğrulama hataları yine döner) |
+| `POST /numbers/{id}/history-import`, `POST /numbers/{id}/detach`, form yazma uçları | `403 test_mode_unsupported` |
+
 ## Scope (İzinler)
 
 Anahtar oluştururken hangi endpoint'lere erişim olacağını belirleyebilirsiniz:

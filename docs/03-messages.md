@@ -17,7 +17,7 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 |---|---|---|
 | `phone_number_id` | string | Hangi WhatsApp numaranızdan gönderileceği |
 | `to` | string | Alıcı E.164 formatında (örn. `905551234567`, başında + olmaz) |
-| `type` | string | `text`, `image`, `document`, `video`, `audio`, `sticker`, `template`, `reaction`, `flow`, `location`, `contacts` · etkileşimli düğme/liste (`button` / `list`) **henüz desteklenmiyor** |
+| `type` | string | `text`, `image`, `document`, `video`, `audio`, `sticker`, `template`, `reaction`, `flow`, `location`, `contacts`, `interactive` (`button` / `list` / `cta_url` / `location_request_message`) |
 | `context` | object | (opsiyonel) Alıntılı cevap: `{ "message_id": "wamid..." }` — bkz. [11-gelismis.md](11-gelismis.md) |
 
 ## Mesaj Tipleri
@@ -186,6 +186,38 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 - Hatalı değer → `422 invalid_contacts` (ör. `field: "contacts[0].name.formatted_name"`).
 
 > Konum ve kişi kartı serbest mesajdır: 24 saat penceresi (kapalıysa Meta `131047` → `meta_send_failed`, kredi iade edilir), 1 kredi, `Idempotency-Key`, test anahtarında simülasyon, `recipient` (BSUID), `context` ve `biz_opaque_callback_data` diğer türlerle aynı çalışır. Yanıtta `type` `location` / `contacts` döner; `GET /messages` kaydının `text` alanında okunur bir özet görünür (ör. `📍 Konum: Merkez Ofis — … (41.0082, 28.9784)`). Gelen konum / kişi kartları `message.received` olayında `location` / `contacts` alanlarıyla gelir.
+
+### 7c) Etkileşimli mesajlar (v2.22.0)
+
+`type: "interactive"` ile yanıt düğmeleri (`button`, en çok 3), liste (`list`, en çok 10 satır), bağlantı düğmesi (`cta_url`) ve konum isteği (`location_request_message`) gönderin. Gövde Meta Cloud API ile aynıdır; Meta sınırları gönderimden önce doğrulanır.
+
+```json
+{
+ "phone_number_id": "1234567890",
+ "to": "905550000000",
+ "type": "interactive",
+ "interactive": {
+ "type": "button",
+ "body": { "text": "Yarın 14:00 randevunuzu onaylıyor musunuz?" },
+ "action": { "buttons": [
+ { "type": "reply", "reply": { "id": "onay", "title": "Onaylıyorum" } },
+ { "type": "reply", "reply": { "id": "degistir", "title": "Saati değiştir" } }
+ ] }
+ }
+}
+```
+
+| Tür | Sınırlar |
+|---|---|
+| `button` | 1–3 düğme; `reply.title` ≤ 20, `reply.id` ≤ 256 (benzersiz). `body.text` ≤ 1024, `footer.text` ≤ 60 |
+| `list` | `action.button` ≤ 20; 1–10 bölüm, toplam 1–10 satır; satır `title` ≤ 24, `description` ≤ 72. `body.text` ≤ 4096 |
+| `cta_url` | `display_text` ≤ 20; `url` `http(s)://` ile başlar (≤ 2000). Dokunma olay üretmez |
+| `location_request_message` | Yalnız `body.text` (≤ 1024). Yanıt `message.received` `type: location` olarak gelir |
+
+- Hatalı gövdede `422 invalid_interactive` döner; `error.field` hatalı alanı gösterir (ör. `interactive.action.buttons[1].reply.title`).
+- Müşterinin seçimi `message.received` olayında `data.interactive.reply_id`, `reply_title` ve (listede) `reply_description` alanlarıyla gelir.
+- Serbest mesaj kuralları aynen geçerlidir (24 saat penceresi, 1 kredi, test anahtarında simülasyon).
+- SDK: `sendButtons`, `sendList`, `sendCtaUrl`, `requestLocation`, `sendInteractive` (Python'da snake_case).
 
 ### 8) Reaction (Emoji tepki)
 

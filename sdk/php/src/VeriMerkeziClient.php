@@ -20,7 +20,7 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.21.0';
+ public const VERSION = '2.22.0';
 
  private string $apiKey;
  private string $baseUrl;
@@ -485,6 +485,62 @@ class VeriMerkeziClient
  public function sendContacts(string $phoneNumberId, string $to, array $contacts): array
  {
  return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'type' => 'contacts', 'contacts' => array_values($contacts)]);
+ }
+
+ /**
+ * Etkileşimli mesaj (v2.22.0) — Meta biçiminde interactive: ['type' => 'button'|'list'|'cta_url'|'location_request_message', 'header'?, 'body', 'footer'?, 'action'].
+ */
+ public function sendInteractive(string $phoneNumberId, string $to, array $interactive): array
+ {
+ return $this->post('/messages', ['phone_number_id' => $phoneNumberId, 'to' => $to, 'type' => 'interactive', 'interactive' => $interactive]);
+ }
+
+ /**
+ * Yanıt düğmeleri (v2.22.0). $buttons: [['id' => 'onay', 'title' => 'Onaylıyorum'], ...] — 1..3; title ≤20, id ≤256, body ≤1024.
+ * $options: ['header' => 'metin' | ['type' => 'image', 'image' => ['link' => 'https://...']], 'footer' => 'metin' (≤60)].
+ */
+ public function sendButtons(string $phoneNumberId, string $to, string $bodyText, array $buttons, array $options = []): array
+ {
+ $i = $this->interactiveBase('button', $bodyText, $options);
+ $i['action'] = ['buttons' => array_map(fn ($b) => isset($b['reply']) ? $b : ['type' => 'reply', 'reply' => ['id' => (string) $b['id'], 'title' => (string) $b['title']]], array_values($buttons))];
+ return $this->sendInteractive($phoneNumberId, $to, $i);
+ }
+
+ /**
+ * Liste (v2.22.0). $buttonText ≤20; $sections: [['title' => 'İstanbul', 'rows' => [['id' => 'ist-1', 'title' => 'Kadıköy', 'description' => '...']]]]
+ * — 1..10 bölüm, toplam ≤10 satır; row title ≤24, description ≤72. $options: ['header' => 'metin' (≤60), 'footer' => 'metin']. body ≤4096.
+ */
+ public function sendList(string $phoneNumberId, string $to, string $bodyText, string $buttonText, array $sections, array $options = []): array
+ {
+ $i = $this->interactiveBase('list', $bodyText, $options);
+ $i['action'] = ['button' => $buttonText, 'sections' => array_values($sections)];
+ return $this->sendInteractive($phoneNumberId, $to, $i);
+ }
+
+ /**
+ * Bağlantı düğmesi (v2.22.0). $displayText ≤20, $url http(s). Dokunma webhook olayı üretmez.
+ */
+ public function sendCtaUrl(string $phoneNumberId, string $to, string $bodyText, string $displayText, string $url, array $options = []): array
+ {
+ $i = $this->interactiveBase('cta_url', $bodyText, $options);
+ $i['action'] = ['name' => 'cta_url', 'parameters' => ['display_text' => $displayText, 'url' => $url]];
+ return $this->sendInteractive($phoneNumberId, $to, $i);
+ }
+
+ /**
+ * Konum isteği (v2.22.0). Yalnız body (≤1024). Yanıt message.received type "location" (context.message_id = bu mesaj) olarak gelir.
+ */
+ public function requestLocation(string $phoneNumberId, string $to, string $bodyText): array
+ {
+ return $this->sendInteractive($phoneNumberId, $to, ['type' => 'location_request_message', 'body' => ['text' => $bodyText], 'action' => ['name' => 'send_location']]);
+ }
+
+ private function interactiveBase(string $type, string $bodyText, array $options): array
+ {
+ $i = ['type' => $type, 'body' => ['text' => $bodyText]];
+ if (!empty($options['header'])) $i['header'] = is_string($options['header']) ? ['type' => 'text', 'text' => $options['header']] : $options['header'];
+ if (!empty($options['footer'])) $i['footer'] = ['text' => (string) $options['footer']];
+ return $i;
  }
 
  private function flowPath(string $flowId, string $suffix, ?string $phoneNumberId): string

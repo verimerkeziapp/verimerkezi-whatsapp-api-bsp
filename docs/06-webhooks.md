@@ -218,7 +218,7 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 | `username` | WhatsApp kullanıcı adı (Meta `profile.username`); kullanıcı adı olmayan göndericide `null`. Meta kullanıcı adlarını kademeli açtığı için şu an çoğunlukla `null` gelir — eşleştirmede telefon / `user_id`'yi esas alın. Aynı değer `contact.username`'de de bulunur |
 | `name` | Kişinin WhatsApp profil adı |
 | `type` | `text` · `image` · `video` · `audio` · `document` · `sticker` · `button` · `interactive` … |
-| `interactive` | `type: interactive` mesajlarda `{ "type": "...", "name": "..." }`; form (WhatsApp Flow) yanıtında `type: "nfm_reply"`, `name: "flow"` (yanıtın kendisi `flow.completed` olayıyla gelir). Diğer tiplerde `null` |
+| `interactive` | `type: interactive` mesajlarda `{ "type": "...", "name": "..." }` (ör. `button_reply`, `list_reply`; form yanıtında `type: "nfm_reply"`, `name: "flow"` — yanıtın kendisi `flow.completed` olayıyla gelir). Düğme ve liste seçiminde ayrıca `reply_id`, `reply_title` ve (yalnız listede) `reply_description` (v2.22.0; `message.echo`'da da). Diğer tiplerde `null` |
 | `text` | Mesaj metni; medyada açıklama (caption), açıklama yoksa boş |
 | `media` | Medyalı mesajlarda dolu, diğerlerinde `null` — aşağıya bakın |
 | `timestamp` | Meta'nın mesaj zamanı (Unix saniye, string) |

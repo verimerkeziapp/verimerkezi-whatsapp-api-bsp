@@ -2,8 +2,8 @@
   "info": {
     "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.21.0 (2026-10-10).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 61 uç (HEAD /media/{media_id} dahil), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n32 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
-    "version": "2.21.0",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.22.0 (2026-10-10).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 61 uç (+ HEAD /media/{media_id}), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n32 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "version": "2.22.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -445,6 +445,110 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"type\": \"contacts\",\n  \"contacts\": [\n    {\n      \"name\": { \"formatted_name\": \"Destek Hattı\", \"first_name\": \"Destek\", \"last_name\": \"Hattı\" },\n      \"phones\": [ { \"phone\": \"+905550000000\", \"type\": \"WORK\", \"wa_id\": \"905550000000\" } ],\n      \"emails\": [ { \"email\": \"destek@example.com\", \"type\": \"WORK\" } ],\n      \"org\": { \"company\": \"Örnek A.Ş.\", \"title\": \"Müşteri Hizmetleri\" }\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Düğmeli mesaj (interactive button)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "v2.22.0 — Serbest mesaj (24 saat pencere, 1 kredi). 1–3 yanıt düğmesi; title ≤20 (benzersiz), id ≤256; body ≤1024, footer ≤60; header text/image/video/document. Seçim message.received data.interactive (button_reply, reply_id/reply_title) olarak gelir. Hata: 422 invalid_interactive.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone_number_id\": \"{{phone_number_id}}\",\n    \"to\": \"{{test_recipient}}\",\n    \"type\": \"interactive\",\n    \"interactive\": {\n        \"type\": \"button\",\n        \"header\": {\n            \"type\": \"text\",\n            \"text\": \"Randevu\"\n        },\n        \"body\": {\n            \"text\": \"Yarın 14:00 randevunuzu onaylıyor musunuz?\"\n        },\n        \"footer\": {\n            \"text\": \"Örnek Klinik\"\n        },\n        \"action\": {\n            \"buttons\": [\n                {\n                    \"type\": \"reply\",\n                    \"reply\": {\n                        \"id\": \"onay\",\n                        \"title\": \"Onaylıyorum\"\n                    }\n                },\n                {\n                    \"type\": \"reply\",\n                    \"reply\": {\n                        \"id\": \"degistir\",\n                        \"title\": \"Saati değiştir\"\n                    }\n                }\n            ]\n        }\n    }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Liste mesajı (interactive list)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "v2.22.0 — Serbest mesaj (24 saat pencere, 1 kredi). action.button ≤20; 1–10 bölüm, toplam ≤10 satır; satır id ≤200 (benzersiz), title ≤24, description ≤72; body ≤4096; header yalnız text. Seçim data.interactive (list_reply, reply_id/reply_title/reply_description). Hata: 422 invalid_interactive.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone_number_id\": \"{{phone_number_id}}\",\n    \"to\": \"{{test_recipient}}\",\n    \"type\": \"interactive\",\n    \"interactive\": {\n        \"type\": \"list\",\n        \"header\": {\n            \"type\": \"text\",\n            \"text\": \"Şubelerimiz\"\n        },\n        \"body\": {\n            \"text\": \"Size en yakın şubeyi seçin.\"\n        },\n        \"footer\": {\n            \"text\": \"Hafta içi 09:00-18:00\"\n        },\n        \"action\": {\n            \"button\": \"Şube seç\",\n            \"sections\": [\n                {\n                    \"title\": \"İstanbul\",\n                    \"rows\": [\n                        {\n                            \"id\": \"ist-kadikoy\",\n                            \"title\": \"Kadıköy\",\n                            \"description\": \"Örnek Cad. No:1\"\n                        },\n                        {\n                            \"id\": \"ist-besiktas\",\n                            \"title\": \"Beşiktaş\"\n                        }\n                    ]\n                },\n                {\n                    \"title\": \"Ankara\",\n                    \"rows\": [\n                        {\n                            \"id\": \"ank-cankaya\",\n                            \"title\": \"Çankaya\"\n                        }\n                    ]\n                }\n            ]\n        }\n    }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Bağlantı düğmesi (interactive cta_url)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "v2.22.0 — Serbest mesaj (24 saat pencere, 1 kredi). display_text ≤20, url http(s); body ≤1024, footer ≤60. Dokunma webhook olayı üretmez. Hata: 422 invalid_interactive.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone_number_id\": \"{{phone_number_id}}\",\n    \"to\": \"{{test_recipient}}\",\n    \"type\": \"interactive\",\n    \"interactive\": {\n        \"type\": \"cta_url\",\n        \"header\": {\n            \"type\": \"image\",\n            \"image\": {\n                \"link\": \"https://example.com/kargo.jpg\"\n            }\n        },\n        \"body\": {\n            \"text\": \"Siparişiniz kargoya verildi.\"\n        },\n        \"footer\": {\n            \"text\": \"Örnek Mağaza\"\n        },\n        \"action\": {\n            \"name\": \"cta_url\",\n            \"parameters\": {\n                \"display_text\": \"Kargo takibi\",\n                \"url\": \"https://example.com/takip?no=12345\"\n            }\n        }\n    }\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /messages — Konum isteği (interactive location_request_message)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "v2.22.0 — Serbest mesaj (24 saat pencere, 1 kredi). Yalnız body (≤1024); header/footer yok. Kullanıcının konumu message.received type \"location\" (context.message_id = bu mesaj) olarak gelir. Hata: 422 invalid_interactive.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone_number_id\": \"{{phone_number_id}}\",\n    \"to\": \"{{test_recipient}}\",\n    \"type\": \"interactive\",\n    \"interactive\": {\n        \"type\": \"location_request_message\",\n        \"body\": {\n            \"text\": \"Teslimat için konumunuzu paylaşır mısınız?\"\n        },\n        \"action\": {\n            \"name\": \"send_location\"\n        }\n    }\n}"
             }
           }
         },
