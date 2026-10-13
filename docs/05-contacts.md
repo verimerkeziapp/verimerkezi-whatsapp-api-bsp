@@ -4,6 +4,8 @@ Veri Merkezi, müşterilerinizin telefon + isim + etiketlerini saklamak için ki
 
 > **Not:** Kişi güncelleme/silme, etiket ekleme/çıkarma, opt-out **değiştirme** ve toplu işlem (bulk-action) için API endpoint'i bulunmamaktadır; bu işlemler panel üzerinden yapılır. Opt-out durumunu **okumak** için `GET /wa/contacts/opted-out` ucunu ve `contact.opt_out_changed` webhook olayını kullanın (bkz. aşağıdaki **Mesaj Almak İstemeyenler** bölümü).
 
+> **Uygulama rehberi:** Numaranızı WhatsApp Business uygulamasıyla birlikte kullanıyorsanız, telefondaki rehber ayrı bir kaynaktan okunur: `GET /wa/app-contacts` — bkz. [14-uygulama-rehberi.md](14-uygulama-rehberi.md).
+
 ## Kişi Ekleme
 
 ```bash

@@ -2,6 +2,19 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.23.0] — 2026-10-13
+
+> WhatsApp Business uygulaması rehberi (coexistence). Tamamen additive; panel kişi rehberi (`GET /contacts`) değişmedi. Ayrıntı: [docs/14-uygulama-rehberi.md](docs/14-uygulama-rehberi.md).
+
+### Eklenenler
+- **`GET /app-contacts`** (süzgeçler: `phone_number_id`, `updated_since`, `include_removed`; imleçle sayfalama, en çok 200) ve **`GET /numbers/{phone_number_id}/app-contacts/sync`** (senkron durumu). Kapsam `contacts:read`, kredi düşmez.
+- **Yeni olay `contact.synced`:** rehberde ekleme, düzenleme ve silme; numara başına en fazla 100 değişiklikle toplu (`batch.index` / `batch.count`, `sync_type: initial | incremental`). **`*` aboneliğine dahil değildir** (toplam 33 olay).
+- 2.23.0 öncesinde saklanmış rehber olayları geriye dönük işlendi; bu kayıtlar `source: "app_backfill"` ile döner (olay yayınlanmaz).
+- Meta ilk aktarımı yalnız bağlantıdan sonraki 24 saat içinde ve bir kez verir; tekrar isteme ucu yoktur (durum: `initial_sync.status: "expired"`).
+- `POST /test/inbound` `type: "app_contact_sync"` örnek `contact.synced` gönderir; test anahtarında `GET /app-contacts` 3 örnek kayıt döner.
+- Silme: `number.purged` olayında `counts.app_contacts`, `POST /privacy/erasure` yanıtında ve `privacy.erasure_completed` olayında `erased.app_contacts`.
+- **SDK'lar** 2.23.0: `listAppContacts` / `getAppContactsSyncStatus` (PHP, Node.js), Python'da `list_app_contacts` / `get_app_contacts_sync_status`. OpenAPI ve Postman güncellendi.
+
 ## [2.22.0] — 2026-10-10
 
 > Etkileşimli mesajlar + test anahtarı düzeltmesi. Geriye dönük uyumlu. (Canlıya 10.10'da çıktı; public repoya 13.10'da işlendi.)

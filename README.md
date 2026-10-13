@@ -1,7 +1,7 @@
 # Veri Merkezi — WhatsApp Business API SDK & Dokümantasyon
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![API](https://img.shields.io/badge/API-v2.22.0-emerald.svg)](https://api.verimerkezi.app)
+[![API](https://img.shields.io/badge/API-v2.23.0-emerald.svg)](https://api.verimerkezi.app)
 [![Status](https://img.shields.io/badge/Status-Production-success.svg)](https://verimerkezi.app)
 
 > Türkiye'nin **Meta onaylı WhatsApp Business Tech Provider**'ı — Veri Merkezi BSP altyapısı için resmî SDK, OpenAPI şeması ve dokümantasyon deposu.
@@ -56,7 +56,8 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 │ ├── 10-media.md # Gelen medyayı indirme (media_id → dosya)
 │ ├── 11-gelismis.md # Yükleme, alıntılı cevap, uzlaştırma, geçmiş, ayarlar, sağlık
 │ ├── 12-arama.md # Arama (Calling): ayarlar, gelen/giden arama, izin, geçmiş
-│ └── 13-formlar.md # Formlar (WhatsApp Flows)
+│ ├── 13-formlar.md # Formlar (WhatsApp Flows)
+│ └── 14-uygulama-rehberi.md # WhatsApp Business uygulaması rehberi (coexistence)
 ├── examples/
 │ ├── php/ # Örnek kullanımlar
 │ ├── nodejs/
@@ -124,10 +125,11 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
 | **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
-| **32 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `privacy.erasure_completed`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`, `call.terminate`, `call.permission_reply`, `flow.completed`, `flow.status_changed`, `number.detached`, `number.purged`) | Evet |
+| **33 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `privacy.erasure_completed`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`, `call.terminate`, `call.permission_reply`, `flow.completed`, `flow.status_changed`, `number.detached`, `number.purged`, `contact.synced`) | Evet |
 | **Numara ayırma** (numarayı hesaptan ayır; isteğe bağlı, **geri alınamaz** kayıt silme) | Evet — `POST /numbers/{id}/detach` |
 | **Şablon senkronu** (Meta'dan anlık senkron) | Evet — `POST /templates/sync`, `GET /templates?refresh=1` |
 | **Etkileşimli mesajlar** (yanıt düğmeleri, liste, bağlantı düğmesi, konum isteği) | Evet — `POST /messages` `type: interactive` |
+| **WhatsApp Business uygulaması rehberi** (coexistence rehber senkronu, `contact.synced`) | Evet — `GET /app-contacts`, `GET /numbers/{id}/app-contacts/sync` |
 | **Arama (Calling)** (gelen aramayı kabul/ret, izinli müşteriyi arama, arama izni, ayarlar, geçmiş — WebRTC) | Evet — `/numbers/{id}/calling`, `/calls`, `/calls/{call_id}/*`, `/calls/permission*` |
 | **Formlar (WhatsApp Flows)** (statik formlar: oluştur / yayınla / gönder, yanıt `flow.completed`) | Evet — `/flows`, `/flows/{flow_id}/*`, `POST /messages` `type: flow` |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — `POST /messages`, `POST /calls` |
@@ -168,6 +170,7 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 | [11-gelismis.md](docs/11-gelismis.md) | Dosya yükleme, alıntılı cevap, uzlaştırma, geçmiş aktarımı, numara ayarları, sağlık |
 | [12-arama.md](docs/12-arama.md) | WhatsApp Arama (Calling): ayarlar, gelen/giden arama, arama izni, geçmiş, ücret, gizlilik |
 | [13-formlar.md](docs/13-formlar.md) | Formlar (WhatsApp Flows): oluşturma, yayın, gönderim, `flow.completed`, hazır teklif formu örneği |
+| [14-uygulama-rehberi.md](docs/14-uygulama-rehberi.md) | WhatsApp Business uygulaması rehberi: liste, senkron durumu, `contact.synced`, ilk aktarım kuralı |
 
 ---
 

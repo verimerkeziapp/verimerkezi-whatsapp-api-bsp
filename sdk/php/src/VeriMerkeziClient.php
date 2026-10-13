@@ -13,14 +13,15 @@
  * v1.9.0 — 2026-09-23 — şablon yönetimi + webhook aboneliği + kredi olayları
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı: hesap ayarları, KVKK saklama/silme,
  *   sandbox gelen mesaj, webhook secret döndürme
- * https://verimerkezi.app/panel/api/dokuman
+ * v2.23.0 — 2026-10-13 — WhatsApp Business uygulaması rehberi: listAppContacts, getAppContactsSyncStatus (+ contact.synced olayı)
+ * Belgeler: https://api.verimerkezi.app/referans/
  */
 
 namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.22.0';
+ public const VERSION = '2.23.0';
 
  private string $apiKey;
  private string $baseUrl;
@@ -156,6 +157,24 @@ class VeriMerkeziClient
  {
  return $this->post('/contacts/bulk', ['contacts' => $contacts, 'skip_duplicates' => $skipDuplicates]);
  }
+
+ /**
+ * Uygulama rehberi (v2.23.0, contacts:read) — coexistence numaralarında telefondaki WhatsApp Business uygulaması rehberi.
+ * Panel kişi rehberinden (listContacts) ayrıdır. Değişiklikler contact.synced olayıyla gelir ('*' kapsamaz).
+ * $opts: phoneNumberId, updatedSince (ISO 8601), includeRemoved (bool), limit (1-200), cursor.
+ */
+ public function listAppContacts(array $opts = []): array
+ {
+ $query = ['limit' => (int) ($opts['limit'] ?? 50)];
+ if (!empty($opts['phoneNumberId'])) $query['phone_number_id'] = (string) $opts['phoneNumberId'];
+ if (!empty($opts['updatedSince'])) $query['updated_since'] = $opts['updatedSince'] instanceof \DateTimeInterface ? $opts['updatedSince']->format(DATE_ATOM) : (string) $opts['updatedSince'];
+ if (!empty($opts['includeRemoved'])) $query['include_removed'] = 'true';
+ if (!empty($opts['cursor'])) $query['cursor'] = (string) $opts['cursor'];
+ return $this->get('/app-contacts?' . http_build_query($query));
+ }
+
+ /** Senkron durumu: coexistence, sync_supported, reason, initial_sync { status, requested_at, completed_at }, sayılar. */
+ public function getAppContactsSyncStatus(string $phoneNumberId): array { return $this->get('/numbers/' . rawurlencode($phoneNumberId) . '/app-contacts/sync'); }
 
  /** Şablonları listeler. Filtreler (hepsi opsiyonel): status, category, language, q, cursor, limit. */
  public function listTemplates(array $filters = []): array

@@ -11,8 +11,9 @@ info:
     Test keys never change real data: every write endpoint is either simulated (`simulated: true`,
     `mode: "test"`) or returns 403 `test_mode_unsupported`; both carry the `X-Test-Mode: 1` header (since 2.22.0).
 
-    API version 2.22.0 (2026-10-10) - 61 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
-  version: "2.22.0"
+    API version 2.23.0 (2026-10-13) - 63 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
+    Documentation: https://api.verimerkezi.app/referans/
+  version: "2.23.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -381,11 +382,11 @@ components:
     WebhookEvent:
       type: string
       description: |
-        32 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
-        account.alert). The other 20 (message.revoked/edited/history/sent, number.status_changed,
+        33 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
+        account.alert). The other 21 (message.revoked/edited/history/sent, number.status_changed,
         number.name_changed, credit.low/exhausted, privacy.erasure_completed, contact.opt_out_changed,
         template.category_changed/quality_changed, call.connect/status/terminate/permission_reply,
-        flow.completed, flow.status_changed, number.detached, number.purged)
+        flow.completed, flow.status_changed, number.detached, number.purged, contact.synced)
         must be selected explicitly.
       enum:
         - "*"
@@ -421,6 +422,69 @@ components:
         - "flow.status_changed"
         - "number.detached"
         - "number.purged"
+        - "contact.synced"
+
+    AppContact:
+      type: object
+      description: |
+        WhatsApp Business app address book entry of a coexistence number (2.23.0). Separate from the panel
+        address book (/contacts). Source: Meta webhook field smb_app_state_sync
+        (https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/reference/smb_app_state_sync).
+      properties:
+        id: { type: integer, description: "Our id (unique per number + phone); equals contact.synced changes[].id" }
+        phone_number_id: { type: string }
+        phone: { type: [string, "null"], example: "+905551112233", description: "E.164 with +" }
+        wa_id: { type: [string, "null"], example: "905551112233", description: "Derived from phone (Meta does not send wa_id)" }
+        user_id: { type: [string, "null"], description: "BSUID (business-scoped user id) when Meta sends it" }
+        full_name: { type: [string, "null"], description: "null for removed entries" }
+        first_name: { type: [string, "null"] }
+        source: { type: string, enum: [app_sync, app_initial_sync, app_backfill], description: "Origin of the latest change" }
+        updated_at: { type: string, format: date-time }
+        removed_at: { type: [string, "null"], format: date-time }
+
+    AppContactSyncStatus:
+      type: object
+      properties:
+        ok: { type: boolean }
+        phone_number_id: { type: string }
+        coexistence: { type: boolean }
+        sync_supported: { type: boolean }
+        reason: { type: [string, "null"], enum: [not_coexistence, number_detached, null] }
+        initial_sync:
+          type: object
+          properties:
+            status: { type: string, enum: [not_requested, requested, in_progress, completed, expired, failed] }
+            requested_at: { type: [string, "null"], format: date-time }
+            completed_at: { type: [string, "null"], format: date-time }
+        last_event_at: { type: [string, "null"], format: date-time }
+        contact_count: { type: integer }
+        removed_count: { type: integer }
+
+    ContactSyncedEventData:
+      type: object
+      description: "data of the contact.synced webhook event (max 100 changes per event)"
+      properties:
+        phone_number_id: { type: string }
+        sync_type: { type: string, enum: [initial, incremental] }
+        batch:
+          type: object
+          properties:
+            index: { type: integer }
+            count: { type: integer }
+        changes:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            properties:
+              action: { type: string, enum: [add, update, remove] }
+              id: { type: integer }
+              phone: { type: [string, "null"] }
+              wa_id: { type: [string, "null"] }
+              user_id: { type: [string, "null"] }
+              full_name: { type: [string, "null"], description: "null on remove" }
+              first_name: { type: [string, "null"], description: "null on remove" }
+              changed_at: { type: string, format: date-time }
 
     WebhookSubscription:
       type: object
@@ -806,6 +870,81 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
         '429': { description: Rate limited }
+
+  /app-contacts:
+    get:
+      summary: List WhatsApp Business app address book entries (coexistence)
+      description: >-
+        Address book of the WhatsApp Business app on the phone of coexistence numbers (2.23.0). Separate from
+        the panel address book (/contacts). Ordered by updated_at desc, id desc. Full pull once, then listen to
+        contact.synced; recover missed events with updated_since + include_removed=true. Test keys return 3 fixed
+        sample rows (simulated: true). No credits charged.
+      tags: [Contacts]
+      operationId: listAppContacts
+      security: [{ BearerAuth: ["contacts:read"] }]
+      parameters:
+        - in: query
+          name: phone_number_id
+          description: Only this number's address book (default all numbers of the account).
+          schema: { type: string }
+        - in: query
+          name: updated_since
+          description: ISO 8601; only entries with updated_at >= updated_since.
+          schema: { type: string, format: date-time }
+        - in: query
+          name: include_removed
+          schema: { type: boolean, default: false }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - in: query
+          name: cursor
+          description: Opaque cursor (next_cursor of the previous page).
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  app_contacts: { type: array, items: { $ref: "#/components/schemas/AppContact" } }
+                  next_cursor: { type: [string, "null"] }
+                  has_more: { type: boolean }
+        '401': { description: Invalid or missing API key }
+        '403': { description: "Missing contacts:read scope" }
+        '404': { description: number_not_found }
+        '422':
+          description: Invalid updated_since / limit / cursor / phone_number_id (error.field)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '429': { description: Rate limited }
+
+  /numbers/{phone_number_id}/app-contacts/sync:
+    get:
+      summary: App address book sync status (coexistence)
+      description: >-
+        Meta delivers the initial address book only within 24 hours after onboarding and only once
+        (https://developers.facebook.com/docs/whatsapp/embedded-signup/custom-flows/onboarding-business-app-users);
+        Veri Merkezi requests it automatically on connect. There is no re-sync endpoint; later changes arrive by
+        themselves. Older numbers report initial_sync.status = expired.
+      tags: [Numbers]
+      operationId: getAppContactsSyncStatus
+      security: [{ BearerAuth: ["contacts:read"] }]
+      parameters:
+        - { name: phone_number_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AppContactSyncStatus" }
+        '403': { description: "Missing contacts:read scope" }
+        '404': { description: number_not_found }
+        '422': { description: invalid_request }
 
   /contacts/bulk:
     post:
@@ -1723,7 +1862,8 @@ paths:
       description: |
         Only with a vmk_test_ key. The synthetic message goes through the real inbound pipeline and
         signed message.received / message.revoked / message.edited events are delivered to your active
-        webhook subscriptions. Nothing is sent to Meta.
+        webhook subscriptions. Nothing is sent to Meta. type app_contact_sync (2.23.0) sends a sample
+        contact.synced event (add/update/remove); nothing is written to the address book.
       tags: [Messages]
       operationId: testInbound
       security: [{ BearerAuth: [] }]
@@ -1736,7 +1876,7 @@ paths:
               required: [phone_number_id]
               properties:
                 phone_number_id: { type: string, example: "1234567890" }
-                type: { type: string, enum: [text, revoke, edit], default: text }
+                type: { type: string, enum: [text, revoke, edit, app_contact_sync], default: text }
                 from: { type: string, description: "Sender phone, 8-15 digits", default: "905550000000" }
                 text: { type: string, maxLength: 4096, description: "Required for text and edit" }
                 original_message_id: { type: string, description: "Target message for revoke/edit" }

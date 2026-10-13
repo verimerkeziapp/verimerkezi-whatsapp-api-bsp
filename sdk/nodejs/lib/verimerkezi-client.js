@@ -10,12 +10,13 @@
  *
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı (hesap ayarları, KVKK saklama/silme,
  * sandbox gelen mesaj, webhook secret döndürme)
- * https://verimerkezi.app/panel/api/dokuman
+ * v2.23.0 — 2026-10-13 — WhatsApp Business uygulaması rehberi: listAppContacts, getAppContactsSyncStatus (+ contact.synced olayı)
+ * Belgeler: https://api.verimerkezi.app/referans/
  */
 
 const crypto = require('crypto');
 
-const VERSION = '2.22.0';
+const VERSION = '2.23.0';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {
@@ -111,6 +112,21 @@ class VeriMerkeziClient {
  bulkContacts(contacts, skipDuplicates = true) {
  return this._post('/contacts/bulk', { contacts, skip_duplicates: skipDuplicates });
  }
+
+ // Uygulama rehberi (v2.23.0, contacts:read) — coexistence numaralarında telefondaki WhatsApp Business uygulaması rehberi.
+ // Panel kişi rehberinden (listContacts) ayrıdır. Değişiklikler contact.synced olayıyla gelir ('*' kapsamaz).
+ listAppContacts({ phoneNumberId = null, updatedSince = null, includeRemoved = false, limit = 50, cursor = null } = {}) {
+ const params = new URLSearchParams();
+ params.set('limit', limit);
+ if (phoneNumberId) params.set('phone_number_id', phoneNumberId);
+ if (updatedSince) params.set('updated_since', updatedSince instanceof Date ? updatedSince.toISOString() : updatedSince);
+ if (includeRemoved) params.set('include_removed', 'true');
+ if (cursor) params.set('cursor', cursor);
+ return this._get('/app-contacts?' + params.toString());
+ }
+
+ // Senkron durumu: coexistence, sync_supported, reason, initial_sync { status, requested_at, completed_at }, sayılar.
+ getAppContactsSyncStatus(phoneNumberId) { return this._get('/numbers/' + encodeURIComponent(phoneNumberId) + '/app-contacts/sync'); }
 
  // ── Şablon yönetimi (templates) ────────────────────────────────────────
  // listTemplates artık opsiyonel filtre alır (status/category/language/q/cursor/limit);

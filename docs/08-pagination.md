@@ -61,6 +61,7 @@ Tüm yanıtlar `"ok": true` ile başlar; liste alanının adı ve cursor'ın yer
 |---|---|---|---|
 | `GET /wa/contacts` | `contacts` | `next_cursor` (+ `has_more`) | opak string |
 | `GET /wa/contacts/opted-out` | `contacts` | `next_cursor` (+ `has_more`) | opak string |
+| `GET /wa/app-contacts` | `app_contacts` | `next_cursor` (+ `has_more`) | opak string |
 | `GET /wa/credit/transactions` | `transactions` | `next_cursor` (+ `has_more`) | opak string |
 | `GET /wa/templates` | `templates` | `next_cursor` (+ `has_more`) | tamsayı |
 | `GET /wa/messages` | `data` (+ `phone_number_id`) | `next_cursor` (+ `has_more`) | tamsayı |
@@ -121,6 +122,7 @@ print(f"{len(all_contacts)} kişi yüklendi")
 |---|---|
 | `GET /wa/contacts` | `id desc` |
 | `GET /wa/contacts/opted-out` | `id desc` |
+| `GET /wa/app-contacts` | `updated_at desc, id desc` |
 | `GET /wa/credit/transactions` | `id desc` |
 | `GET /wa/messages` | `id desc` |
 | `GET /wa/media` | `id desc` |
@@ -131,6 +133,7 @@ print(f"{len(all_contacts)} kişi yüklendi")
 |---|---|---|
 | `/wa/contacts` | 50 | 200 |
 | `/wa/contacts/opted-out` | 50 | 200 |
+| `/wa/app-contacts` | 50 | 200 |
 | `/wa/credit/transactions` | 50 | 200 |
 | `/wa/messages` | 50 | 100 |
 | `/wa/media` | 50 | 100 |

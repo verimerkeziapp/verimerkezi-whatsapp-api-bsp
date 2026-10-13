@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.22.0)
+VeriMerkezi WhatsApp API — Python SDK (v2.23.0)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -9,13 +9,14 @@ Kullanım:
     ])
 
 Bağımlılık: pip install requests
+Belgeler: https://api.verimerkezi.app/referans/
 """
 
 import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.22.0'
+__version__ = '2.23.0'
 VERSION = __version__
 
 
@@ -98,6 +99,21 @@ class VeriMerkeziClient:
 
     def bulk_contacts(self, contacts, skip_duplicates=True) -> dict:
         return self._post('/contacts/bulk', {'contacts': contacts, 'skip_duplicates': skip_duplicates})
+
+    # ── Uygulama rehberi (v2.23.0, contacts:read) ─────────────────────
+    # Coexistence numaralarında telefondaki WhatsApp Business uygulaması rehberi; panel kişi rehberinden ayrıdır.
+    # Değişiklikler contact.synced olayıyla gelir ('*' kapsamaz).
+    def list_app_contacts(self, phone_number_id=None, updated_since=None, include_removed=False, limit=50, cursor=None) -> dict:
+        params = {'limit': limit}
+        if phone_number_id: params['phone_number_id'] = str(phone_number_id)
+        if updated_since: params['updated_since'] = updated_since.isoformat() if hasattr(updated_since, 'isoformat') else str(updated_since)
+        if include_removed: params['include_removed'] = 'true'
+        if cursor: params['cursor'] = cursor
+        return self._get('/app-contacts?' + urlencode(params))
+
+    def get_app_contacts_sync_status(self, phone_number_id) -> dict:
+        """Senkron durumu: coexistence, sync_supported, reason, initial_sync {status, requested_at, completed_at}, sayılar."""
+        return self._get('/numbers/' + quote(str(phone_number_id)) + '/app-contacts/sync')
 
     # ── Şablon yönetimi (2026-09-23) ─────────────────────────────────
     def list_templates(self, status=None, category=None, language=None, q=None, cursor=None, limit=None) -> dict:

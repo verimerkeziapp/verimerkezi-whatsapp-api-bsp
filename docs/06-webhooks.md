@@ -128,6 +128,7 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | `flow.status_changed` ⁿ | Formun Meta durumu değişti (`PUBLISHED` / `THROTTLED` / `BLOCKED` …) (v2.20.0) |
 | `number.detached` ⁿ | Numara hesabınızdan ayrıldı (`POST /wa/numbers/{id}/detach`) — bkz. [11-gelismis.md](11-gelismis.md) (v2.20.0) |
 | `number.purged` ⁿ | Ayrılan numaranın zamanlanmış kayıt silmesi tamamlandı (`purge_messages: true`) (v2.20.0) |
+| `contact.synced` ⁿ | WhatsApp Business uygulaması rehberinde ekleme / düzenleme / silme (toplu) — bkz. [14-uygulama-rehberi.md](14-uygulama-rehberi.md) (v2.23.0) |
 | `*` | Tüm event'ler (yalnızca yukarıdaki **ⁿ işaretsiz** klasik olayları kapsar) |
 
 > **ⁿ = yeni olay (22–23 Eylül 2026).** Bu olaylar `*` aboneliğine **dahil DEĞİLDİR** — mevcut `*` aboneleri beklemedikleri trafik almaz. Yeni bir olayı almak için abonelik oluştururken/güncellerken listeye **açıkça ekleyin** (API'de `events` dizisine, panelde işaret kutusuyla). `*` seçtiğinizde `POST /wa/webhooks` yanıtındaki `note` alanı, joker kapsamı dışında kalan bu olayları size hatırlatır.
@@ -294,7 +295,8 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | `flow.completed` | `event_id` (yanıt için sabit), `phone_number_id`, `from`, `user_id`, `contact_name`, `message_id`, `context_message_id`, `flow_token`, `flow_id` (yalnız API'den gönderildiyse), `response` (ayrıştırılmış form yanıtı), `response_raw`, `media[]` (`field`, `media_id` → `GET /wa/media/{media_id}`, `mime_type`, `sha256`, `file_name`, `meta_media_id`), `timestamp` |
 | `flow.status_changed` | `flow_id`, `waba_id`, `old_status`, `new_status`, `reason`, `occurred_at` |
 | `number.detached` | `phone_number_id`, `display_phone_number`, `reason`, `detached_at` (ISO 8601), `cancelled_outbound` |
-| `number.purged` | `phone_number_id`, `purged_at` (ISO 8601), `counts` (`messages`, `media_files`, `media_rows`, `conversations`, `calls`, `flow_sends`, `webhook_log`, `api_log`, `campaign_recipients`, `webhook_deliveries`, `deferred_jobs`) |
+| `number.purged` | `phone_number_id`, `purged_at` (ISO 8601), `counts` (`messages`, `media_files`, `media_rows`, `conversations`, `calls`, `flow_sends`, `webhook_log`, `api_log`, `campaign_recipients`, `webhook_deliveries`, `deferred_jobs`, `app_contacts`) |
+| `contact.synced` | `phone_number_id`, `sync_type` (`initial` / `incremental`), `batch` (`index`, `count`), `changes[]` (`action` `add`/`update`/`remove`, `id`, `phone`, `wa_id`, `user_id`, `full_name`, `first_name`, `changed_at`) — en çok 100 değişiklik |
 | `account.alert` | `field` (`account_update` / `account_alerts`), `event` (Meta olay adı, ör. `DISABLED_UPDATE`, `PARTNER_REMOVED`) |
 
 `errors` başarılı durumlarda `null`, `message.status.failed`'da Meta'nın hata listesidir:

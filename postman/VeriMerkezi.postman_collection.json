@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.22.0 (2026-10-10).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 61 uç (+ HEAD /media/{media_id}), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n32 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/docs/wa · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.23.0 (13.10.2026).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 63 uç (+ HEAD /media/{media_id}), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n33 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/referans/ · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
     "version": "2.22.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -614,6 +614,33 @@
             },
             "description": "YALNIZ test anahtarı (vmk_test_). type: text | revoke | edit (revoke/edit için original_message_id). İmzalı message.received / message.revoked / message.edited olayları aboneliklerinize gider; Meta'ya istek gitmez. 202 döner."
           }
+        },
+        {
+          "name": "POST /test/inbound — örnek contact.synced (app_contact_sync)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"type\": \"app_contact_sync\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/test/inbound",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "inbound"
+              ]
+            },
+            "description": "Yalnız vmk_test_ anahtarı (2.23.0). add/update/remove içeren örnek contact.synced olayını, olayı seçmiş webhook aboneliklerinize gönderir. Rehbere kayıt yazılmaz."
+          }
         }
       ]
     },
@@ -902,6 +929,67 @@
               ]
             },
             "description": "Kapsam: contacts:read. limit 1-200, cursor ile sayfalama."
+          }
+        },
+        {
+          "name": "GET /app-contacts — Uygulama rehberi (coexistence)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/app-contacts?phone_number_id={{phone_number_id}}&include_removed=true&limit=200",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "app-contacts"
+              ],
+              "query": [
+                {
+                  "key": "phone_number_id",
+                  "value": "{{phone_number_id}}"
+                },
+                {
+                  "key": "updated_since",
+                  "value": "2026-10-13T00:00:00+03:00",
+                  "disabled": true
+                },
+                {
+                  "key": "include_removed",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "200"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Kapsam: contacts:read (2.23.0). Telefondaki WhatsApp Business uygulaması rehberi; panel kişi rehberinden (/contacts) ayrı. Sıralama updated_at desc, id desc; limit 1-200, cursor ile sayfalama. source: app_initial_sync | app_sync | app_backfill. Değişiklikler contact.synced olayıyla gelir ('*' kapsamaz). Test anahtarı 3 örnek kayıt döner."
+          }
+        },
+        {
+          "name": "GET /numbers/{phone_number_id}/app-contacts/sync — Rehber senkron durumu",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/numbers/{{phone_number_id}}/app-contacts/sync",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "numbers",
+                "{{phone_number_id}}",
+                "app-contacts",
+                "sync"
+              ]
+            },
+            "description": "Kapsam: contacts:read (2.23.0). coexistence, sync_supported, reason (not_coexistence | number_detached | null), initial_sync.status (not_requested | requested | in_progress | completed | expired | failed), last_event_at, contact_count, removed_count. Meta ilk aktarımı bağlantıdan sonraki 24 saatte bir kez verir; tekrar isteme ucu yoktur."
           }
         }
       ]
