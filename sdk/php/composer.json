@@ -6,7 +6,7 @@
  "homepage": "https://api.verimerkezi.app",
  "support": {
  "email": "bilgi@verimerkezi.app",
- "docs": "https://api.verimerkezi.app/docs/wa",
+ "docs": "https://api.verimerkezi.app/referans/",
  "issues": "https://github.com/verimerkeziapp/whatsapp-sdk/issues"
  },
  "authors": [

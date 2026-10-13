@@ -19,7 +19,7 @@ setup(
  long_description_content_type="text/markdown",
  url="https://api.verimerkezi.app",
  project_urls={
- "Documentation": "https://api.verimerkezi.app/docs/wa",
+ "Documentation": "https://api.verimerkezi.app/referans/",
  "Source": "https://github.com/verimerkeziapp/whatsapp-sdk",
  "Bug Tracker": "https://github.com/verimerkeziapp/whatsapp-sdk/issues",
  },

@@ -156,4 +156,4 @@ curl -X PATCH https://api.verimerkezi.app/wa/profile/1234567890 \
 
 - bilgi@verimerkezi.app
 - 0332 606 09 24
-- [api.verimerkezi.app/docs/wa](https://api.verimerkezi.app/docs/wa) (canlı dokümanlar)
+- [api.verimerkezi.app/referans](https://api.verimerkezi.app/referans/) (canlı dokümanlar)

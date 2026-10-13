@@ -186,7 +186,7 @@ Her dilde çalışan, kopyala-yapıştır örnekler:
 
 - **Web:** [verimerkezi.app](https://verimerkezi.app)
 - **API Hub:** [api.verimerkezi.app](https://api.verimerkezi.app)
-- **WhatsApp Dokümanı:** [api.verimerkezi.app/docs/wa](https://api.verimerkezi.app/docs/wa)
+- **WhatsApp Dokümanı:** [api.verimerkezi.app/referans](https://api.verimerkezi.app/referans/)
 - **OpenAPI:** [api.verimerkezi.app/sdk/openapi.yaml.txt](https://api.verimerkezi.app/sdk/openapi.yaml.txt)
 - **Destek:** bilgi@verimerkezi.app · 0332 606 09 24
 
