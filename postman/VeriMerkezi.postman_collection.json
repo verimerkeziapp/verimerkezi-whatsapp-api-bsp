@@ -2,8 +2,8 @@
   "info": {
     "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.23.0 (13.10.2026).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 63 uç (+ HEAD /media/{media_id}), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n33 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/referans/ · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
-    "version": "2.22.0",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.32.1 (25.10.2026).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 68 uç (+ HEAD /media/{media_id}), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n35 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/referans/ · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "version": "2.32.1",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -259,6 +259,66 @@
                 "messages"
               ]
             }
+          }
+        },
+        {
+          "name": "POST /messages — Template (medya başlıklı, header göndermeden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"template\": {\n    \"name\": \"kampanya_gorselli\",\n    \"language\": {\n      \"code\": \"tr\"\n    },\n    \"components\": [\n      {\n        \"type\": \"body\",\n        \"parameters\": [\n          {\n            \"type\": \"text\",\n            \"text\": \"Ahmet\"\n          }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "Kapsam: messages:send (2.25.0). Şablon medya başlıklıysa ve Veri Merkezi'nde kayıtlıysa `header` bileşeni gönderilmez: kayıtlı medya kalıcı bağlantıyla (GET /templates → header_media.url) otomatik eklenir. `header` gönderirseniz aynen kullanılır."
+          }
+        },
+        {
+          "name": "POST /messages — Template (dinamik URL düğmesi)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"to\": \"{{test_recipient}}\",\n  \"template\": {\n    \"name\": \"police_yenileme_hatirlatma_named\",\n    \"language\": {\n      \"code\": \"tr\"\n    },\n    \"components\": [\n      {\n        \"type\": \"body\",\n        \"parameters\": [\n          {\n            \"type\": \"text\",\n            \"text\": \"Ayşe Yılmaz\"\n          }\n        ]\n      },\n      {\n        \"type\": \"button\",\n        \"sub_type\": \"url\",\n        \"index\": \"0\",\n        \"parameters\": [\n          {\n            \"type\": \"text\",\n            \"text\": \"abc123\"\n          }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "Kapsam: messages:send (2.25.0). `parameters[0].text` şablon adresinin sonundaki {{1}} yerine geçer. Sabit adresli URL düğmesine button bileşeni GÖNDERİLMEZ. Uyumsuzlukta 422 invalid_template_parameters (field)."
           }
         },
         {
@@ -716,7 +776,34 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"waba_id\": \"{{waba_id}}\",\n  \"name\": \"police_yenileme_hatirlatma\",\n  \"language\": \"tr\",\n  \"category\": \"UTILITY\",\n  \"allow_category_change\": true,\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Sayın {{1}}, {{2}} plakalı aracınızın poliçesi {{3}} tarihinde sona eriyor.\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Ahmet Yılmaz\",\n            \"34 ABC 123\",\n            \"12.10.2026\"\n          ]\n        ]\n      }\n    },\n    {\n      \"type\": \"FOOTER\",\n      \"text\": \"Mim Gökmen Sigorta\"\n    },\n    {\n      \"type\": \"BUTTONS\",\n      \"buttons\": [\n        {\n          \"type\": \"QUICK_REPLY\",\n          \"text\": \"Teklif istiyorum\"\n        }\n      ]\n    }\n  ]\n}"
-            }
+            },
+            "description": "Kapsam: templates:write. 2.25.0: parameter_format (POSITIONAL | NAMED), allow_category_change, message_send_ttl_seconds, cta_url_link_tracking_opted_out, header_media_ref; NAMED değişkenler, metin başlıkta 1 değişken, LOCATION başlık, COPY_CODE düğmesi. Aynı WABA'da aynı ad+dil → 409 template_exists. Hatalarda error.field ve (Meta kaynaklıysa) meta_code, meta_subcode, meta_message, meta_user_title, meta_user_message, fbtrace_id."
+          }
+        },
+        {
+          "name": "POST /templates — NAMED değişken, başlık değişkeni, COPY_CODE",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"waba_id\": \"{{waba_id}}\",\n  \"name\": \"police_yenileme_hatirlatma_named\",\n  \"language\": \"tr\",\n  \"category\": \"UTILITY\",\n  \"parameter_format\": \"NAMED\",\n  \"components\": [\n    {\n      \"type\": \"HEADER\",\n      \"format\": \"TEXT\",\n      \"text\": \"Poliçe {{police_no}}\",\n      \"example\": {\n        \"header_text_named_params\": [\n          {\n            \"param_name\": \"police_no\",\n            \"example\": \"TR-2026-001\"\n          }\n        ]\n      }\n    },\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Sayın {{ad_soyad}}, {{bitis_tarihi}} tarihinde biten poliçeniz için teklifiniz hazır.\",\n      \"example\": {\n        \"body_text_named_params\": [\n          {\n            \"param_name\": \"ad_soyad\",\n            \"example\": \"Ayşe Yılmaz\"\n          },\n          {\n            \"param_name\": \"bitis_tarihi\",\n            \"example\": \"30.10.2026\"\n          }\n        ]\n      }\n    },\n    {\n      \"type\": \"FOOTER\",\n      \"text\": \"Sorularınız için bize yazabilirsiniz\"\n    },\n    {\n      \"type\": \"BUTTONS\",\n      \"buttons\": [\n        {\n          \"type\": \"URL\",\n          \"text\": \"Teklifi gör\",\n          \"url\": \"https://ornek.com/teklif/{{1}}\",\n          \"example\": [\n            \"https://ornek.com/teklif/abc123\"\n          ]\n        },\n        {\n          \"type\": \"COPY_CODE\",\n          \"example\": \"YENI2026\"\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "description": "Kapsam: templates:write (2.25.0). NAMED değişkenli şablonlar yalnız API ile (POST /messages, components ile) gönderilebilir."
           }
         },
         {
@@ -773,6 +860,72 @@
           }
         },
         {
+          "name": "POST /templates/media — Başlık örnek medyası (header_handle)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/media",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "media"
+              ]
+            },
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "format",
+                  "value": "IMAGE",
+                  "type": "text",
+                  "description": "IMAGE | VIDEO | DOCUMENT (verilmezse dosya türünden çıkarılır)"
+                },
+                {
+                  "key": "waba_id",
+                  "value": "{{waba_id}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Kapsam: templates:write (2.25.0). Üç giriş (biri): multipart file, JSON {url} ya da JSON {media_id, phone_number_id}. Kabul: JPEG/PNG ≤5 MB (IMAGE), MP4 ≤16 MB (VIDEO), PDF ≤100 MB (DOCUMENT). 201: header_handle (kısa ömürlü; HEADER example.header_handle[0]'a koyun), header_media_ref (POST /templates gövdesine), format, mime_type, file_size, waba_id. Test anahtarı: header_handle '4::test…', header_media_ref null, simulated true."
+          }
+        },
+        {
+          "name": "POST /templates/media — URL ile (JSON)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/media",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "media"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://cdn.example.com/kampanya.jpg\",\n  \"format\": \"IMAGE\",\n  \"waba_id\": \"{{waba_id}}\"\n}"
+            },
+            "description": "Kapsam: templates:write (2.25.0). Sunucu herkese açık https adresini indirir. media_id girişi: {\"media_id\":\"1234567890\",\"phone_number_id\":\"{{phone_number_id}}\"}."
+          }
+        },
+        {
           "name": "GET /templates/{id} — Ayrıntı",
           "request": {
             "method": "GET",
@@ -785,7 +938,8 @@
                 "templates",
                 "{{template_id}}"
               ]
-            }
+            },
+            "description": "Kapsam: templates:read. 2.25.0: previous_category, parameter_format, rejected_reason_text, header_media_ref ve edit_limit {editable, edits_last_30d, max_edits_30d, next_edit_at}."
           }
         },
         {
@@ -811,7 +965,63 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Sayın {{1}}, poliçeniz {{2}} tarihinde bitiyor.\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Ahmet\",\n            \"12.10.2026\"\n          ]\n        ]\n      }\n    }\n  ]\n}"
-            }
+            },
+            "description": "Kapsam: templates:write. Yalnız APPROVED/REJECTED/PAUSED (409 template_not_editable). Onaylı: 24 saatte 1, 30 günde 10; kategori değişmez (422 category_not_editable); sınırda 429 template_edit_limit (next_edit_at, retry_after). TÜM bileşenler gönderilir. POST /templates/{id} eşdeğeridir."
+          }
+        },
+        {
+          "name": "POST /templates/{id} — Düzenle (PATCH eşdeğeri)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "{{template_id}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Sayın {{1}}, poliçeniz {{2}} tarihinde bitiyor.\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Ahmet\",\n            \"12.10.2026\"\n          ]\n        ]\n      }\n    }\n  ]\n}"
+            },
+            "description": "Kapsam: templates:write (2.25.0). PATCH /templates/{id} ile aynı davranış, gövde ve hatalar."
+          }
+        },
+        {
+          "name": "POST /templates/{id}/copy — Kopyala",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/copy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates",
+                "{{template_id}}",
+                "copy"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"police_yenileme_hatirlatma_en\",\n  \"language\": \"en_US\",\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"Dear {{1}}, your policy expires on {{2}}.\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Ahmet\",\n            \"12.10.2026\"\n          ]\n        ]\n      }\n    }\n  ]\n}"
+            },
+            "description": "Kapsam: templates:write (2.25.0). Kaynağın bileşenleri, parameter_format ve başlık medyası (VM kopyası varsa) kullanılır; components verilirse onlar esas alınır. 202: yeni şablon (PENDING). Medya başlıklı kaynakta VM kopyası yoksa 422 invalid_request (field: header_media_ref)."
           }
         },
         {
@@ -827,7 +1037,35 @@
                 "templates",
                 "{{template_id}}"
               ]
-            }
+            },
+            "description": "Kapsam: templates:write. 2.25.0 düzeltmesi: yalnız bu dil silinir (Meta: name + hsm_id). Adın tüm dilleri için DELETE /templates?name=…"
+          }
+        },
+        {
+          "name": "DELETE /templates?name= — Ada göre sil (tüm diller)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/templates?name=police_yenileme_hatirlatma&waba_id={{waba_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "templates"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "police_yenileme_hatirlatma"
+                },
+                {
+                  "key": "waba_id",
+                  "value": "{{waba_id}}",
+                  "description": "Birden çok WABA varsa zorunlu"
+                }
+              ]
+            },
+            "description": "Kapsam: templates:write (2.25.0). Adın TÜM dillerini siler; yanıt ids ve languages. Tek dil için DELETE /templates/{id}."
           }
         }
       ]
@@ -1231,6 +1469,31 @@
               ],
               "path": [
                 "numbers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /meta/error-codes — Hata kodları sözlüğü",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/meta/error-codes?source=meta_message",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "meta",
+                "error-codes"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "meta_message",
+                  "disabled": true,
+                  "description": "meta_message | meta_template | meta_account | meta_call | vm"
+                }
               ]
             }
           }
@@ -1935,7 +2198,7 @@
                 }
               ]
             },
-            "description": "Kapsam: flows:read. Numaranın WABA'sındaki formlar; paging.after ile sonraki sayfa (?after=)."
+            "description": "Kapsam: flows:read. Numaranın WABA'sındaki formlar. 2.26.0: her formda id, waba_id, phone_number_id, updated_at; yanıtta next_cursor + has_more — sonraki sayfa için ?cursor=<next_cursor> (ya da ?after=). limit ≤ 200."
           }
         },
         {
@@ -1966,7 +2229,7 @@
                 }
               }
             },
-            "description": "Kapsam: flows:write. DRAFT oluşturur; Meta doğrulama hataları validation_errors'ta. Idempotency-Key desteklenir. Test anahtarıyla 403 test_mode_unsupported."
+            "description": "Kapsam: flows:write. DRAFT oluşturur; Meta doğrulama hataları validation_errors'ta. Idempotency-Key desteklenir. Test anahtarıyla 403 test_mode_unsupported. 2.26.0: Meta 'Type mismatch in an equality operation' verirse yanıtta hint (flow_chained_equality | crm_update_required) + hint_message; Meta bir ifadede tek eşitlik kabul eder, koşulu iç içe If'lere bölün (≤ 3 seviye)."
           }
         },
         {
@@ -2017,7 +2280,7 @@
                 }
               }
             },
-            "description": "Kapsam: flows:write. Yalnız DRAFT (aksi 409 flow_not_draft)."
+            "description": "Kapsam: flows:write. Yalnız DRAFT (aksi 409 flow_not_draft). 2.26.0: zincirlenmiş eşitlikte hint + hint_message (bkz. POST /flows)."
           }
         },
         {

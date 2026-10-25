@@ -13,6 +13,18 @@
  * v1.9.0 — 2026-09-23 — şablon yönetimi + webhook aboneliği + kredi olayları
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı: hesap ayarları, KVKK saklama/silme,
  *   sandbox gelen mesaj, webhook secret döndürme
+ * v2.32.1 — 2026-10-25 — sendText: isteğe bağlı bağlantı önizlemesi (text.preview_url); varsayılan kapalı, eski çağrılar değişmeden çalışır
+ * v2.32.0 — 2026-10-22 — getErrorCodes() (GET /meta/error-codes, hata sözlüğü); hata yanıtlarında message_tr/action_tr; message.status.failed ve şablon olaylarında Türkçe alanlar; yeni olaylar: number.limit_changed, account.review_changed, message.status.deleted, 8 şablon durumu; GET /numbers: payment_method_status
+ * v2.31.1 — 2026-10-22 — kopma nedeni sonradan gelirse güncellenir (number.status_changed tekrar, nedenli); SDK imzası değişmedi
+ * v2.31.0 — 2026-10-20 — getDisconnectReasons() (GET /meta/disconnect-reasons); GET /numbers ve number.status_changed: disconnect_message_tr, disconnect_action_tr, reconnect_url
+ * v2.30.0 — 2026-10-20 — GET /numbers: disconnect_reason, disconnect_initiated_by, reauth_required, reauth_required_at (SDK imzası değişmedi)
+ * v2.29.0 — 2026-10-19 — privacyErasure: isteğe bağlı reference; SDK'nın otomatik Idempotency-Key'i artık KVKK silmede de yeniden denemeyi güvenli kılar (aynı erasure_id)
+ * v2.28.0 — 2026-10-19 — eşzamanlı medya sınırı (429 scope=concurrency, Retry-After ile otomatik yeniden deneme); sunucu tarafı önbellek ve devre kesici
+ * v2.27.0 — 2026-10-19 — 429 ve 503'te Retry-After ile otomatik yeniden deneme; hesap düzeyi hız sınırı başlıkları (X-RateLimit-Account-*, X-RateLimit-Scope)
+ * v2.26.1 — 2026-10-15 — Belge düzeltmesi: opt_out_autoreply_enabled her zaman true (false yok sayılır); kod değişmedi
+ * v2.26.0 — 2026-10-14 — listFlows: limit ≤ 200, yanıtta next_cursor + has_more (after parametresine next_cursor verin); form yazma yanıtlarında hint ve hint_message
+ * v2.25.0 — 2026-10-14 — şablon yönetimi: uploadTemplateMedia, copyTemplate, deleteTemplatesByName; updateTemplate ek alanlar; deleteTemplate artık yalnız o dili siler
+ * v2.24.0 — 2026-10-14 — message.received: data.unsupported (type, raw_type, error_code, error_title)
  * v2.23.0 — 2026-10-13 — WhatsApp Business uygulaması rehberi: listAppContacts, getAppContactsSyncStatus (+ contact.synced olayı)
  * Belgeler: https://api.verimerkezi.app/referans/
  */
@@ -21,7 +33,7 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.23.0';
+ public const VERSION = '2.32.1';
 
  private string $apiKey;
  private string $baseUrl;
@@ -69,12 +81,13 @@ class VeriMerkeziClient
  ]);
  }
 
- public function sendText(string $phoneNumberId, string $to, string $text): array
+ /** $previewUrl: true → metindeki bağlantının önizlemesi gösterilir (2.32.1) */
+ public function sendText(string $phoneNumberId, string $to, string $text, bool $previewUrl = false): array
  {
  return $this->post('/messages', [
  'phone_number_id' => $phoneNumberId,
  'to' => $to,
- 'text' => $text,
+ 'text' => $previewUrl ? ['body' => $text, 'preview_url' => true] : $text,
  ]);
  }
 
@@ -299,10 +312,22 @@ class VeriMerkeziClient
  /** $retention: messages_days (1-3650), media_days (1-3650), webhook_deliveries_days (1-365) — en az bir alan. */
  public function updateRetention(array $retention): array { return $this->patch('/account/retention', $retention); }
 
- /** KVKK silme/unutulma — waId (telefon) veya userId (BSUID) zorunlu. 202 + privacy.erasure_completed olayı. */
- public function privacyErasure(?string $waId = null, ?string $userId = null, ?string $phoneNumberId = null): array
+ /** Numara kopma / kısıt / yeniden yetki nedenleri sözlüğü (2.31.0). */
+ /** Hata kodları sözlüğü (2.32.0). $source: meta_message | meta_template | meta_account | meta_call | vm */
+ public function getErrorCodes(?string $source = null): array
  {
- $body = array_filter(['wa_id' => $waId, 'user_id' => $userId, 'phone_number_id' => $phoneNumberId], fn ($v) => $v !== null);
+ return $this->request('GET', '/meta/error-codes' . ($source ? '?source=' . rawurlencode($source) : ''));
+ }
+
+ public function getDisconnectReasons(): array
+ {
+ return $this->request('GET', '/meta/disconnect-reasons');
+ }
+
+ /** KVKK silme/unutulma — waId (telefon) veya userId (BSUID) zorunlu. 202 + privacy.erasure_completed olayı. */
+ public function privacyErasure(?string $waId = null, ?string $userId = null, ?string $phoneNumberId = null, ?string $reference = null): array
+ {
+ $body = array_filter(['wa_id' => $waId, 'user_id' => $userId, 'phone_number_id' => $phoneNumberId, 'reference' => $reference], fn ($v) => $v !== null);
  return $this->post('/privacy/erasure', $body);
  }
 
@@ -331,16 +356,60 @@ class VeriMerkeziClient
  /** Tek bir şablonu bileşenleriyle birlikte döner. */
  public function getTemplate(int $id): array { return $this->get('/templates/' . $id); }
 
- /** Şablonu günceller (durum PENDING olur). $opts['category'] ile kategori değiştirilebilir. */
+ /**
+ * Şablonu günceller (durum PENDING olur). $components TAM liste olmalı. $opts: category (yalnız reddedilen/duraklatılan),
+ * message_send_ttl_seconds, header_media_ref, header_media_url, allow_category_change, cta_url_link_tracking_opted_out, optout_footer.
+ * Onaylı şablon 24 saatte 1, 30 günde 10 düzenlenebilir (429 template_edit_limit: next_edit_at, retry_after). PATCH /templates/{id}.
+ */
  public function updateTemplate(int $id, array $components, array $opts = []): array
  {
  $body = ['components' => $components];
- if (isset($opts['category'])) { $body['category'] = $opts['category']; }
+ foreach ($opts as $k => $v) { if ($v !== null) { $body[$k] = $v; } }
  return $this->patch('/templates/' . $id, $body);
  }
 
- /** Şablonu siler. */
+ /** Şablonu siler — 2.25.0'dan beri YALNIZ bu dili (Meta: name + hsm_id). Adın tüm dilleri için deleteTemplatesByName(). */
  public function deleteTemplate(int $id): array { return $this->delete('/templates/' . $id); }
+
+ /** Adın TÜM dillerini siler: DELETE /templates?name=… Yanıt: deleted, name, waba_id, ids, languages. Birden çok WABA'da $wabaId (ya da $phoneNumberId) verin. */
+ public function deleteTemplatesByName(string $name, ?string $wabaId = null, ?string $phoneNumberId = null): array
+ {
+ $q = ['name' => $name];
+ if ($wabaId !== null && $wabaId !== '') { $q['waba_id'] = $wabaId; }
+ if ($phoneNumberId !== null && $phoneNumberId !== '') { $q['phone_number_id'] = $phoneNumberId; }
+ return $this->delete('/templates?' . http_build_query($q));
+ }
+
+ /** Şablonu yeni ad/dil ile kopyalar (POST /templates/{id}/copy). $data: name (zorunlu), language, category, components, waba_id, header_media_ref … */
+ public function copyTemplate(int $id, array $data): array { return $this->post('/templates/' . $id . '/copy', $data); }
+
+ /**
+  * Medya başlıklı şablon için örnek dosyayı yükler (POST /templates/media) → header_handle + header_media_ref.
+  * $source: dosya yolu (multipart; JPEG/PNG ≤5 MB, MP4 ≤16 MB, PDF ≤100 MB) ya da ['url' => 'https://…'] / ['media_id' => '…', 'phone_number_id' => '…'].
+  * $opts: format (IMAGE|VIDEO|DOCUMENT), waba_id, phone_number_id.
+  * Dönen header_handle'ı HEADER example.header_handle[0]'a, header_media_ref'i createTemplate gövdesine koyun.
+  */
+ public function uploadTemplateMedia($source, array $opts = []): array
+ {
+ if (is_array($source)) { return $this->post('/templates/media', $source + $opts); }
+ $filePath = (string) $source;
+ if (!is_file($filePath)) { throw new VeriMerkeziException('Dosya bulunamadı: ' . $filePath, 0); }
+ $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($filePath) ?: 'application/octet-stream';
+ $fields = ['file' => new \CURLFile($filePath, $mime, basename($filePath))];
+ foreach (['format', 'waba_id', 'phone_number_id'] as $k) { if (!empty($opts[$k])) { $fields[$k] = (string) $opts[$k]; } }
+ $ch = curl_init($this->baseUrl . '/templates/media');
+ curl_setopt_array($ch, [
+ CURLOPT_RETURNTRANSFER => true,
+ CURLOPT_POST => true,
+ CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $this->apiKey, 'User-Agent: VeriMerkezi-PHP-SDK/' . self::VERSION],
+ CURLOPT_POSTFIELDS => $fields,
+ CURLOPT_TIMEOUT => 300,
+ ]);
+ $raw = curl_exec($ch); $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+ $j = json_decode((string) $raw, true) ?: [];
+ if ($status < 200 || $status >= 300) { throw new VeriMerkeziException($j['error']['message'] ?? ('HTTP ' . $status), $status, $j['error']['code'] ?? null, $j['error'] ?? []); }
+ return $j;
+ }
 
  // ── Webhooks ───────────────────────────────────────────────────────────
  // Webhook abonelikleri artık programatik olarak yönetilebilir:
@@ -438,6 +507,7 @@ class VeriMerkeziClient
  // Formlar WABA düzeyindedir. Yönetim kredisiz; form mesajı (sendFlow) normal mesaj gibi 1 kredi.
  // Olaylar: flow.completed / flow.status_changed ('*' kapsamaz — açıkça ekleyin).
  // $phoneNumberId (isteğe bağlı) Meta arayüzünde oluşturulmuş formu hesabınıza bağlamak içindir.
+ // listFlows: $limit ≤ 200; sonraki sayfa için yanıttaki next_cursor değerini $after olarak verin (has_more: false → son sayfa).
  public function listFlows(string $phoneNumberId, ?int $limit = null, ?string $after = null): array
  {
  $q = ['phone_number_id' => $phoneNumberId];
@@ -612,12 +682,13 @@ class VeriMerkeziClient
  $data = json_decode((string)$raw, true);
  if (!is_array($data)) throw new VeriMerkeziException('Geçersiz JSON yanıt', $status);
 
- if ($status >= 500 && $attempt < $this->maxRetries) { usleep($attempt * 1000000); continue; }
- if ($status === 429 && $attempt < $this->maxRetries) {
+ if (($status === 429 || $status === 503) && $attempt < $this->maxRetries) {
  $retryAfter = (int) ($data['error']['retry_after'] ?? 5);
  sleep(min(30, $retryAfter));
  continue;
  }
+
+ if ($status >= 500 && $attempt < $this->maxRetries) { usleep($attempt * 1000000); continue; }
 
  if ($status >= 400) {
  $errData = $data['error'] ?? [];

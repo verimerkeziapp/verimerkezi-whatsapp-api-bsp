@@ -10,13 +10,25 @@
  *
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı (hesap ayarları, KVKK saklama/silme,
  * sandbox gelen mesaj, webhook secret döndürme)
+ * v2.32.1 — 2026-10-25 — sendText: isteğe bağlı bağlantı önizlemesi (text.preview_url); varsayılan kapalı, eski çağrılar değişmeden çalışır
+ * v2.32.0 — 2026-10-22 — getErrorCodes() (GET /meta/error-codes, hata sözlüğü); hata yanıtlarında message_tr/action_tr; message.status.failed ve şablon olaylarında Türkçe alanlar; yeni olaylar: number.limit_changed, account.review_changed, message.status.deleted, 8 şablon durumu; GET /numbers: payment_method_status
+ * v2.31.1 — 2026-10-22 — kopma nedeni sonradan gelirse güncellenir (number.status_changed tekrar, nedenli); SDK imzası değişmedi
+ * v2.31.0 — 2026-10-20 — getDisconnectReasons() (GET /meta/disconnect-reasons); GET /numbers ve number.status_changed: disconnect_message_tr, disconnect_action_tr, reconnect_url
+ * v2.30.0 — 2026-10-20 — GET /numbers: disconnect_reason, disconnect_initiated_by, reauth_required, reauth_required_at (SDK imzası değişmedi)
+ * v2.29.0 — 2026-10-19 — privacyErasure: isteğe bağlı reference; SDK'nın otomatik Idempotency-Key'i artık KVKK silmede de yeniden denemeyi güvenli kılar (aynı erasure_id)
+ * v2.28.0 — 2026-10-19 — eşzamanlı medya sınırı (429 scope=concurrency, Retry-After ile otomatik yeniden deneme); sunucu tarafı önbellek ve devre kesici
+ * v2.27.0 — 2026-10-19 — 429 ve 503'te Retry-After ile otomatik yeniden deneme; hesap düzeyi hız sınırı başlıkları (X-RateLimit-Account-*, X-RateLimit-Scope)
+ * v2.26.1 — 2026-10-15 — Belge düzeltmesi: opt_out_autoreply_enabled her zaman true (false yok sayılır); kod değişmedi
+ * v2.26.0 — 2026-10-14 — listFlows: limit ≤ 200, yanıtta next_cursor + has_more (after parametresine next_cursor verin); form yazma yanıtlarında hint ve hint_message
+ * v2.25.0 — 2026-10-14 — şablon yönetimi: uploadTemplateMedia, copyTemplate, deleteTemplatesByName; updateTemplate ek alanlar; deleteTemplate artık yalnız o dili siler
+ * v2.24.0 — 2026-10-14 — message.received: data.unsupported (type, raw_type, error_code, error_title)
  * v2.23.0 — 2026-10-13 — WhatsApp Business uygulaması rehberi: listAppContacts, getAppContactsSyncStatus (+ contact.synced olayı)
  * Belgeler: https://api.verimerkezi.app/referans/
  */
 
 const crypto = require('crypto');
 
-const VERSION = '2.23.0';
+const VERSION = '2.32.1';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {
@@ -59,8 +71,9 @@ class VeriMerkeziClient {
  });
  }
 
- sendText(phoneNumberId, to, text) {
- return this._post('/messages', { phone_number_id: phoneNumberId, to, text });
+ // previewUrl: true → metindeki bağlantının önizlemesi gösterilir (2.32.1)
+ sendText(phoneNumberId, to, text, previewUrl = false) {
+ return this._post('/messages', { phone_number_id: phoneNumberId, to, text: previewUrl ? { body: text, preview_url: true } : text });
  }
 
  // ── Medya (link tabanlı) ───────────────────────────────────────────────
@@ -155,14 +168,54 @@ class VeriMerkeziClient {
 
  getTemplate(id) { return this._get('/templates/' + encodeURIComponent(id)); }
 
- // Onaylı/reddedilmiş şablonu düzenler (durum PENDING olur). opts.category opsiyonel.
+ // Onaylı/reddedilmiş/duraklatılmış şablonu düzenler (durum PENDING olur; components TAM liste). opts: category (yalnız reddedilen/duraklatılan),
+ // message_send_ttl_seconds, header_media_ref, header_media_url, allow_category_change, cta_url_link_tracking_opted_out, optout_footer.
+ // Onaylı şablon 24 saatte 1, 30 günde 10 düzenlenebilir (429 template_edit_limit: next_edit_at, retry_after).
  updateTemplate(id, components, opts = {}) {
  const body = { components };
- if (opts.category != null) body.category = opts.category;
+ for (const [k, v] of Object.entries(opts || {})) { if (v != null) body[k] = v; }
  return this._patch('/templates/' + encodeURIComponent(id), body);
  }
 
+ // 2.25.0'dan beri YALNIZ bu dili siler (Meta: name + hsm_id). Adın tüm dilleri için deleteTemplatesByName().
  deleteTemplate(id) { return this._delete('/templates/' + encodeURIComponent(id)); }
+
+ // Adın TÜM dillerini siler: DELETE /templates?name=… Yanıt: deleted, name, waba_id, ids, languages. Birden çok WABA'da wabaId (ya da phoneNumberId) verin.
+ deleteTemplatesByName(name, wabaId, phoneNumberId) {
+ const q = new URLSearchParams({ name });
+ if (wabaId) q.set('waba_id', wabaId);
+ if (phoneNumberId) q.set('phone_number_id', phoneNumberId);
+ return this._delete('/templates?' + q.toString());
+ }
+
+ // Şablonu yeni ad/dil ile kopyalar (POST /templates/{id}/copy). data: name (zorunlu), language, category, components, waba_id, header_media_ref …
+ copyTemplate(id, data) { return this._post('/templates/' + encodeURIComponent(id) + '/copy', data); }
+
+ // Medya başlıklı şablon için örnek dosyayı yükler (POST /templates/media) → { header_handle, header_media_ref, format, mime_type, file_size, waba_id }.
+ // source: dosya yolu | Buffer (multipart; JPEG/PNG ≤5 MB, MP4 ≤16 MB, PDF ≤100 MB) ya da { url } / { media_id, phone_number_id } (JSON).
+ // opts: format (IMAGE|VIDEO|DOCUMENT), waba_id, phone_number_id, filename, contentType.
+ // header_handle'ı HEADER example.header_handle[0]'a, header_media_ref'i createTemplate gövdesine koyun.
+ async uploadTemplateMedia(source, opts = {}) {
+ if (source && typeof source === 'object' && !Buffer.isBuffer(source)) {
+ const { filename, contentType, ...rest } = opts || {};
+ return this._post('/templates/media', { ...source, ...rest });
+ }
+ const fs = require('fs');
+ const buf = Buffer.isBuffer(source) ? source : fs.readFileSync(source);
+ const name = opts.filename || (typeof source === 'string' ? require('path').basename(source) : 'file');
+ const fd = new FormData();
+ fd.set('file', new Blob([buf], opts.contentType ? { type: opts.contentType } : undefined), name);
+ for (const k of ['format', 'waba_id', 'phone_number_id']) { if (opts[k]) fd.set(k, String(opts[k])); }
+ const res = await fetch(this.baseUrl + '/templates/media', {
+ method: 'POST',
+ headers: { 'Authorization': 'Bearer ' + this.apiKey, 'User-Agent': 'VeriMerkezi-NodeJS-SDK/' + VERSION },
+ body: fd,
+ });
+ const txt = await res.text();
+ let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = {}; }
+ if (!res.ok) throw new VeriMerkeziException(j?.error?.message || ('HTTP ' + res.status), res.status, j?.error?.code || null, j?.error || null);
+ return j;
+ }
 
  getProfile(phoneNumberId) { return this._get('/profile/' + encodeURIComponent(phoneNumberId)); }
  updateProfile(phoneNumberId, fields) { return this._patch('/profile/' + encodeURIComponent(phoneNumberId), fields); }
@@ -264,9 +317,15 @@ class VeriMerkeziClient {
  accountSettings(settings) { return this._patch('/account/settings', settings); }
  // retention: { messages_days (1-3650), media_days (1-3650), webhook_deliveries_days (1-365) } — en az bir alan.
  updateRetention(retention) { return this._patch('/account/retention', retention); }
+ // Numara kopma / kısıt / yeniden yetki nedenleri sözlüğü (2.31.0)
+ getDisconnectReasons() { return this._request('GET', '/meta/disconnect-reasons'); }
+ // Hata kodları sözlüğü (2.32.0) — source: meta_message | meta_template | meta_account | meta_call | vm
+ getErrorCodes(source = null) { return this._request('GET', '/meta/error-codes' + (source ? '?source=' + encodeURIComponent(source) : '')); }
+
  // KVKK silme/unutulma — waId (telefon) veya userId (BSUID) zorunlu. 202 + privacy.erasure_completed olayı.
- privacyErasure({ waId, userId, phoneNumberId } = {}) {
+ privacyErasure({ waId, userId, phoneNumberId, reference } = {}) {
  const body = {};
+ if (reference != null) body.reference = reference;
  if (waId != null) body.wa_id = waId;
  if (userId != null) body.user_id = userId;
  if (phoneNumberId != null) body.phone_number_id = phoneNumberId;
@@ -359,6 +418,7 @@ class VeriMerkeziClient {
  // Formlar WABA düzeyindedir. Yönetim kredisiz; form mesajı (sendFlow) normal mesaj gibi 1 kredi.
  // Olaylar: flow.completed / flow.status_changed ('*' kapsamaz — açıkça ekleyin).
  // phoneNumberId (isteğe bağlı) Meta arayüzünde oluşturulmuş formu hesabınıza bağlamak içindir.
+ // listFlows: limit ≤ 200; sonraki sayfa için yanıttaki next_cursor değerini after olarak verin (has_more: false → son sayfa).
  listFlows(phoneNumberId, { limit, after } = {}) {
  const params = new URLSearchParams({ phone_number_id: phoneNumberId });
  if (limit != null) params.set('limit', String(limit));
@@ -483,7 +543,13 @@ class VeriMerkeziClient {
  let data;
  try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
 
- // 5xx -> retry
+ // 429 / 503 -> Retry-After başlığı ya da gövdedeki retry_after (2.27.0: 503 temporarily_unavailable)
+ if ((resp.status === 429 || resp.status === 503) && attempt < this.maxRetries) {
+ const retryAfter = parseInt(resp.headers.get('Retry-After') || '', 10) || data?.error?.retry_after || 5;
+ await new Promise(r => setTimeout(r, Math.min(30000, retryAfter * 1000)));
+ continue;
+ }
+ // diğer 5xx -> retry
  if (resp.status >= 500 && attempt < this.maxRetries) {
  await new Promise(r => setTimeout(r, attempt * 1000));
  continue;

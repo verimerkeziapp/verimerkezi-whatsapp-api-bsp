@@ -11,9 +11,17 @@ info:
     Test keys never change real data: every write endpoint is either simulated (`simulated: true`,
     `mode: "test"`) or returns 403 `test_mode_unsupported`; both carry the `X-Test-Mode: 1` header (since 2.22.0).
 
-    API version 2.23.0 (2026-10-13) - 63 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
+    Rate limits (since 2.27.0): per-key and per-account fixed one-minute windows per bucket (send, read, media, get, post, patch, put, delete).
+    Account budget 300/min (media 150) shared by all keys; the linked service key (first party, e.g. Sigorta CRM) may use all of it,
+    other keys share 40% when a first-party key exists. Headers: X-RateLimit-Limit/Remaining/Reset (key), X-RateLimit-Account-Limit/Remaining/Reset,
+    X-RateLimit-Bucket; on 429: Retry-After, X-RateLimit-Scope (key | account | account_share), error.scope, error.bucket.
+    Transient infrastructure errors return 503 temporarily_unavailable with Retry-After instead of 500.
+    Since 2.28.0: at most 6 concurrent media downloads per account (first-party key all 6, other keys 2 combined);
+    when full: 429 rate_limited, error.scope=concurrency, X-RateLimit-Scope: concurrency, X-Concurrency-Limit, Retry-After: 2.
+
+    API version 2.32.1 (2026-10-25) - 68 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
     Documentation: https://api.verimerkezi.app/referans/
-  version: "2.23.0"
+  version: "2.32.1"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -59,16 +67,29 @@ components:
           properties:
             code: { type: string, example: insufficient_credits }
             message: { type: string }
-            field: { type: string, nullable: true }
+            field: { type: string, nullable: true, description: "Template validation errors: path of the offending field, e.g. components[0].text (since 2.25.0)" }
             retryable: { type: boolean, description: "Meta-originated and call errors: whether retrying makes sense" }
-            meta_code: { type: integer, description: "Meta error code (e.g. 131047 = outside 24h window)" }
-            meta_subcode: { type: [integer, "null"] }
-            meta_message: { type: string, maxLength: 300, description: "Call errors: Meta's description" }
+            meta_code: { type: integer, description: "Meta error code (e.g. 131047 = outside 24h window). Since 2.32.0 present on every Meta-originated error; 0 = could not reach Meta" }
+            message_tr: { type: string, description: "Short Turkish explanation from the error dictionary (since 2.32.0, all errors)" }
+            action_tr: { type: [string, "null"], description: "Turkish next step (since 2.32.0)" }
+            severity: { type: string, enum: [info, warn, error, critical], description: "When the code is in the dictionary (since 2.32.0)" }
+            category: { type: string, enum: [recipient, template, account, rate, payment, other], description: "Meta-originated errors (since 2.32.0)" }
+            meta_message_tr: { type: [string, "null"], description: "Call and Flow errors: Turkish meaning of meta_code (since 2.32.0)" }
+            meta_subcode: { type: [string, integer, "null"], description: "Meta error subcode; returned as text on template endpoints (since 2.25.0)" }
+            meta_message: { type: string, maxLength: 300, description: "Meta's raw (usually English) text, incl. connection errors. error.message is always Turkish since 2.32.0" }
+            meta_user_title: { type: string, description: "Template endpoints: Meta's user-facing title (since 2.25.0)" }
+            meta_user_message: { type: string, description: "Template endpoints: Meta's user-facing message (since 2.25.0)" }
+            fbtrace_id: { type: string, description: "Template endpoints: Meta trace id (since 2.25.0)" }
+            hint: { type: string, enum: [flow_chained_equality, crm_update_required], description: "Flows meta_flow_failed: Meta rejected the Flow JSON with 'Type mismatch in an equality operation' (more than one equality in one expression). crm_update_required when the key belongs to a Sigorta CRM service (since 2.26.0)" }
+            hint_message: { type: string, description: "Turkish explanation for hint (since 2.26.0)" }
+            next_edit_at: { type: string, format: date-time, description: "template_edit_limit: earliest time the template can be edited again" }
+            template_id: { type: integer, description: "template_exists: id of the existing template" }
+            status: { type: string, description: "template_not_editable: current template status" }
             required_scope: { type: string, description: "insufficient_scope (single scope)" }
             required_scopes: { type: array, items: { type: string }, description: "insufficient_scope where any one of several scopes is enough" }
             phone_number_id: { type: string, description: "number_detached" }
             detached_at: { type: string, format: date-time, description: "number_detached" }
-            max_bytes: { type: integer, description: "media_too_large (POST /media)" }
+            max_bytes: { type: integer, description: "media_too_large (POST /media, POST /templates/media)" }
             type: { type: string, description: "media_too_large: detected media type" }
             balance: { type: integer, description: "insufficient_credits" }
             retry_after: { type: integer, description: "Seconds to wait (also Retry-After header)" }
@@ -155,6 +176,21 @@ components:
         json_version: { type: [string, "null"] }
         data_api_version: { type: [string, "null"] }
         endpoint_uri: { type: [string, "null"] }
+    FlowListItem:
+      allOf:
+        - { $ref: '#/components/schemas/Flow' }
+        - type: object
+          properties:
+            id: { type: string, description: "Same as flow_id (since 2.26.0)" }
+            waba_id: { type: string, description: "since 2.26.0" }
+            phone_number_id: { type: [string, "null"], description: "The number the list was requested for (since 2.26.0)" }
+            updated_at: { type: [string, "null"], format: date-time, description: "Last change observed in the Veri Merkezi record (Meta has no Flow modification time); null if not recorded (since 2.26.0)" }
+    FlowHint:
+      type: object
+      description: "Present only when Meta's validation_errors contain 'Type mismatch in an equality operation' (since 2.26.0). Flow JSON is never modified."
+      properties:
+        hint: { type: string, enum: [flow_chained_equality, crm_update_required] }
+        hint_message: { type: string }
     FlowMessage:
       type: object
       description: "Interactive WhatsApp Flow message (type=flow). Exactly one of flow_id / flow_name."
@@ -254,15 +290,84 @@ components:
         name: { type: string }
         language: { type: string, example: tr }
         category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+        previous_category: { type: string, nullable: true, description: "Category before Meta changed it (since 2.25.0)" }
+        parameter_format: { type: string, enum: [POSITIONAL, NAMED], description: "Variable format; fixed at creation (since 2.25.0)" }
         status: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED, PAUSED, DISABLED] }
         components: { type: array, items: { type: object } }
-        rejected_reason: { type: string, nullable: true }
-        quality_score: { type: string, nullable: true }
+        rejected_reason: { type: string, nullable: true, description: "Raw Meta reason (INVALID_FORMAT, ABUSIVE_CONTENT, ...); meaningful only when REJECTED" }
+        rejected_reason_text: { type: string, nullable: true, description: "Turkish explanation; only when REJECTED (since 2.25.0)" }
+        quality_score: { type: string, nullable: true, description: "Also returned in the list since 2.25.0" }
         waba_id: { type: string, nullable: true }
         phone_number_id: { type: string, nullable: true }
         created_at: { type: string, nullable: true }
         submitted_at: { type: string, nullable: true }
         status_updated_at: { type: string, nullable: true }
+        header_media_ref: { type: [integer, "null"], description: "Detail only: VM copy of the header media (since 2.25.0)" }
+        header_media: { $ref: "#/components/schemas/TemplateHeaderMedia" }
+        edit_limit:
+          type: object
+          description: "Detail only (since 2.25.0). Counts edits made through Veri Merkezi only."
+          properties:
+            editable: { type: boolean }
+            edits_last_30d: { type: integer }
+            max_edits_30d: { type: integer, example: 10 }
+            next_edit_at: { type: [string, "null"], format: date-time }
+
+    TemplateHeaderMedia:
+      type: [object, "null"]
+      description: |
+        List and detail (since 2.25.0). null when the template has no IMAGE/VIDEO/DOCUMENT header. With a VM copy:
+        permanent public link + file info (temporary=false). Without a copy: Meta's short-lived approval sample
+        (temporary=true, only url and format). When a media-header template is sent with POST /messages without a
+        `header` component, the permanent link is added automatically.
+      properties:
+        url: { type: string, format: uri }
+        mime_type: { type: [string, "null"], example: image/jpeg }
+        file_size: { type: [integer, "null"] }
+        sha256: { type: [string, "null"] }
+        filename: { type: [string, "null"] }
+        format: { type: string, enum: [IMAGE, VIDEO, DOCUMENT] }
+        temporary: { type: boolean }
+
+    TemplateMediaUploadResponse:
+      type: object
+      description: "POST /templates/media response (201, since 2.25.0). Test keys: header_handle '4::test...', header_media_ref null, simulated true."
+      properties:
+        ok: { type: boolean }
+        header_handle: { type: string, example: "4::aW1hZ2UvanBlZw==:ARb..." , description: "Short-lived; use it as HEADER example.header_handle[0] right away" }
+        header_media_ref: { type: [integer, "null"], example: 8812 }
+        format: { type: string, enum: [IMAGE, VIDEO, DOCUMENT] }
+        mime_type: { type: [string, "null"], example: image/jpeg }
+        file_size: { type: [integer, "null"] }
+        waba_id: { type: string }
+        simulated: { type: boolean }
+
+    TemplateDeleteResponse:
+      type: object
+      description: "DELETE /templates/{id} (single language) or DELETE /templates?name= (all languages) response"
+      properties:
+        ok: { type: boolean }
+        deleted: { type: boolean }
+        id: { type: integer, description: "DELETE /templates/{id}" }
+        name: { type: string }
+        language: { type: string, description: "DELETE /templates/{id}" }
+        waba_id: { type: string, description: "DELETE /templates?name=" }
+        ids: { type: array, items: { type: integer }, description: "DELETE /templates?name=" }
+        languages: { type: array, items: { type: string }, description: "DELETE /templates?name=" }
+        meta_missing: { type: boolean, description: "Already gone at Meta; local rows deleted anyway" }
+
+    TemplateUpdateRequest:
+      type: object
+      description: "PATCH|POST /templates/{id} body. components is the FULL list (required unless only the category changes)."
+      properties:
+        components: { type: array, items: { type: object } }
+        category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION], description: "Only REJECTED/PAUSED templates; APPROVED -> 422 category_not_editable" }
+        message_send_ttl_seconds: { type: integer }
+        header_media_ref: { type: integer, description: "Omit to regenerate the handle from the existing VM copy" }
+        header_media_url: { type: string, format: uri }
+        allow_category_change: { type: boolean }
+        cta_url_link_tracking_opted_out: { type: boolean }
+        optout_footer: { type: boolean }
 
     InteractiveHeader:
       type: object
@@ -379,14 +484,25 @@ components:
         reply_title: { type: [string, "null"] }
         reply_description: { type: [string, "null"], description: "list_reply only" }
 
+    InboundUnsupported:
+      type: [object, "null"]
+      description: "data.unsupported in message.received when type=unsupported (since 2.24.0, additive); otherwise null. Meta did not deliver the content; reason from errors[0]."
+      properties:
+        type: { type: [string, "null"], example: unknown, description: "Meta unsupported.type" }
+        raw_type: { type: [string, "null"], example: unknown }
+        error_code: { type: [integer, "null"], example: 131060 }
+        error_title: { type: [string, "null"], example: "This message is unavailable." }
+
     WebhookEvent:
       type: string
       description: |
-        33 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
-        account.alert). The other 21 (message.revoked/edited/history/sent, number.status_changed,
+        46 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
+        account.alert). The other 23 (message.revoked/edited/history/sent, number.status_changed,
         number.name_changed, credit.low/exhausted, privacy.erasure_completed, contact.opt_out_changed,
-        template.category_changed/quality_changed, call.connect/status/terminate/permission_reply,
-        flow.completed, flow.status_changed, number.detached, number.purged, contact.synced)
+        template.category_changed/quality_changed, template.disabled/reinstated, call.connect/status/terminate/permission_reply,
+        flow.completed, flow.status_changed, number.detached, number.purged, contact.synced; since 2.32.0
+        message.status.deleted, number.limit_changed, account.review_changed, template.pending/in_appeal/locked/
+        archived/unarchived/deleted/pending_deletion/limit_exceeded)
         must be selected explicitly.
       enum:
         - "*"
@@ -413,6 +529,8 @@ components:
         - "contact.opt_out_changed"
         - "template.category_changed"
         - "template.quality_changed"
+        - "template.disabled"
+        - "template.reinstated"
         - "number.name_changed"
         - "call.connect"
         - "call.status"
@@ -423,6 +541,17 @@ components:
         - "number.detached"
         - "number.purged"
         - "contact.synced"
+        - "message.status.deleted"
+        - "number.limit_changed"
+        - "account.review_changed"
+        - "template.pending"
+        - "template.in_appeal"
+        - "template.locked"
+        - "template.archived"
+        - "template.unarchived"
+        - "template.deleted"
+        - "template.pending_deletion"
+        - "template.limit_exceeded"
 
     AppContact:
       type: object
@@ -511,6 +640,16 @@ components:
         quality_rating: { type: string, enum: [GREEN, YELLOW, RED, UNKNOWN] }
         status: { type: string }
         connection_type: { type: string, enum: [standard, coexistence] }
+        disconnected_at: { type: [string, "null"] }
+        disconnect_reason: { type: [string, "null"], description: "Meta disconnection_info.reason, e.g. PRIMARY_INACTIVITY; only when status is not active (since 2.30.0)" }
+        disconnect_initiated_by: { type: [string, "null"], description: "e.g. SYSTEM, USER; only when status is not active (since 2.30.0)" }
+        reauth_required: { type: boolean, description: "Meta permission lost; reconnect the number in the panel (since 2.30.0)" }
+        reauth_required_at: { type: [string, "null"], description: "since 2.30.0" }
+        disconnect_message_tr: { type: [string, "null"], description: "Short Turkish reason from the disconnect reasons dictionary (since 2.31.0)" }
+        disconnect_action_tr: { type: [string, "null"], description: "Turkish next step for the customer (since 2.31.0)" }
+        reconnect_url: { type: [string, "null"], description: "Panel page to reconnect the number, when reconnection is needed (since 2.31.0)" }
+        payment_method_status: { type: string, enum: [ok, missing, unknown], description: "Meta payment method of the WABA (the WABA owner pays Meta) (since 2.32.0)" }
+        payment_method_action_tr: { type: [string, "null"], description: "Turkish next step when missing (since 2.32.0)" }
 
   parameters:
     IdempotencyKey:
@@ -607,7 +746,14 @@ paths:
                         for a dynamic URL button, a `button` component:
                         `{ "type": "button", "sub_type": "url", "index": 0, "parameters": [{ "type": "text", "text": "..." }] }`
                         — its parameters[0].text fills the trailing `{{1}}` of the template URL button
-                        (one variable, at the end of the URL; API send only).
+                        (one variable, at the end of the URL; API send only). `index` may be a number or a string ("0").
+                        Do NOT send a button component for a fixed-URL button (Meta rejects it with the 132000/131008 family).
+                        Since 2.25.0, for templates registered at VM (except AUTHENTICATION) the components are checked
+                        against the stored definition: mismatch -> 422 invalid_template_parameters (field e.g.
+                        template.components[0].parameters / template.components[0].index / template.components);
+                        unregistered templates are passed through unchanged. Media-header templates: when no `header`
+                        component is sent, the stored header media is added automatically with its permanent link
+                        (GET /templates -> header_media.url); a `header` you send is used as is.
                         For a FLOW button: `{ "type": "button", "sub_type": "flow", "index": 0, "parameters": [{ "type": "action", "flow_token": "...", "flow_action_data": {} }] }`
                         (Meta's native `{ "type": "action", "action": { ... } }` is also accepted).
                       items: { type: object }
@@ -1030,21 +1176,118 @@ paths:
                 name: { type: string }
                 language: { type: string, example: tr }
                 category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
-                allow_category_change: { type: boolean }
-                header_media_url: { type: string, format: uri, description: "Public https URL for an IMAGE/VIDEO/DOCUMENT header; downloaded and uploaded to Meta as header_handle" }
-                components: { type: array, items: { type: object } }
+                parameter_format: { type: string, enum: [POSITIONAL, NAMED], default: POSITIONAL, description: "NAMED uses {{ad_soyad}}-style variables with example.*_named_params (since 2.25.0)" }
+                allow_category_change: { type: boolean, description: "Passed to Meta as is" }
+                message_send_ttl_seconds: { type: integer, minimum: -1, maximum: 2592000, description: "Passed to Meta as is (since 2.25.0)" }
+                cta_url_link_tracking_opted_out: { type: boolean, description: "Passed to Meta as is (since 2.25.0)" }
+                header_media_ref: { type: integer, description: "From POST /templates/media; for IMAGE/VIDEO/DOCUMENT headers one of example.header_handle, header_media_ref or header_media_url is required (since 2.25.0)" }
+                header_media_url: { type: string, format: uri, description: "Legacy: public https URL for an IMAGE/VIDEO/DOCUMENT header; downloaded and uploaded to Meta as header_handle" }
+                optout_footer: { type: boolean, description: "MARKETING only; default true adds the standard opt-out footer" }
+                components:
+                  type: array
+                  items: { type: object }
+                  description: |
+                    Meta components. HEADER: TEXT (<=60 chars, at most 1 variable + example), IMAGE/VIDEO/DOCUMENT
+                    (example.header_handle), LOCATION. BODY (<=1024). FOOTER (<=60). BUTTONS (<=10): QUICK_REPLY, URL
+                    (<=2), PHONE_NUMBER, COPY_CODE (<=1, example <=20 chars), FLOW, OTP. Variable examples:
+                    POSITIONAL -> example.body_text / header_text; NAMED -> example.body_text_named_params /
+                    header_text_named_params [{param_name, example}].
       responses:
         '202':
-          description: Accepted (status PENDING)
+          description: Accepted (status PENDING; Meta may answer APPROVED/REJECTED immediately). Test keys - simulated, id 0.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Template" }
-        '404': { description: number_or_waba_not_found }
-        '422':
-          description: template_invalid (pre-Meta validation) or template_rejected (Meta)
+        '404': { description: number_not_found }
+        '409':
+          description: template_exists (same name + language in this WABA; error.field=name, error.template_id)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+        '422':
+          description: invalid_request / template_invalid (error.field = field path) or template_rejected (Meta, error.meta_*)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '502': { description: "meta_unavailable (Meta unreachable or 5xx)" }
+    delete:
+      summary: Delete a template by name (ALL languages)
+      description: |
+        Deletes every language of `name` in the WABA (since 2.25.0). Use DELETE /templates/{id} for a single
+        language. A deleted approved template's name cannot be reused for 30 days; DISABLED templates cannot be
+        deleted. Test keys: simulated (404 template_not_found if no local row has that name).
+      tags: [Templates]
+      operationId: deleteTemplatesByName
+      security: [{ BearerAuth: ["templates:write"] }]
+      parameters:
+        - { name: name, in: query, required: true, schema: { type: string } }
+        - { name: waba_id, in: query, required: false, schema: { type: string }, description: "Required when the account has several WABAs" }
+        - { name: phone_number_id, in: query, required: false, schema: { type: string }, description: "Alternative to waba_id" }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TemplateDeleteResponse" }
+        '404': { description: "template_not_found / number_not_found" }
+        '422':
+          description: invalid_request / waba_required / template_delete_failed (error.meta_*)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '502': { description: meta_unavailable }
+
+  /templates/media:
+    post:
+      summary: Upload a template header sample (returns header_handle)
+      description: |
+        Since 2.25.0. Uploads the sample file for an IMAGE/VIDEO/DOCUMENT header to Meta's Resumable Upload.
+        Put `header_handle` into the HEADER component's `example.header_handle[0]` and `header_media_ref` at the
+        top level of POST /templates. Three inputs (use one): multipart `file`, JSON `url` (public https) or JSON
+        `media_id` (uploaded with POST /media, 30 days valid; the server re-downloads and re-uploads it).
+        Accepted: IMAGE image/jpeg, image/png <=5 MB; VIDEO video/mp4 <=16 MB; DOCUMENT application/pdf <=100 MB.
+        Test keys: nothing is sent to Meta or stored (header_handle `4::test...`, header_media_ref null,
+        simulated true); multipart type/size checks still apply, url/media_id are not downloaded.
+        https://developers.facebook.com/docs/graph-api/guides/upload
+      tags: [Templates]
+      operationId: uploadTemplateMedia
+      security: [{ BearerAuth: ["templates:write"] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                format: { type: string, enum: [IMAGE, VIDEO, DOCUMENT], description: "Inferred from the file type when omitted" }
+                waba_id: { type: string }
+                phone_number_id: { type: string }
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string, format: uri, example: "https://cdn.example.com/kampanya.jpg" }
+                media_id: { type: string, example: "1234567890", description: "Meta media id from POST /media (send phone_number_id too)" }
+                format: { type: string, enum: [IMAGE, VIDEO, DOCUMENT] }
+                waba_id: { type: string }
+                phone_number_id: { type: string }
+      responses:
+        '201':
+          description: Uploaded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TemplateMediaUploadResponse" }
+        '404': { description: number_not_found }
+        '413': { description: "media_too_large (error.max_bytes)" }
+        '415': { description: "media_invalid_format" }
+        '422':
+          description: invalid_request / waba_required / header_media_fetch_failed / meta_upload_failed (error.meta_*)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '502': { description: meta_unavailable }
 
   /templates/validate:
     post:
@@ -1065,6 +1308,8 @@ paths:
                 name: { type: string }
                 language: { type: string }
                 category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+                parameter_format: { type: string, enum: [POSITIONAL, NAMED] }
+                header_media_ref: { type: integer, description: "Optional; without a media source a placeholder is used for validation" }
                 components: { type: array, items: { type: object } }
       responses:
         '200':
@@ -1077,7 +1322,11 @@ paths:
                   ok: { type: boolean }
                   valid: { type: boolean }
                   message: { type: string }
-        '422': { description: template_invalid }
+        '422':
+          description: template_invalid (error.field = path of the offending field, since 2.25.0)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /templates/sync:
     post:
@@ -1113,7 +1362,7 @@ paths:
 
   /templates/{id}:
     get:
-      summary: Template detail
+      summary: Template detail (adds header_media_ref and edit_limit)
       tags: [Templates]
       operationId: getTemplate
       security: [{ BearerAuth: ["templates:read"] }]
@@ -1128,6 +1377,12 @@ paths:
         '404': { description: template_not_found }
     patch:
       summary: Edit a template (re-submits, status PENDING)
+      description: |
+        Only APPROVED, REJECTED or PAUSED templates (else 409 template_not_editable). Approved: 1 edit per 24 h and
+        10 per 30 days, category cannot change (422 category_not_editable); rejected/paused: unlimited, category may
+        change. The edit replaces ALL components (send the full list). name, language and parameter_format cannot be
+        changed (422 invalid_request). Equivalent: POST /templates/{id}. Test keys: validated and simulated
+        (status PENDING, nothing stored). https://developers.facebook.com/documentation/business-messaging/whatsapp/templates/template-management
       tags: [Templates]
       operationId: updateTemplate
       security: [{ BearerAuth: ["templates:write"] }]
@@ -1137,22 +1392,60 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [components]
-              properties:
-                components: { type: array, items: { type: object } }
-                category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+            schema: { $ref: "#/components/schemas/TemplateUpdateRequest" }
       responses:
         '200':
-          description: OK
+          description: OK (status PENDING)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Template" }
         '404': { description: template_not_found }
-        '422': { description: template_edit_failed }
+        '409':
+          description: template_not_editable (error.status)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '422':
+          description: invalid_request / category_not_editable / template_invalid (error.field) / template_edit_failed (error.meta_*)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '429':
+          description: template_edit_limit (error.next_edit_at, error.retry_after, Retry-After header; error.meta_* when Meta enforced it)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '502': { description: meta_unavailable }
+    post:
+      summary: Edit a template (POST alias of PATCH)
+      description: Same behaviour, body and responses as PATCH /templates/{id} (since 2.25.0).
+      tags: [Templates]
+      operationId: updateTemplatePost
+      security: [{ BearerAuth: ["templates:write"] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateUpdateRequest" }
+      responses:
+        '200':
+          description: OK (status PENDING)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        '404': { description: template_not_found }
+        '409': { description: template_not_editable }
+        '422': { description: "invalid_request / category_not_editable / template_invalid / template_edit_failed" }
+        '429': { description: template_edit_limit }
+        '502': { description: meta_unavailable }
     delete:
-      summary: Delete a template
+      summary: Delete a template (this language only)
+      description: |
+        Since 2.25.0 only the language of this row is deleted (Meta: name + hsm_id); previously Meta deleted every
+        language of the name. Use DELETE /templates?name= for all languages. Never-submitted drafts are deleted
+        locally only. If already gone at Meta, the local row is deleted and `meta_missing: true` is returned.
       tags: [Templates]
       operationId: deleteTemplate
       security: [{ BearerAuth: ["templates:write"] }]
@@ -1163,13 +1456,56 @@ paths:
           description: Deleted
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  ok: { type: boolean }
-                  deleted: { type: boolean }
-                  id: { type: integer }
+              schema: { $ref: "#/components/schemas/TemplateDeleteResponse" }
         '404': { description: template_not_found }
+        '422':
+          description: template_delete_failed (error.meta_*; e.g. DISABLED cannot be deleted)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        '502': { description: meta_unavailable }
+
+  /templates/{id}/copy:
+    post:
+      summary: Copy a template under a new name and/or language
+      description: |
+        Since 2.25.0. Uses the source's components, parameter_format and header media (when the VM copy exists);
+        `components` overrides them (e.g. a translation). The footer is copied as is (optout_footer defaults to
+        false). Missing VM copy of a media header -> 422 invalid_request field=header_media_ref (upload with
+        POST /templates/media first). Response and errors as POST /templates. Test keys: 202, id 0.
+      tags: [Templates]
+      operationId: copyTemplate
+      security: [{ BearerAuth: ["templates:write"] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                language: { type: string, example: en_US }
+                category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+                waba_id: { type: string }
+                components: { type: array, items: { type: object } }
+                optout_footer: { type: boolean }
+                header_media_ref: { type: integer }
+                allow_category_change: { type: boolean }
+                message_send_ttl_seconds: { type: integer }
+                cta_url_link_tracking_opted_out: { type: boolean }
+      responses:
+        '202':
+          description: Accepted (status PENDING)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Template" }
+        '404': { description: template_not_found }
+        '409': { description: template_exists }
+        '422': { description: "invalid_request / template_invalid / template_rejected" }
+        '502': { description: meta_unavailable }
 
   /profile/{phone_number_id}:
     get:
@@ -1755,9 +2091,9 @@ paths:
               properties:
                 revoke_edit_clean: { type: boolean, description: "Applied to ALL existing numbers" }
                 automation_enabled: { type: boolean, description: "Applied to ALL existing numbers" }
-                opt_out_autoreply_enabled: { type: boolean, description: "Applied to ALL existing numbers" }
+                opt_out_autoreply_enabled: { type: boolean, description: "Always true since 2026-10-11 (opt-out confirmation reply is mandatory); false is ignored" }
                 default_automation_enabled: { type: boolean, description: "Default for numbers connected later" }
-                default_opt_out_autoreply_enabled: { type: boolean, description: "Default for numbers connected later" }
+                default_opt_out_autoreply_enabled: { type: boolean, description: "Always true (mandatory); false is ignored" }
       responses:
         '200':
           description: OK
@@ -1816,6 +2152,60 @@ paths:
         '403': { description: insufficient_scope }
         '422': { description: invalid_request (no field / out of range / not an integer) }
 
+  /meta/disconnect-reasons:
+    get:
+      summary: Disconnect / restriction / re-auth reasons dictionary (since 2.31.0)
+      tags: [Numbers]
+      operationId: getDisconnectReasons
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  reconnect_url: { type: string }
+                  reasons:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string, example: PRIMARY_INACTIVITY }
+                        source: { type: string, enum: [meta_disconnection_reason, meta_event, meta_ban_state, meta_restriction, vm_event] }
+                        message_tr: { type: string }
+                        action_tr: { type: [string, "null"] }
+  /meta/error-codes:
+    get:
+      summary: Error codes dictionary - Meta and Veri Merkezi codes with Turkish text (since 2.32.0)
+      tags: [Numbers]
+      operationId: getErrorCodes
+      parameters:
+        - { name: source, in: query, required: false, schema: { type: string, enum: [meta_message, meta_template, meta_account, meta_call, vm] } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  version: { type: string }
+                  count: { type: integer }
+                  codes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string, description: "Always a string (e.g. '131047', 'FIRST_PAUSE', 'insufficient_credits')" }
+                        source: { type: string, enum: [meta_message, meta_template, meta_account, meta_call, vm] }
+                        message_tr: { type: string }
+                        action_tr: { type: [string, "null"] }
+                        severity: { type: string, enum: [info, warn, error, critical] }
+                        retryable: { type: boolean }
+                        category: { type: [string, "null"], enum: [recipient, template, account, rate, payment, other, null] }
   /privacy/erasure:
     post:
       summary: KVKK erasure (right to be forgotten) for one end user; emits privacy.erasure_completed
@@ -1835,6 +2225,9 @@ paths:
                 wa_id: { type: string, description: "End-user phone (E.164 digits, 8-15)", example: "905550000000" }
                 user_id: { type: string, description: "End-user BSUID (alternative to wa_id)" }
                 phone_number_id: { type: string, description: "Optional; must belong to your account", example: "1234567890" }
+                reference: { type: string, maxLength: 64, description: "Optional client reference (1-64 chars); echoed in the response and in privacy.erasure_completed (since 2.29.0)" }
+      parameters:
+        - { name: Idempotency-Key, in: header, required: false, description: "8-128 chars; a retry with the same key and body returns the first response (same erasure_id, Idempotent-Replay: true); erasure does not run twice (since 2.29.0)", schema: { type: string } }
       responses:
         '202':
           description: Completed
@@ -1849,12 +2242,15 @@ paths:
                   phone_number_id: { type: [string, "null"] }
                   wa_id: { type: [string, "null"] }
                   user_id: { type: [string, "null"] }
+                  reference: { type: [string, "null"], description: "since 2.29.0" }
                   completed_at: { type: string, format: date-time }
                   erased: { type: object, description: "Per-table deletion counts" }
         '403': { description: insufficient_scope }
         '404': { description: number_not_found }
-        '422': { description: invalid_request }
+        '409': { description: idempotency_in_progress }
+        '422': { description: "invalid_request | idempotency_key_conflict" }
         '500': { description: erasure_failed }
+        '503': { description: temporarily_unavailable (Retry-After) }
 
   /test/inbound:
     post:
@@ -2127,8 +2523,9 @@ paths:
       security: [{ BearerAuth: ["flows:read"] }]
       parameters:
         - { name: phone_number_id, in: query, required: true, schema: { type: string } }
-        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
-        - { name: after, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, description: "1-200 (larger values are capped at 200; 2.25.0 and earlier: 100)", schema: { type: integer, minimum: 1, maximum: 200 } }
+        - { name: after, in: query, required: false, description: "Cursor: next_cursor of the previous page", schema: { type: string } }
+        - { name: cursor, in: query, required: false, description: "Alias of after (since 2.26.0)", schema: { type: string } }
       responses:
         '200':
           description: OK
@@ -2140,8 +2537,10 @@ paths:
                   ok: { type: boolean }
                   phone_number_id: { type: string }
                   waba_id: { type: string }
-                  flows: { type: array, items: { $ref: '#/components/schemas/Flow' } }
+                  flows: { type: array, items: { $ref: '#/components/schemas/FlowListItem' } }
                   paging: { type: object, properties: { after: { type: [string, "null"] } } }
+                  next_cursor: { type: [string, "null"], description: "Same as paging.after (since 2.26.0)" }
+                  has_more: { type: boolean, description: "since 2.26.0" }
     post:
       summary: Create a Flow (with Flow JSON)
       description: Creates the Flow in DRAFT with the given Flow JSON. Meta validation errors are returned in validation_errors. No credit.
@@ -2175,6 +2574,8 @@ paths:
                   flow_id: { type: string }
                   status: { type: string, enum: [DRAFT] }
                   validation_errors: { type: array, items: { type: object } }
+                  hint: { type: string, enum: [flow_chained_equality, crm_update_required], description: "since 2.26.0; see FlowHint" }
+                  hint_message: { type: string }
         '403': { description: "insufficient_scope / test_mode_unsupported" }
         '422': { description: "invalid_request / invalid_flow_json / meta_flow_failed" }
   /flows/{flow_id}:
@@ -2234,6 +2635,8 @@ paths:
                   ok: { type: boolean }
                   flow_id: { type: string }
                   validation_errors: { type: array, items: { type: object } }
+                  hint: { type: string, enum: [flow_chained_equality, crm_update_required], description: "since 2.26.0; see FlowHint" }
+                  hint_message: { type: string }
         '409': { description: flow_not_draft }
   /flows/{flow_id}/publish:
     post:
@@ -2246,7 +2649,7 @@ paths:
         - { name: phone_number_id, in: query, required: false, schema: { type: string } }
       responses:
         '200': { description: "{ ok, flow_id, status: PUBLISHED }" }
-        '422': { description: meta_flow_failed }
+        '422': { description: "meta_flow_failed (error.hint / error.hint_message when the Flow JSON has chained equalities, since 2.26.0)" }
   /flows/{flow_id}/deprecate:
     post:
       summary: Deprecate a published Flow

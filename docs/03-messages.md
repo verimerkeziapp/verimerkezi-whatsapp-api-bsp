@@ -40,6 +40,8 @@ Idempotency-Key: <uuid> (opsiyonel ama önerilir)
 }
 ```
 
+> **Bağlantı önizlemesi (2.32.1):** `text.preview_url: true` gönderildiğinde metindeki bağlantının önizlemesi gösterilir. Alan gönderilmezse önizleme kapalıdır.
+
 ### 2) Görsel
 
 ```json

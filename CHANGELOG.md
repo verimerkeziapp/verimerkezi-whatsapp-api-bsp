@@ -2,6 +2,92 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.32.1] — 2026-10-25
+
+- Bağlantı önizlemesi: `POST /wa/messages` metin mesajlarında `text: { "body": "...", "preview_url": true }` gönderildiğinde değer Meta'ya iletilir ve metindeki bağlantının önizlemesi gösterilir. `preview_url` gönderilmezse önizleme eskisi gibi kapalıdır; mevcut entegrasyonlar etkilenmez.
+
+## [2.32.0] — 2026-10-22
+
+- Hata sözlüğü: `GET /meta/error-codes` (Meta mesaj, şablon, hesap ve arama kodları + Veri Merkezi kodları; Türkçe açıklama, adım, önem, `retryable`, kategori). Yalnız Meta'nın belgelediği kodlar.
+- `message.status.failed`: `errors[]` öğelerine `message_tr`, `action_tr`, `severity`, `retryable`, `category`, `known`; üst düzeyde ilk hatanın özeti (`error_code`, `error_message_tr`, `error_action_tr`, `error_severity`, `error_retryable`, `error_category`). Meta alanları (`error_data.details` dahil) aynen kalır.
+- Hata yanıtları: Meta kaynaklı her hatada `meta_code` (bağlantı hatasında `0`); tüm `error` gövdelerinde `message_tr`, `action_tr`. `error.message` artık Türkçe ve teknik metinsiz; Meta'nın ham metni yalnız `meta_message` / `meta_user_message`da. Arama ve form hatalarında `meta_message_tr`.
+- Şablon olayları: `reason_code`, `reason_tr`, `action_tr`, `paused_until`, `meta_description`; `rejected_reason_text` her redde dolu. Yeni olaylar: `template.pending`, `template.in_appeal`, `template.locked`, `template.archived`, `template.unarchived`, `template.deleted`, `template.pending_deletion`, `template.limit_exceeded`.
+- `account.alert` yapılandırıldı: `type`, `severity`, `message_tr`, `action_tr`, `link` (+ Meta `alert_info` alanları). `number.name_changed`: `rejection_reason_tr`. `number.status_changed`: `ACCOUNT_VIOLATION` → `restricted` + `violation_type`.
+- Yeni olaylar: `number.limit_changed` (Meta mesaj limiti), `account.review_changed` (hesap incelemesi), `message.status.deleted`. Yeni olayların hiçbiri `*` aboneliğine dahil değildir; açıkça seçilmelidir.
+- `GET /numbers`: `payment_method_status` (`ok` | `missing` | `unknown`), `payment_method_action_tr`.
+
+## [2.31.1] — 2026-10-22
+
+- Kopma nedeni sonradan gelirse güncellenir: kopmadan sonraki 10 dakika içinde aynı WABA için nedenli bir kopma olayı (ör. `PARTNER_REMOVED` + `disconnection_info.reason`) gelirse `disconnect_reason` ve `disconnect_initiated_by` güncellenir; CRM'e nedenli tek bir `number.status_changed` daha gider (`reason`, `disconnect_message_tr`, `disconnect_action_tr`, `reconnect_url`). Mevcut olay sırası ve alanlar değişmedi.
+- Sözlük: `BUSINESS_DOWNGRADE` → "Numara telefonda WhatsApp Business'tan normal WhatsApp'a geçirildi." Adım: (1) numarayı telefonda tekrar WhatsApp Business'a taşıyın, (2) Veri Merkezi panelinde Numaralar sayfasından yeniden bağlayın.
+
+## [2.31.0] — 2026-10-20
+
+- Kopma nedenleri sözlüğü: `GET /meta/disconnect-reasons` (Meta `account_update` değerleri + Veri Merkezi olayları; kod, kaynak, kısa Türkçe açıklama, müşterinin adımı).
+- `GET /numbers`: `disconnect_message_tr`, `disconnect_action_tr`, `reconnect_url` (aktif değilse kopma nedeni, aktif ama yetki düşmüşse `REAUTH_REQUIRED`; bilinmiyorsa `null`). 2.30.0 alanları aynen kalır.
+- `number.status_changed`: aynı üç alan her olayda. `ACCOUNT_RESTRICTION` artık `status: "restricted"` olarak yayınlanır (`restriction_type`, `restriction_types`, `restricted_until`, `remediation`).
+- Düzeltme: `DISABLED_UPDATE` olayında yalnız `waba_ban_state: DISABLE` numarayı kapatır; `SCHEDULE_FOR_DISABLE` kapatmaz, `REINSTATE` kapalı numarayı yeniden açar ve `status: "connected"` yayınlar.
+
+## [2.30.0] — 2026-10-20
+
+- Düzeltme: Meta hesap olaylarında (`PARTNER_REMOVED` vb.) WABA kimliği `waba_info.waba_id` alanından okunur. Önceden bazı kopmalarda numara `active` kalıyor ve `number.status_changed` yayınlanmıyordu.
+- `PARTNER_APP_UNINSTALLED` artık kopma sayılır: numara `disconnected` olur. Meta `PARTNER_REMOVED` ile art arda gönderdiğinde numara başına tek `number.status_changed` yayınlanır.
+- `GET /numbers` yeni alanlar: `disconnect_reason`, `disconnect_initiated_by` (Meta `disconnection_info`; yalnız numara aktif değilken dolu), `reauth_required` (boolean), `reauth_required_at`.
+- Not: coexistence numaralarında Meta, telefondaki WhatsApp Business uygulaması uzun süre kullanılmazsa bağlantıyı `PRIMARY_INACTIVITY` nedeniyle kaldırır. Numara panelden yeniden bağlanmalıdır.
+
+## [2.29.0] — 2026-10-19
+
+- `POST /privacy/erasure`: isteğe bağlı `reference` (1–64 karakter) gövde alanı; 202 yanıtında ve `privacy.erasure_completed` olayında aynen döner (verilmediyse `null`).
+- `POST /privacy/erasure`: `Idempotency-Key` desteği. Aynı anahtar ve gövdeyle yeniden denemede aynı `erasure_id` ve yanıt `Idempotent-Replay: true` ile döner; silme ikinci kez çalışmaz. İşlem sürerken `409 idempotency_in_progress`, farklı gövdede `422 idempotency_key_conflict`.
+- Geriye uyumlu: alanlar isteğe bağlı; mevcut istemciler değişiklik gerektirmez.
+
+## [2.28.0] — 2026-10-19
+
+- Eşzamanlı medya indirme sınırı: hesap başına aynı anda en fazla 6 indirme; birinci taraf anahtar 6 yuvanın tamamını, diğer anahtarlar birlikte 2 yuvayı kullanır. Dolunca `429 rate_limited` + `error.scope: concurrency`, `X-Concurrency-Limit`, `Retry-After: 2`. `HEAD` ve `?meta=1` sayılmaz.
+- Dayanıklılık: doğrulanmış anahtar bilgisi 15 sn, medya üstverisi 10 dk sunucu önbelleğinde tutulur (istek başına daha az veritabanı sorgusu). İptal ve IP listesi değişikliği önbelleği hemen temizler.
+- Veritabanı devre kesicisi: kısa sürede art arda bağlantı reddinde API birkaç saniye bağlantı denemeden `503 temporarily_unavailable` döner; önbellekteki bilgilerle medya indirmeleri sürer.
+- SDK'lar 2.28.0: davranış aynı (429/503 Retry-After ile yeniden deneme eşzamanlılık sınırını da kapsar).
+
+## [2.27.0] — 2026-10-19
+
+- Hesap düzeyi hız sınırı: anahtar sınırına ek olarak hesabın tüm anahtarları kova başına ortak bir bütçe paylaşır (JSON kovaları 300/dk, medya 150/dk). Ayrıntı: Hız sınırları rehberi.
+- Birinci taraf önceliği: bağlı hizmetin kurulum anahtarı (ör. Sigorta CRM) hesap bütçesinin tamamını kullanabilir; anahtar sınırı da hesap bütçesine eşittir. Hesapta böyle bir anahtar varken diğer anahtarlar bütçenin %40'ını birlikte paylaşır. Diğer anahtarların kendi sınırları (120/dk, medya 60/dk) değişmedi.
+- Yeni başlıklar: `X-RateLimit-Bucket`, `X-RateLimit-Account-Limit`, `X-RateLimit-Account-Remaining`, `X-RateLimit-Account-Reset`; 429 yanıtında `X-RateLimit-Scope` (`key`, `account`, `account_share`) ve gövdede `error.scope`, `error.bucket`. Tümü `Access-Control-Expose-Headers` ile okunabilir.
+- Geçici altyapı hataları (veritabanı bağlantı reddi vb.) artık `500` yerine `503 temporarily_unavailable` + `Retry-After: 5` döner; bu durumda anahtar doğrulanamazsa da `401 invalid_api_key` yerine `503` döner. API uçlarında beklenmeyen hata yanıtı HTML yerine JSON (`server_error`).
+- Giden webhook teslimi abonelikler arasında adil paylaştırılır; abonelik içinde canlı olaylar `message.history` olaylarından önce teslim edilir.
+- SDK'lar: 429 ve 503 yanıtlarında `Retry-After` kadar bekleyip otomatik yeniden dener (en fazla 3).
+
+## [2.26.1] — 2026-10-15
+
+- Belge düzeltmesi (davranış değişmedi): `opt_out_autoreply_enabled` ve `default_opt_out_autoreply_enabled` 11.10.2026'dan beri her zaman `true`; RET onay mesajı zorunludur, `false` gönderilirse yok sayılır ve yanıtta `true` döner. Ayar eşitleyen istemciler bu alanı göndermemeli ya da beklenen değeri `true` kabul etmelidir.
+
+## [2.26.0] — 2026-10-14
+
+- `GET /flows`: her formda `id` (= `flow_id`), `waba_id`, `phone_number_id`, `updated_at` (Veri Merkezi kaydında son gözlenen değişiklik, ISO 8601); yanıtta `next_cursor` ve `has_more`. `limit` üst sınırı 100'den 200'e çıktı; imleç `cursor` adıyla da gönderilebilir. Eski `flow_id` ve `paging.after` alanları aynen korunur.
+- Formlar: Meta Flow JSON'u `Type mismatch in an equality operation` ile reddederse (`POST /flows`, `PUT /flows/{flow_id}/json` → `validation_errors`; `POST /flows/{flow_id}/publish` ve diğer yazma uçları → `422 meta_flow_failed`) yanıta `hint` + `hint_message` eklenir: `flow_chained_equality` ya da (Sigorta CRM hizmetine bağlı anahtarlarda) `crm_update_required`. Flow JSON değiştirilmez.
+- Belgeler: Meta koşul kuralları — ifade başına tek eşitlik, iç içe If en fazla 3 seviye, Switch uyarısı (canlı Meta testleri, 14.10.2026).
+- SDK'lar: `listFlows` / `list_flows` 200'e kadar `limit` ve `next_cursor` ile çalışır (imza değişmedi). OpenAPI ve Postman güncellendi.
+
+## [2.25.0] — 2026-10-14
+
+- Yeni: `POST /templates/media` — medya başlıklı şablon için örnek dosyayı yükler ve `header_handle` + `header_media_ref` döndürür. Giriş: `multipart/form-data` `file`, JSON `url` ya da JSON `media_id`. Kabul: JPEG/PNG (`IMAGE`, en çok 5 MB), MP4 (`VIDEO`, 16 MB), PDF (`DOCUMENT`, 100 MB). Yanıt `201`: `header_handle`, `header_media_ref`, `format`, `mime_type`, `file_size`, `waba_id`.
+- Yeni: `POST /templates/{id}` (`PATCH /templates/{id}` eşdeğeri), `POST /templates/{id}/copy` (yeni ad / dil / kategori ile kopya, `components` verilirse çeviri) ve `DELETE /templates?name=…` (adın tüm dilleri; `ids`, `languages`).
+- Düzeltme: `DELETE /templates/{id}` artık yalnız o dili siler (Meta'ya ad + `hsm_id`). Önceden Meta'da adın tüm dilleri siliniyordu, yerelde tek satır. Meta'da zaten yoksa yanıtta `meta_missing: true`.
+- `POST /templates`: yeni alanlar `parameter_format` (`POSITIONAL` | `NAMED`), `allow_category_change`, `message_send_ttl_seconds`, `cta_url_link_tracking_opted_out`, `header_media_ref`. Tam bileşen desteği: `NAMED` değişkenler, metin başlıkta 1 değişken + örnek, `LOCATION` başlık, `COPY_CODE` düğmesi. Aynı WABA'da aynı ad + dil için `409 template_exists`; Meta reddederse yerelde `DRAFT` artığı kalmaz.
+- Düzenleme kuralları: yalnız `APPROVED` / `REJECTED` / `PAUSED` (aksi `409 template_not_editable`); onaylıda kategori değişmez (`422 category_not_editable`), 24 saatte 1 ve 30 günde 10 düzenleme sınırı (`429 template_edit_limit`, `next_edit_at`, `retry_after`). `name`, `language`, `parameter_format` düzenlenemez.
+- Hatalar: doğrulama hataları (`422 invalid_request` / `template_invalid`) `error.field` ile alan yolunu verir (ör. `components[0].text`; `POST /templates/validate` dahil). Meta kaynaklı hatalarda `meta_code`, `meta_subcode` (metin), `meta_message`, `meta_user_title`, `meta_user_message`, `fbtrace_id` döner. Yeni kodlar: `template_exists`, `template_not_editable`, `category_not_editable`, `template_edit_limit`, `meta_unavailable` (502); `template_edit_failed`, `template_delete_failed`, `meta_upload_failed`, `media_invalid_format`, `header_media_fetch_failed` şablon uçlarında da kullanılır.
+- Şablon nesnesi: `previous_category`, `parameter_format`, `rejected_reason_text` ve listede `quality_score`; ayrıntıda ayrıca `header_media_ref` ve `edit_limit` (`editable`, `edits_last_30d`, `max_edits_30d`, `next_edit_at`).
+- Yeni olaylar: `template.disabled` ve `template.reinstated`. `*` aboneliğine dahil değildir; açıkça seçilmelidir. Durum olaylarının (`approved`, `rejected`, `paused`, `flagged`, `disabled`, `reinstated`) yüküne `previous_status`, `rejected_reason`, `rejected_reason_text`, `quality_score`, `occurred_at` ve `source` (`webhook` | `sync`) eklendi; `reason` korunur. Meta webhook'u gelmediyse geçiş senkronda yakalanır, aynı geçiş iki kez yayınlanmaz.
+- Test anahtarı: yeni yazma uçları dahil tümü simüle edilir (Meta'ya gitmez, veri değişmez; `simulated: true`, `X-Test-Mode: 1`): `POST /templates/media` `201` (`header_handle: "4::test…"`, `header_media_ref: null`), `POST` / `PATCH /templates/{id}` `200`, `POST /templates/{id}/copy` `202` (`id: 0`), silme uçları `200`.
+- Şablon nesnesi: `GET /templates` ve `GET /templates/{id}` her şablonda `header_media` döner. Medya başlıklı ve Veri Merkezi'nde dosya kopyası olan şablonda `{ url, mime_type, file_size, sha256, filename, format, temporary: false }` (`url` kalıcı herkese açık bağlantı); kopya yoksa Meta onay örneği `{ url, format, temporary: true }`; medya başlığı yoksa `null`.
+- `POST /messages` `type: "template"`: kayıtlı şablon medya başlıklıysa ve `header` bileşeni gönderilmezse kayıtlı medya kalıcı bağlantıyla otomatik eklenir; `header` gönderirseniz aynen kalır.
+- Dinamik URL butonu gönderimi netleştirildi: `{ type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: "<adres sonu>" }] }`; sabit adresli URL butonuna bileşen gönderilmez. Yeni hata `422 invalid_template_parameters` (`field`: `template.components[0].parameters` | `template.components[0].index` | `template.components`): sabit URL'ye parametre, `index`'teki düğme URL değil, değişkenli URL için parametre yok. Denetim yalnız şablon Veri Merkezi'nde kayıtlıysa yapılır (`AUTHENTICATION` hariç); kayıtlı değilse istek aynen gider.
+- SDK'lar: `uploadTemplateMedia`, `updateTemplate`, `copyTemplate`, `deleteTemplate`, `deleteTemplatesByName` (PHP, Node.js) ve Python'da `upload_template_media`, `update_template`, `copy_template`, `delete_template`, `delete_templates_by_name`. OpenAPI ve Postman güncellendi.
+
+## [2.24.0] — 2026-10-14
+
+- Yeni alan: `type: "unsupported"` olan `message.received` olaylarında `data.unsupported` = `{ type, raw_type, error_code, error_title }` gelir. Meta mesajın içeriğini iletmediğinde nedeni (ör. `131060` "This message is unavailable.") burada. Diğer türlerde `null`; mevcut alanlar değişmedi.
+
 ## [2.23.0] — 2026-10-13
 
 > WhatsApp Business uygulaması rehberi (coexistence). Tamamen additive; panel kişi rehberi (`GET /contacts`) değişmedi. Ayrıntı: [docs/14-uygulama-rehberi.md](docs/14-uygulama-rehberi.md).

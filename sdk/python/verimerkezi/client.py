@@ -1,5 +1,5 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.23.0)
+VeriMerkezi WhatsApp API — Python SDK (v2.32.1)
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -16,7 +16,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.23.0'
+__version__ = '2.32.1'
 VERSION = __version__
 
 
@@ -53,8 +53,10 @@ class VeriMerkeziClient:
             'template': {'name': template_name, 'language': language, 'otp': code},
         })
 
-    def send_text(self, phone_number_id, to, text) -> dict:
-        return self._post('/messages', {'phone_number_id': phone_number_id, 'to': to, 'text': text})
+    def send_text(self, phone_number_id, to, text, preview_url=False) -> dict:
+        """preview_url=True → metindeki bağlantının önizlemesi gösterilir (2.32.1)."""
+        body = {'body': text, 'preview_url': True} if preview_url else text
+        return self._post('/messages', {'phone_number_id': phone_number_id, 'to': to, 'text': body})
 
     def send_image(self, phone_number_id, to, link, caption=None) -> dict:
         image = {'link': link}
@@ -153,16 +155,60 @@ class VeriMerkeziClient:
         """Tek şablonun tüm ayrıntısını (components dahil) döner. Yoksa template_not_found."""
         return self._get('/templates/' + str(int(template_id)))
 
-    def update_template(self, template_id, components, category=None) -> dict:
-        """Onaylı/reddedilmiş şablonu düzenler; durum yeniden PENDING olur (components zorunlu)."""
+    def update_template(self, template_id, components, category=None, **extra) -> dict:
+        """Onaylı/reddedilmiş/duraklatılmış şablonu düzenler; durum yeniden PENDING olur (components TAM liste).
+
+        category yalnız reddedilen/duraklatılan şablonda; extra: message_send_ttl_seconds, header_media_ref,
+        header_media_url, allow_category_change, cta_url_link_tracking_opted_out, optout_footer.
+        Onaylı şablon 24 saatte 1, 30 günde 10 düzenlenebilir (429 template_edit_limit: next_edit_at, retry_after).
+        """
         body = {'components': components}
         if category is not None:
             body['category'] = category
+        body.update({k: v for k, v in extra.items() if v is not None})
         return self._patch('/templates/' + str(int(template_id)), body)
 
     def delete_template(self, template_id) -> dict:
-        """Şablonu siler. {'ok': True, 'deleted': True, 'id': ...} döner."""
+        """Şablonu siler — 2.25.0'dan beri YALNIZ bu dili (Meta: name + hsm_id).
+        {'ok': True, 'deleted': True, 'id': ..., 'name': ..., 'language': ...} döner. Tüm diller için delete_templates_by_name()."""
         return self._delete('/templates/' + str(int(template_id)))
+
+    def delete_templates_by_name(self, name, waba_id=None, phone_number_id=None) -> dict:
+        """Adın TÜM dillerini siler: DELETE /templates?name=… Yanıt: deleted, name, waba_id, ids, languages.
+        Birden çok WABA'da waba_id (ya da phone_number_id) verin."""
+        q = {'name': name}
+        if waba_id:
+            q['waba_id'] = waba_id
+        if phone_number_id:
+            q['phone_number_id'] = phone_number_id
+        return self._delete('/templates?' + urlencode(q))
+
+    def copy_template(self, template_id, data) -> dict:
+        """Şablonu yeni ad/dil ile kopyalar (POST /templates/{id}/copy). data: name (zorunlu), language, category,
+        components, waba_id, header_media_ref …"""
+        return self._post('/templates/' + str(int(template_id)) + '/copy', data)
+
+    def upload_template_media(self, source, format=None, waba_id=None, phone_number_id=None, mime_type=None) -> dict:
+        """Medya başlıklı şablon için örnek dosyayı yükler (POST /templates/media).
+
+        source: dosya yolu (multipart; JPEG/PNG ≤5 MB, MP4 ≤16 MB, PDF ≤100 MB) ya da {'url': 'https://…'} /
+        {'media_id': '…', 'phone_number_id': '…'} (JSON). Dönen header_handle'ı HEADER example.header_handle[0]'a,
+        header_media_ref'i create_template gövdesine koyun.
+        """
+        extra = {k: v for k, v in (('format', format), ('waba_id', waba_id), ('phone_number_id', phone_number_id)) if v}
+        if isinstance(source, dict):
+            return self._post('/templates/media', dict(source, **extra))
+        with open(source, 'rb') as f:
+            name = os.path.basename(source)
+            files = {'file': (name, f, mime_type) if mime_type else (name, f)}
+            resp = requests.post(self.base_url + '/templates/media', headers={'Authorization': f'Bearer {self.api_key}',
+                                 'User-Agent': 'VeriMerkezi-Python-SDK/' + __version__},
+                                 data={k: str(v) for k, v in extra.items()}, files=files, timeout=self.timeout)
+        j = resp.json() if resp.content else {}
+        if resp.status_code // 100 != 2:
+            err = j.get('error', {}) if isinstance(j, dict) else {}
+            raise VeriMerkeziException(err.get('message', f'HTTP {resp.status_code}'), resp.status_code, err.get('code'), err)
+        return j
 
     def get_profile(self, phone_number_id) -> dict: return self._get('/profile/' + quote(phone_number_id))
     def update_profile(self, phone_number_id, fields) -> dict: return self._patch('/profile/' + quote(phone_number_id), fields)
@@ -268,12 +314,21 @@ class VeriMerkeziClient:
                                   'webhook_deliveries_days': webhook_deliveries_days}.items() if v is not None}
         return self._patch('/account/retention', body)
 
-    def privacy_erasure(self, wa_id=None, user_id=None, phone_id=None) -> dict:
+    def get_error_codes(self, source=None) -> dict:
+        """Hata kodları sözlüğü (2.32.0). source: meta_message | meta_template | meta_account | meta_call | vm."""
+        return self._request('GET', '/meta/error-codes' + (('?' + urlencode({'source': source})) if source else ''))
+
+    def get_disconnect_reasons(self) -> dict:
+        """Numara kopma / kısıt / yeniden yetki nedenleri sözlüğü (2.31.0)."""
+        return self._request('GET', '/meta/disconnect-reasons')
+
+    def privacy_erasure(self, wa_id=None, user_id=None, phone_id=None, reference=None) -> dict:
         """KVKK silme/unutulma — wa_id (telefon) veya user_id (BSUID) zorunlu. 202 + privacy.erasure_completed."""
         body = {}
         if wa_id is not None: body['wa_id'] = str(wa_id)
         if user_id is not None: body['user_id'] = str(user_id)
         if phone_id is not None: body['phone_number_id'] = str(phone_id)
+        if reference is not None: body['reference'] = str(reference)  # 2.29.0
         return self._post('/privacy/erasure', body)
 
     # ── Sandbox (yalnız vmk_test_ anahtarı) ──────────────────────────
@@ -373,6 +428,7 @@ class VeriMerkeziClient:
     # Formlar WABA düzeyindedir. Yönetim kredisiz; form mesajı (send_flow) normal mesaj gibi 1 kredi.
     # Olaylar: flow.completed / flow.status_changed ('*' kapsamaz — açıkça ekleyin).
     # phone_id (isteğe bağlı) Meta arayüzünde oluşturulmuş formu hesabınıza bağlamak içindir.
+    # list_flows: limit ≤ 200; sonraki sayfa için yanıttaki next_cursor değerini after olarak verin (has_more: False → son sayfa).
     def list_flows(self, phone_id, limit=None, after=None) -> dict:
         q = ['phone_number_id=' + quote(str(phone_id))]
         if limit is not None: q.append('limit=' + str(int(limit)))
@@ -500,9 +556,9 @@ class VeriMerkeziClient:
                 raise VeriMerkeziException(f'Bağlantı hatası: {e}', 0)
 
             # 5xx ve 429 yeniden denemeleri JSON parse'tan ÖNCE — gövde JSON olmayabilir
-            if resp.status_code >= 500 and attempt < self.max_retries:
+            if resp.status_code >= 500 and resp.status_code != 503 and attempt < self.max_retries:
                 time.sleep(attempt * 1.0); continue
-            if resp.status_code == 429 and attempt < self.max_retries:
+            if resp.status_code in (429, 503) and attempt < self.max_retries:  # 2.27.0: 503 de Retry-After ile
                 retry_after = 5
                 try:
                     body_json = resp.json()
