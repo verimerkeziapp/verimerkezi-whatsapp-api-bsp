@@ -227,6 +227,7 @@ Veri Merkezi her event için bu JSON'u **POST** eder (`message.received` örneğ
 | `contact` | `wa_id`, `user_id`, `username`, `profile_name` |
 | `context` | Alıntılı cevapta dolu: `{ message_id, from, forwarded, frequently_forwarded }`; yoksa `null` |
 | `reaction` | Tepki mesajında (`type: reaction`): `{ message_id, emoji }`; tepki kaldırıldıysa `emoji` boş string |
+| `referral` | Müşteri bir Click-to-WhatsApp (CTWA) reklamına ya da Facebook/Instagram gönderisine tıklayıp sohbeti başlattıysa **ilk mesajda** dolu: `source_url`, `source_id`, `source_type` (`ad` / `post`), `headline`, `body`, `media_type` (`image` / `video`), `image_url`, `video_url`, `thumbnail_url`, `ctwa_clid`, `welcome_message`. Diğer mesajlarda ve `message.echo`'da `null`. `GET /wa/messages`'ta da aynı biçimde döner (v2.33.0) |
 | `location` | Konum mesajında: `{ latitude, longitude, name, address, url }`; yoksa `null` |
 | `contacts` | Kişi kartı paylaşıldıysa Meta'nın kişi dizisi; yoksa `null` |
 | `original_message_id` | `revoke` / `edit` türünde hedef mesajın `wamid`'i; diğerlerinde `null` |

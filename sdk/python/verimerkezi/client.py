@@ -1,5 +1,10 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.32.1)
+VeriMerkezi WhatsApp API — Python SDK (v2.33.0)
+
+v2.33.0 — 2026-10-31 — Webhook: message.received ve GET /messages yanıtına data.referral (Click-to-WhatsApp
+reklam referralı: source_url/source_id/source_type/headline/body/media_type/image_url/video_url/thumbnail_url/
+ctwa_clid/welcome_message). Webhook gövdesi olduğu gibi geçirildiğinden yeni metot gerekmez; alanı doğrudan
+event["data"]["referral"] ile okuyun.
 
 Kullanım:
     from verimerkezi import VeriMerkeziClient
@@ -16,7 +21,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.32.1'
+__version__ = '2.33.0'
 VERSION = __version__
 
 

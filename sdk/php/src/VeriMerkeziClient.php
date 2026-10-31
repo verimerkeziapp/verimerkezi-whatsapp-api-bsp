@@ -13,6 +13,7 @@
  * v1.9.0 — 2026-09-23 — şablon yönetimi + webhook aboneliği + kredi olayları
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı: hesap ayarları, KVKK saklama/silme,
  *   sandbox gelen mesaj, webhook secret döndürme
+ * v2.33.0 — 2026-10-31 — Webhook: message.received ve GET /messages yanıtına data.referral (Click-to-WhatsApp reklam referralı: source_url/source_id/source_type/headline/body/media_type/image_url/video_url/thumbnail_url/ctwa_clid/welcome_message). Webhook gövdesi olduğu gibi geçirildiğinden yeni metot gerekmez; alanı doğrudan $event['data']['referral'] ile okuyun.
  * v2.32.1 — 2026-10-25 — sendText: isteğe bağlı bağlantı önizlemesi (text.preview_url); varsayılan kapalı, eski çağrılar değişmeden çalışır
  * v2.32.0 — 2026-10-22 — getErrorCodes() (GET /meta/error-codes, hata sözlüğü); hata yanıtlarında message_tr/action_tr; message.status.failed ve şablon olaylarında Türkçe alanlar; yeni olaylar: number.limit_changed, account.review_changed, message.status.deleted, 8 şablon durumu; GET /numbers: payment_method_status
  * v2.31.1 — 2026-10-22 — kopma nedeni sonradan gelirse güncellenir (number.status_changed tekrar, nedenli); SDK imzası değişmedi
@@ -33,7 +34,7 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.32.1';
+ public const VERSION = '2.33.0';
 
  private string $apiKey;
  private string $baseUrl;

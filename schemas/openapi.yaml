@@ -21,7 +21,7 @@ info:
 
     API version 2.32.1 (2026-10-25) - 68 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
     Documentation: https://api.verimerkezi.app/referans/
-  version: "2.32.1"
+  version: "2.33.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -492,6 +492,26 @@ components:
         raw_type: { type: [string, "null"], example: unknown }
         error_code: { type: [integer, "null"], example: 131060 }
         error_title: { type: [string, "null"], example: "This message is unavailable." }
+
+    InboundReferral:
+      type: [object, "null"]
+      description: >
+        data.referral in message.received / GET /messages (since 2.33.0, additive). Present on the FIRST
+        inbound message when the customer tapped a Click-to-WhatsApp (CTWA) ad or a Facebook/Instagram post;
+        otherwise null. Also returned for past messages via GET /messages when stored. Meta object, field
+        names unchanged. Match ad clicks with ctwa_clid; ad/post id is source_id.
+      properties:
+        source_url: { type: [string, "null"], example: "https://fb.me/2abcDEF" }
+        source_id: { type: [string, "null"], example: "120210000000000000", description: "Ad or post id" }
+        source_type: { type: [string, "null"], example: ad, description: "ad | post" }
+        headline: { type: [string, "null"], example: "Kasko teklifinizi 2 dakikada alın" }
+        body: { type: [string, "null"], example: "Hemen WhatsApp'tan yazın" }
+        media_type: { type: [string, "null"], example: image, description: "image | video" }
+        image_url: { type: [string, "null"] }
+        video_url: { type: [string, "null"] }
+        thumbnail_url: { type: [string, "null"] }
+        ctwa_clid: { type: [string, "null"], example: "ARAbcd1234...", description: "Click-to-WhatsApp click id" }
+        welcome_message: { type: [object, "null"], description: "Ad greeting payload when present" }
 
     WebhookEvent:
       type: string

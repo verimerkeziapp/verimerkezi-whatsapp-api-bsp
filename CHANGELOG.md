@@ -2,6 +2,16 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.33.0] — 2026-10-31
+
+> Click-to-WhatsApp (CTWA) reklam referralı. Geriye dönük uyumlu; ek webhook ayarı gerekmez.
+
+### Eklenenler
+- **`data.referral`:** `message.received` olayına ve `GET /messages` yanıtına eklendi. Müşteri bir Meta reklamına ya da Facebook/Instagram gönderisine tıklayıp sohbeti başlattığında **ilk mesajda** dolu gelir: `source_url`, `source_id`, `source_type` (`ad` | `post`), `headline`, `body`, `media_type` (`image` | `video`), `image_url`, `video_url`, `thumbnail_url`, `ctwa_clid`, `welcome_message`. Reklamdan gelmeyen mesajlarda ve aynı sohbetin sonraki mesajlarında `null`.
+- **Geçmiş mesajlar:** Meta'nın o mesajda gönderdiği referral saklandıysa, 2.33.0 öncesi CTWA mesajları için de `GET /messages` yanıtında döner.
+- `message.echo` olayında alan yer alır, işletme mesajı olduğundan her zaman `null`'dır.
+- **SDK'lar** 2.33.0: webhook gövdesi olduğu gibi geçer, yeni metot yok (`event.data.referral` okunur). **OpenAPI:** `InboundReferral` şeması. **Postman** güncellendi.
+
 ## [2.32.1] — 2026-10-25
 
 - Bağlantı önizlemesi: `POST /wa/messages` metin mesajlarında `text: { "body": "...", "preview_url": true }` gönderildiğinde değer Meta'ya iletilir ve metindeki bağlantının önizlemesi gösterilir. `preview_url` gönderilmezse önizleme eskisi gibi kapalıdır; mevcut entegrasyonlar etkilenmez.

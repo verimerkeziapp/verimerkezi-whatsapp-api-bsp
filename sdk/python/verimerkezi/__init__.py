@@ -1,5 +1,5 @@
 """Veri Merkezi WhatsApp Business API — Python SDK"""
 from .client import VeriMerkeziClient, VeriMerkeziException
 
-__version__ = "2.32.1"
+__version__ = "2.33.0"
 __all__ = ["VeriMerkeziClient", "VeriMerkeziException"]
