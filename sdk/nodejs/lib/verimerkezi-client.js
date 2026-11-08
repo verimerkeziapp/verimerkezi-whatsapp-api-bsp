@@ -10,6 +10,7 @@
  *
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı (hesap ayarları, KVKK saklama/silme,
  * sandbox gelen mesaj, webhook secret döndürme)
+ * v2.34.0 — 2026-11-08 — Webhook: message.content_available eklendi. Meta bir mesajı 131060 ("message currently unavailable") / type:"unsupported" yer tutucusuyla verdiğinde (özellikle CTWA ilk mesajları), gerçek içerik 1-2 sn sonra AYNI wamid ile bu olayda gelir; event.data.message, message.received ile aynı şekildedir (CTWA referral dahil). message.content_available / message.received / "*" olaylarına abone olan tüm webhook'lar alır. Webhook gövdesi olduğu gibi geçirilir; yeni metot gerekmez.
  * v2.33.0 — 2026-10-31 — Webhook: message.received ve GET /messages yanıtına data.referral (Click-to-WhatsApp reklam referralı: source_url/source_id/source_type/headline/body/media_type/image_url/video_url/thumbnail_url/ctwa_clid/welcome_message). Webhook gövdesi olduğu gibi geçirildiğinden yeni metot gerekmez; alanı doğrudan event.data.referral ile okuyun.
  * v2.32.1 — 2026-10-25 — sendText: isteğe bağlı bağlantı önizlemesi (text.preview_url); varsayılan kapalı, eski çağrılar değişmeden çalışır
  * v2.32.0 — 2026-10-22 — getErrorCodes() (GET /meta/error-codes, hata sözlüğü); hata yanıtlarında message_tr/action_tr; message.status.failed ve şablon olaylarında Türkçe alanlar; yeni olaylar: number.limit_changed, account.review_changed, message.status.deleted, 8 şablon durumu; GET /numbers: payment_method_status
@@ -29,7 +30,7 @@
 
 const crypto = require('crypto');
 
-const VERSION = '2.33.0';
+const VERSION = '2.34.0';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {

@@ -1,6 +1,10 @@
 """
 VeriMerkezi WhatsApp API — Python SDK (v2.33.0)
 
+v2.34.0 — 2026-11-08 — Webhook: message.content_available eklendi. Meta bir mesajı 131060 ("message currently
+unavailable") / type:"unsupported" yer tutucusuyla verdiğinde (özellikle CTWA ilk mesajları), gerçek içerik 1-2 sn
+sonra AYNI wamid ile bu olayda gelir; event["data"]["message"], message.received ile aynı şekildedir (CTWA referral
+dahil). message.content_available / message.received / "*" olaylarına abone tüm webhook'lar alır; gövde olduğu gibi geçer.
 v2.33.0 — 2026-10-31 — Webhook: message.received ve GET /messages yanıtına data.referral (Click-to-WhatsApp
 reklam referralı: source_url/source_id/source_type/headline/body/media_type/image_url/video_url/thumbnail_url/
 ctwa_clid/welcome_message). Webhook gövdesi olduğu gibi geçirildiğinden yeni metot gerekmez; alanı doğrudan
@@ -21,7 +25,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.33.0'
+__version__ = '2.34.0'
 VERSION = __version__
 
 

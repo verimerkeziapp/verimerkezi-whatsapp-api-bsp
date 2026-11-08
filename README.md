@@ -1,7 +1,7 @@
 # Veri Merkezi — WhatsApp Business API SDK & Dokümantasyon
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![API](https://img.shields.io/badge/API-v2.33.0-emerald.svg)](https://api.verimerkezi.app)
+[![API](https://img.shields.io/badge/API-v2.34.0-emerald.svg)](https://api.verimerkezi.app)
 [![Status](https://img.shields.io/badge/Status-Production-success.svg)](https://verimerkezi.app)
 
 > Türkiye'nin **Meta onaylı WhatsApp Business Tech Provider**'ı — Veri Merkezi BSP altyapısı için resmî SDK, OpenAPI şeması ve dokümantasyon deposu.
@@ -125,7 +125,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **İşletme profili** (`GET` / `PATCH /profile/{id}`) | Evet |
 | **Outgoing webhook** (HMAC-SHA256, exponential backoff retry) | Evet |
 | **Webhook aboneliği yönetimi** (oluştur / listele / güncelle / sil / test — API + panel) | Evet — `POST` / `GET` / `PATCH` / `DELETE /webhooks`, `POST /webhooks/{id}/test` |
-| **33 webhook event tipi** (klasik 12 + `message.revoked`, `message.edited`, `message.sent`, `message.history`, `number.status_changed`, `credit.low`, `credit.exhausted`, `privacy.erasure_completed`, `contact.opt_out_changed`, `template.category_changed`, `template.quality_changed`, `number.name_changed`, `call.connect`, `call.status`, `call.terminate`, `call.permission_reply`, `flow.completed`, `flow.status_changed`, `number.detached`, `number.purged`, `contact.synced`) | Evet |
+| **47 webhook event tipi** (klasik 12 + açıkça seçilen olaylar; `message.content_available`, `message.received` / `*` aboneleriyle birlikte gelir) — tam liste: [`schemas/openapi.yaml`](schemas/openapi.yaml) → `WebhookEvent`, açıklamalar: [docs/06-webhooks.md](docs/06-webhooks.md) | Evet |
 | **Numara ayırma** (numarayı hesaptan ayır; isteğe bağlı, **geri alınamaz** kayıt silme) | Evet — `POST /numbers/{id}/detach` |
 | **Şablon senkronu** (Meta'dan anlık senkron) | Evet — `POST /templates/sync`, `GET /templates?refresh=1` |
 | **Etkileşimli mesajlar** (yanıt düğmeleri, liste, bağlantı düğmesi, konum isteği) | Evet — `POST /messages` `type: interactive` |

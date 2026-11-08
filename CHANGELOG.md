@@ -2,6 +2,15 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.34.0] — 2026-11-08
+
+> `message.content_available` olayı belgelendi ve teslimi genişletildi. Geriye dönük uyumlu.
+
+### Değişiklikler
+- Meta bazı ilk mesajları (özellikle CTWA reklamından gelenleri) önce `type: "unsupported"` / `131060` ("message currently unavailable") yer tutucusuyla, 1–2 sn sonra gerçek içerikle gönderir. Gerçek içerik **aynı `wamid`** ile `message.content_available` olayında gelir; `data.message`, `message.received` ile birebir aynı şekildedir ve CTWA `referral` dahildir. Böylece yer tutucuyla gelen mesajların içeriği ve referral'ı kurtarılır.
+- **Teslim kapsamı genişledi:** bu olay önce yalnız CRM entegrasyonlarına gidiyordu; artık `message.content_available`, `message.received` ya da `*` olaylarına abone olan **her** webhook alır. `message.received` tekrarlanmaz.
+- **SDK'lar** 2.34.0 (webhook gövdesi olduğu gibi geçer, ek kod gerekmez). **OpenAPI:** `WebhookEvent` listesine `message.content_available` eklendi (47 olay). **Postman** güncellendi.
+
 ## [2.33.0] — 2026-10-31
 
 > Click-to-WhatsApp (CTWA) reklam referralı. Geriye dönük uyumlu; ek webhook ayarı gerekmez.

@@ -97,6 +97,7 @@ Panel -> **API -> Webhooks -> "Yeni Webhook"**: Ad, URL, event'ler (veya tümü 
 | Event | Açıklama |
 |---|---|
 | `message.received` | Müşteriden yeni mesaj geldi (chatbot için en kritik) |
+| `message.content_available` | Meta'nın `131060` / `type: "unsupported"` yer tutucusuyla verdiği mesajın gerçek içeriği geldi (aynı `wamid`). `message.content_available`, `message.received` ya da `*` aboneliği olan her webhook'a gider (v2.34.0) |
 | `message.echo` | **CoExistence**: işletme WhatsApp uygulamasından telefon üzerinden mesaj yazdığında — `data.from` işletme numarası, `data.to` müşteri |
 | `message.status.sent` | Meta gönderimi kabul etti |
 | `message.status.delivered` | Alıcının cihazına teslim edildi |
@@ -275,6 +276,7 @@ Görsel, video, ses, belge veya çıkartma geldiğinde `data.media.media_id` dol
 | Olay | `data` alanları |
 |---|---|
 | `message.echo` | `wamid`, `from` (işletme), `to` (müşteri), `user_id` (müşteri BSUID), `type`, `text`, `media` (medya indirildiyse), `timestamp`, `source` (`coexistence_app`), `phone_number_id` + `context`/`reaction`/`location`/`contacts` |
+| `message.content_available` | `wamid` (yer tutucuyla **aynı**), `replaces` (`"unavailable"`), `message` (`message.received` `data`'sıyla **birebir aynı şekil**, CTWA `referral` dahil). Yer tutucuyu bu içerikle değiştirin; `message.received` tekrar gönderilmez. Meta nadiren içeriği hiç yeniden göndermeyebilir (mesaj yalnız telefon uygulamasında kalır) |
 | `message.revoked` · `message.edited` | `wamid`, `original_message_id`, `direction` (`inbound`/`echo`), `revoked_by`/`edited_by` (`customer`/`business`), `from`, `user_id`, `phone_number_id`, `timestamp`; `edited` ayrıca `type` + `text` |
 | `message.sent` | `wamid`, `source` (`vm_panel`/`automation`/`campaign`/`opt_out`/`system`), `from`, `to`, `user_id`, `type`, `text`, `media`, `template_name`, `campaign_id`, `phone_number_id`, `timestamp` |
 | `number.status_changed` | `phone_number_id`, `display_phone_number`, `status` (`connected`/`disconnected`/`flagged`/`restricted`/`pending`), `event`, `reason`, `initiated_by`, `occurred_at` |

@@ -19,9 +19,9 @@ info:
     Since 2.28.0: at most 6 concurrent media downloads per account (first-party key all 6, other keys 2 combined);
     when full: 429 rate_limited, error.scope=concurrency, X-RateLimit-Scope: concurrency, X-Concurrency-Limit, Retry-After: 2.
 
-    API version 2.32.1 (2026-10-25) - 68 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
+    API version 2.34.0 (2026-11-08) - 68 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
     Documentation: https://api.verimerkezi.app/referans/
-  version: "2.33.0"
+  version: "2.34.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -516,7 +516,7 @@ components:
     WebhookEvent:
       type: string
       description: |
-        46 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
+        47 events. A '*' subscription covers ONLY the 12 classic events (message.received ..
         account.alert). The other 23 (message.revoked/edited/history/sent, number.status_changed,
         number.name_changed, credit.low/exhausted, privacy.erasure_completed, contact.opt_out_changed,
         template.category_changed/quality_changed, template.disabled/reinstated, call.connect/status/terminate/permission_reply,
@@ -524,9 +524,11 @@ components:
         message.status.deleted, number.limit_changed, account.review_changed, template.pending/in_appeal/locked/
         archived/unarchived/deleted/pending_deletion/limit_exceeded)
         must be selected explicitly.
+        message.content_available (since 2.34.0) is delivered to subscriptions of message.content_available, message.received or '*'.
       enum:
         - "*"
         - "message.received"
+        - "message.content_available"
         - "message.echo"
         - "message.status.sent"
         - "message.status.delivered"
