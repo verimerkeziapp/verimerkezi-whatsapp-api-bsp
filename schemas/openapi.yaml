@@ -522,13 +522,13 @@ components:
         template.category_changed/quality_changed, template.disabled/reinstated, call.connect/status/terminate/permission_reply,
         flow.completed, flow.status_changed, number.detached, number.purged, contact.synced; since 2.32.0
         message.status.deleted, number.limit_changed, account.review_changed, template.pending/in_appeal/locked/
-        archived/unarchived/deleted/pending_deletion/limit_exceeded)
+        archived/unarchived/deleted/pending_deletion/limit_exceeded; since 2.34.0 message.content_available
+        — real content + CTWA referral after a 131060/"unsupported" placeholder; delivered to subscribers of
+        message.content_available / message.received / "*")
         must be selected explicitly.
-        message.content_available (since 2.34.0) is delivered to subscriptions of message.content_available, message.received or '*'.
       enum:
         - "*"
         - "message.received"
-        - "message.content_available"
         - "message.echo"
         - "message.status.sent"
         - "message.status.delivered"
@@ -543,6 +543,7 @@ components:
         - "message.revoked"
         - "message.edited"
         - "message.history"
+        - "message.content_available"
         - "message.sent"
         - "number.status_changed"
         - "credit.low"
