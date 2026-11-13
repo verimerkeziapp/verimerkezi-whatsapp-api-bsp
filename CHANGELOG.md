@@ -2,6 +2,17 @@
 
 Tüm önemli değişiklikler bu dosyada belgelenir. Format [Keep a Changelog](https://keepachangelog.com/) standardını takip eder.
 
+## [2.35.0] — 2026-11-13
+
+> CTWA Dönüşümleri (Conversions API for Business Messaging). Tamamen additive. Ayrıntı: [docs/15-ctwa-donusumleri.md](docs/15-ctwa-donusumleri.md).
+
+### Eklenenler
+- **3 yeni uç:** `POST /conversions` (satış/dönüşüm bildir), `GET /conversions` (iletilen dönüşümler), `GET /conversions/click` (kişi için yakalanmış `ctwa_clid`). Yeni scope'lar: `conversions:write`, `conversions:read`.
+- `ctwa_clid` (2.33.0'dan beri `message.received` referralında gelir) artık kişi bazında saklanır; `POST /conversions`'a yalnız `to` verseniz bile son reklam tıklaması otomatik ilişkilendirilir. İsterseniz `ctwa_clid`'i doğrudan da gönderebilirsiniz.
+- Olay Meta'ya `action_source: business_messaging`, `messaging_channel: whatsapp` ve `user_data.ctwa_clid` ile iletilir; dataset WABA başına otomatik oluşturulur. `event_id` / `order_id` ile tekilleştirilir (Meta tekilleştirmez).
+- İletim için numaranın erişim anahtarında `whatsapp_business_manage_events` izni gerekir; yoksa `403 manage_events_permission_required`. Diğer hatalar: `422 ctwa_clid_required` / `currency_required` / `invalid_event_name`, `502 conversion_failed`.
+- **SDK'lar** 2.35.0: `sendConversion`, `listConversions`, `getCtwaClick` (PHP'de `ctwaClick`; Python'da `send_conversion`, `list_conversions`, `ctwa_click`). **OpenAPI** 2.35.0 (71 uç), **Postman** "11. CTWA Dönüşümleri" klasörü.
+
 ## [2.34.0] — 2026-11-08
 
 > `message.content_available` olayı belgelendi ve teslimi genişletildi. Geriye dönük uyumlu.

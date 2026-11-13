@@ -13,6 +13,7 @@
  * v1.9.0 — 2026-09-23 — şablon yönetimi + webhook aboneliği + kredi olayları
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı: hesap ayarları, KVKK saklama/silme,
  *   sandbox gelen mesaj, webhook secret döndürme
+ * v2.35.0 — 2026-11-13 — CTWA Dönüşümleri (Conversions API for Business Messaging): sendConversion() ile Click-to-WhatsApp satışları Meta'ya bildirilir (ctwa_clid ile; vermezseniz `to` için yakalanan kullanılır), listConversions() ve ctwaClick() eklendi. Yeni kapsamlar conversions:write / conversions:read. İletim için numaranın Meta anahtarında whatsapp_business_manage_events izni gerekir.
  * v2.34.0 — 2026-11-08 — Webhook: message.content_available eklendi. Meta bir mesajı 131060 ("message currently unavailable") / type:"unsupported" yer tutucusuyla verdiğinde (özellikle CTWA ilk mesajları), gerçek içerik 1-2 sn sonra AYNI wamid ile bu olayda gelir; $event['data']['message'], message.received ile aynı şekildedir (CTWA referral dahil). message.content_available / message.received / "*" olaylarına abone olan tüm webhook'lar alır. Webhook gövdesi olduğu gibi geçirilir; yeni metot gerekmez.
  * v2.33.0 — 2026-10-31 — Webhook: message.received ve GET /messages yanıtına data.referral (Click-to-WhatsApp reklam referralı: source_url/source_id/source_type/headline/body/media_type/image_url/video_url/thumbnail_url/ctwa_clid/welcome_message). Webhook gövdesi olduğu gibi geçirildiğinden yeni metot gerekmez; alanı doğrudan $event['data']['referral'] ile okuyun.
  * v2.32.1 — 2026-10-25 — sendText: isteğe bağlı bağlantı önizlemesi (text.preview_url); varsayılan kapalı, eski çağrılar değişmeden çalışır
@@ -35,7 +36,7 @@ namespace VeriMerkezi;
 
 class VeriMerkeziClient
 {
- public const VERSION = '2.34.0';
+ public const VERSION = '2.35.0';
 
  private string $apiKey;
  private string $baseUrl;
@@ -171,6 +172,28 @@ class VeriMerkeziClient
  public function bulkContacts(array $contacts, bool $skipDuplicates = true): array
  {
  return $this->post('/contacts/bulk', ['contacts' => $contacts, 'skip_duplicates' => $skipDuplicates]);
+ }
+
+ // ── CTWA Dönüşümleri (Conversions API for Business Messaging) — v2.35.0 ──
+ // Click-to-WhatsApp satışlarını Meta'ya bildirir. $opts: event_name, value, currency, to, ctwa_clid,
+ // order_id, event_id, event_time, custom_data. ctwa_clid vermezseniz `to` için yakalanan son tıklama kullanılır.
+ public function sendConversion(string $phoneNumberId, array $opts = []): array
+ {
+ $body = ['phone_number_id' => $phoneNumberId, 'event_name' => $opts['event_name'] ?? 'Purchase'];
+ foreach (['value', 'currency', 'to', 'ctwa_clid', 'order_id', 'event_id', 'event_time', 'custom_data'] as $k) {
+ if (array_key_exists($k, $opts)) $body[$k] = $opts[$k];
+ }
+ return $this->post('/conversions', $body);
+ }
+
+ public function listConversions(int $limit = 25): array
+ {
+ return $this->get('/conversions?' . http_build_query(['limit' => $limit]));
+ }
+
+ public function ctwaClick(string $phoneNumberId, string $to): array
+ {
+ return $this->get('/conversions/click?' . http_build_query(['phone_number_id' => $phoneNumberId, 'to' => $to]));
  }
 
  /**

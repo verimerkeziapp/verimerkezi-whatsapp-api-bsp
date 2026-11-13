@@ -10,6 +10,7 @@
  *
  * v2.19.1 — 2026-10-08 — API 2.19.1 ile hizalandı (hesap ayarları, KVKK saklama/silme,
  * sandbox gelen mesaj, webhook secret döndürme)
+ * v2.35.0 — 2026-11-13 — CTWA Dönüşümleri (Conversions API for Business Messaging): sendConversion() ile Click-to-WhatsApp satışları Meta'ya bildirilir (ctwa_clid ile; vermezseniz `to` için yakalanan kullanılır), listConversions() ve getCtwaClick() eklendi. Yeni kapsamlar conversions:write / conversions:read. İletim için numaranın Meta anahtarında whatsapp_business_manage_events izni gerekir.
  * v2.34.0 — 2026-11-08 — Webhook: message.content_available eklendi. Meta bir mesajı 131060 ("message currently unavailable") / type:"unsupported" yer tutucusuyla verdiğinde (özellikle CTWA ilk mesajları), gerçek içerik 1-2 sn sonra AYNI wamid ile bu olayda gelir; event.data.message, message.received ile aynı şekildedir (CTWA referral dahil). message.content_available / message.received / "*" olaylarına abone olan tüm webhook'lar alır. Webhook gövdesi olduğu gibi geçirilir; yeni metot gerekmez.
  * v2.33.0 — 2026-10-31 — Webhook: message.received ve GET /messages yanıtına data.referral (Click-to-WhatsApp reklam referralı: source_url/source_id/source_type/headline/body/media_type/image_url/video_url/thumbnail_url/ctwa_clid/welcome_message). Webhook gövdesi olduğu gibi geçirildiğinden yeni metot gerekmez; alanı doğrudan event.data.referral ile okuyun.
  * v2.32.1 — 2026-10-25 — sendText: isteğe bağlı bağlantı önizlemesi (text.preview_url); varsayılan kapalı, eski çağrılar değişmeden çalışır
@@ -30,7 +31,7 @@
 
 const crypto = require('crypto');
 
-const VERSION = '2.34.0';
+const VERSION = '2.35.0';
 
 class VeriMerkeziException extends Error {
  constructor(message, statusCode = 0, errorCode = null, errorData = null) {
@@ -142,6 +143,23 @@ class VeriMerkeziClient {
 
  // Senkron durumu: coexistence, sync_supported, reason, initial_sync { status, requested_at, completed_at }, sayılar.
  getAppContactsSyncStatus(phoneNumberId) { return this._get('/numbers/' + encodeURIComponent(phoneNumberId) + '/app-contacts/sync'); }
+
+ // ── CTWA Dönüşümleri (Conversions API for Business Messaging) — v2.35.0 ──
+ // Click-to-WhatsApp satışlarını Meta'ya bildirir. ctwaClid vermezseniz `to` için yakalanan son tıklama kullanılır.
+ sendConversion(phoneNumberId, { eventName = 'Purchase', value, currency, to, ctwaClid, orderId, eventId, eventTime, customData } = {}) {
+  const body = { phone_number_id: phoneNumberId, event_name: eventName };
+  if (value !== undefined) body.value = value;
+  if (currency !== undefined) body.currency = currency;
+  if (to !== undefined) body.to = to;
+  if (ctwaClid !== undefined) body.ctwa_clid = ctwaClid;
+  if (orderId !== undefined) body.order_id = orderId;
+  if (eventId !== undefined) body.event_id = eventId;
+  if (eventTime !== undefined) body.event_time = eventTime;
+  if (customData !== undefined) body.custom_data = customData;
+  return this._post('/conversions', body);
+ }
+ listConversions({ limit = 25 } = {}) { return this._get('/conversions?limit=' + encodeURIComponent(limit)); }
+ getCtwaClick(phoneNumberId, to) { return this._get('/conversions/click?phone_number_id=' + encodeURIComponent(phoneNumberId) + '&to=' + encodeURIComponent(to)); }
 
  // ── Şablon yönetimi (templates) ────────────────────────────────────────
  // listTemplates artık opsiyonel filtre alır (status/category/language/q/cursor/limit);

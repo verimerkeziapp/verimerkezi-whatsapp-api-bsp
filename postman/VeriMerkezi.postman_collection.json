@@ -2,8 +2,8 @@
   "info": {
     "_postman_id": "b6f1d2a0-2191-4c3e-9a51-0219000000a1",
     "name": "Veri Merkezi — WhatsApp Business API",
-    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.34.0 (08.11.2026).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 68 uç (+ HEAD /media/{media_id}), 10 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n35 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\nv2.33.0 — Click-to-WhatsApp (CTWA) reklam referralı: müşteri bir Meta reklamına/gönderisine tıklayıp sohbeti başlattığında ilk `message.received` olayında ve `GET /messages` yanıtında `data.referral` = { source_url, source_id, source_type, headline, body, media_type, image_url, video_url, thumbnail_url, ctwa_clid, welcome_message } dolu gelir; diğer mesajlarda null.\nv2.34.0 — `message.content_available`: Meta bir mesajı `131060` (\"message currently unavailable\") / `type: unsupported` yer tutucusuyla verdiğinde (özellikle CTWA ilk mesajları), gerçek içerik + CTWA `referral` 1-2 sn sonra aynı `wamid` ile bu olayda gelir. `message.content_available` / `message.received` / `*` olaylarına abone olan tüm webhook'lar alır.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/referans/ · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
-    "version": "2.34.0",
+    "description": "Resmî Postman koleksiyonu — Veri Merkezi WhatsApp Business API, sürüm 2.35.0 (13.11.2026).\nBelgeler, OpenAPI, SDK'lar ve bu koleksiyon aynı sürümdedir. 71 uç (+ HEAD /media/{media_id}), 11 klasör.\n\n## Kurulum\n1. Koleksiyonu Postman'e import edin\n2. Koleksiyon değişkenlerini doldurun:\n   - `api_key`: vmk_live_... veya vmk_test_... (panel/api)\n   - `phone_number_id`: bağlı WhatsApp numaranızın ID'si\n   - `test_recipient`: kendi test numaranız\n3. Hazırsınız! Kimlik doğrulama koleksiyon düzeyinde Bearer {{api_key}}.\n\n## Webhook olayları\n35 olay; '*' aboneliği klasik 12 olayı kapsar, diğerleri açıkça seçilmeli.\nv2.33.0 — Click-to-WhatsApp (CTWA) reklam referralı: müşteri bir Meta reklamına/gönderisine tıklayıp sohbeti başlattığında ilk `message.received` olayında ve `GET /messages` yanıtında `data.referral` = { source_url, source_id, source_type, headline, body, media_type, image_url, video_url, thumbnail_url, ctwa_clid, welcome_message } dolu gelir; diğer mesajlarda null.\nv2.34.0 — `message.content_available`: Meta bir mesajı `131060` (\"message currently unavailable\") / `type: unsupported` yer tutucusuyla verdiğinde (özellikle CTWA ilk mesajları), gerçek içerik + CTWA `referral` 1-2 sn sonra aynı `wamid` ile bu olayda gelir. `message.content_available` / `message.received` / `*` olaylarına abone olan tüm webhook'lar alır.\n\nv2.35.0 — CTWA Dönüşümleri (Conversions API for Business Messaging): Click-to-WhatsApp satışlarını Meta'ya bildirin — POST /conversions (ctwa_clid ile; vermezseniz `to` için yakalanan kullanılır), GET /conversions, GET /conversions/click. Kapsamlar: conversions:write / conversions:read. İletim için numaranın Meta anahtarında whatsapp_business_manage_events izni gerekir.\n\n## Dokümantasyon\nhttps://api.verimerkezi.app/referans/ · OpenAPI: https://api.verimerkezi.app/sdk/openapi.yaml.txt",
+    "version": "2.35.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -2430,6 +2430,88 @@
               }
             },
             "description": "Kapsam: messages:send. 1 kredi, 24 saat pencere. mode: draft ile yayınlanmamış formu deneyin. Yanıtta flow.flow_token döner. (Bu öğe /messages ucunun örneğidir; uç sayısına eklenmez.)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. CTWA Dönüşümleri",
+      "item": [
+        {
+          "name": "POST /conversions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number_id\": \"{{phone_number_id}}\",\n  \"event_name\": \"Purchase\",\n  \"value\": 1990,\n  \"currency\": \"TRY\",\n  \"to\": \"{{test_recipient}}\",\n  \"order_id\": \"VM261113155546D6\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/conversions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "conversions"
+              ]
+            },
+            "description": "Kapsam: conversions:write. Click-to-WhatsApp satışını Meta'ya bildirir. ctwa_clid vermezseniz `to` için yakalanan son tıklama kullanılır. value ile currency zorunlu. event_id/order_id ile tekilleştirilir. Numaranın Meta anahtarında whatsapp_business_manage_events izni gerekir (yoksa 403)."
+          }
+        },
+        {
+          "name": "GET /conversions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/conversions?limit=25",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "conversions"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "25"
+                }
+              ]
+            },
+            "description": "Kapsam: conversions:read. İletilen son dönüşümleri (durum/hata dahil) listeler."
+          }
+        },
+        {
+          "name": "GET /conversions/click",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/conversions/click?phone_number_id={{phone_number_id}}&to={{test_recipient}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "conversions",
+                "click"
+              ],
+              "query": [
+                {
+                  "key": "phone_number_id",
+                  "value": "{{phone_number_id}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{test_recipient}}"
+                }
+              ]
+            },
+            "description": "Kapsam: conversions:read. Kişi için yakalanmış en güncel CTWA reklam tıklamasını (tam ctwa_clid + reklam bilgisi) döndürür. İlişkilendirme penceresi 7 gün."
           }
         }
       ]

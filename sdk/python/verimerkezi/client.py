@@ -1,6 +1,10 @@
 """
-VeriMerkezi WhatsApp API — Python SDK (v2.33.0)
+VeriMerkezi WhatsApp API — Python SDK (v2.35.0)
 
+v2.35.0 — 2026-11-13 — CTWA Dönüşümleri (Conversions API for Business Messaging): send_conversion() ile
+Click-to-WhatsApp satışları Meta'ya bildirilir (ctwa_clid ile; vermezseniz `to` için yakalanan kullanılır),
+list_conversions() ve ctwa_click() eklendi. Yeni kapsamlar conversions:write / conversions:read. İletim için
+numaranın Meta anahtarında whatsapp_business_manage_events izni gerekir.
 v2.34.0 — 2026-11-08 — Webhook: message.content_available eklendi. Meta bir mesajı 131060 ("message currently
 unavailable") / type:"unsupported" yer tutucusuyla verdiğinde (özellikle CTWA ilk mesajları), gerçek içerik 1-2 sn
 sonra AYNI wamid ile bu olayda gelir; event["data"]["message"], message.received ile aynı şekildedir (CTWA referral
@@ -25,7 +29,7 @@ import os, re, time, uuid, hmac, hashlib
 import requests
 from urllib.parse import urlencode, quote
 
-__version__ = '2.34.0'
+__version__ = '2.35.0'
 VERSION = __version__
 
 
@@ -110,6 +114,23 @@ class VeriMerkeziClient:
 
     def bulk_contacts(self, contacts, skip_duplicates=True) -> dict:
         return self._post('/contacts/bulk', {'contacts': contacts, 'skip_duplicates': skip_duplicates})
+
+    # ── CTWA Dönüşümleri (Conversions API for Business Messaging) — v2.35.0 ──
+    # Click-to-WhatsApp satışlarını Meta'ya bildirir. ctwa_clid vermezseniz `to` için yakalanan son tıklama kullanılır.
+    def send_conversion(self, phone_number_id, event_name='Purchase', value=None, currency=None,
+                        to=None, ctwa_clid=None, order_id=None, event_id=None, event_time=None, custom_data=None) -> dict:
+        body = {'phone_number_id': phone_number_id, 'event_name': event_name}
+        for k, v in (('value', value), ('currency', currency), ('to', to), ('ctwa_clid', ctwa_clid),
+                     ('order_id', order_id), ('event_id', event_id), ('event_time', event_time), ('custom_data', custom_data)):
+            if v is not None:
+                body[k] = v
+        return self._post('/conversions', body)
+
+    def list_conversions(self, limit=25) -> dict:
+        return self._get('/conversions?' + urlencode({'limit': limit}))
+
+    def ctwa_click(self, phone_number_id, to) -> dict:
+        return self._get('/conversions/click?' + urlencode({'phone_number_id': phone_number_id, 'to': to}))
 
     # ── Uygulama rehberi (v2.23.0, contacts:read) ─────────────────────
     # Coexistence numaralarında telefondaki WhatsApp Business uygulaması rehberi; panel kişi rehberinden ayrıdır.

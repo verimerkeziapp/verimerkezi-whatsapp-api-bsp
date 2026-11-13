@@ -19,9 +19,10 @@ info:
     Since 2.28.0: at most 6 concurrent media downloads per account (first-party key all 6, other keys 2 combined);
     when full: 429 rate_limited, error.scope=concurrency, X-RateLimit-Scope: concurrency, X-Concurrency-Limit, Retry-After: 2.
 
-    API version 2.34.0 (2026-11-08) - 68 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
+    API version 2.35.0 (2026-11-13) - 71 endpoints (+ HEAD /media/{media_id}); docs, OpenAPI, SDKs and Postman share this version.
+    Since 2.35.0: CTWA Conversions API for Business Messaging - POST /conversions, GET /conversions, GET /conversions/click (scopes conversions:write / conversions:read).
     Documentation: https://api.verimerkezi.app/referans/
-  version: "2.34.0"
+  version: "2.35.0"
   contact:
     name: Veri Merkezi
     url: https://verimerkezi.app
@@ -703,6 +704,98 @@ paths:
                     properties:
                       balance: { type: integer }
                       packages: { type: array, items: { type: object } }
+
+  /conversions:
+    post:
+      summary: Report a CTWA sale/conversion to Meta
+      description: |
+        Reports a Click-to-WhatsApp sale/conversion to Meta (Conversions API for Business Messaging).
+        Provide `ctwa_clid` directly, or pass `to` (customer number) to use the latest captured ad click for that contact.
+        If `value` is sent, `currency` (ISO 4217) is required. Idempotent per `event_id` (or `order_id`); Meta does not deduplicate.
+        Requires the number's Meta access token to hold `whatsapp_business_manage_events`; otherwise 403 manage_events_permission_required.
+        Test keys (`vmk_test_`) do not reach Meta and return `simulated: true`.
+      tags: [Conversions]
+      security: [{ BearerAuth: ["conversions:write"] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number_id]
+              properties:
+                phone_number_id: { type: string }
+                event_name:
+                  type: string
+                  default: Purchase
+                  enum: [Purchase, Lead, LeadSubmitted, InitiateCheckout, AddToCart, ViewContent, Subscribe, CompleteRegistration, Contact, Schedule, StartTrial]
+                to: { type: string, example: "905551234567", description: "Customer number; used to look up ctwa_clid when it is not provided." }
+                ctwa_clid: { type: string, description: "Ad click id. If given, no lookup by `to`." }
+                value: { type: number, example: 1990 }
+                currency: { type: string, example: TRY, description: "ISO 4217 (required when value is present)." }
+                event_time: { type: integer, description: "Unix seconds; defaults to now." }
+                event_id: { type: string, description: "Deduplication id; falls back to order_id, then derived." }
+                order_id: { type: string }
+                custom_data: { type: object }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  event_id: { type: string }
+                  event_name: { type: string }
+                  dataset_id: { type: [string, "null"] }
+                  events_received: { type: integer }
+                  duplicate: { type: boolean }
+                  ctwa_clid: { type: string, description: "Partially masked echo." }
+        '403': { description: "insufficient_scope or manage_events_permission_required" }
+        '422': { description: "ctwa_clid_required / currency_required / invalid_event_name" }
+        '502': { description: "conversion_failed (Meta rejected the event)" }
+    get:
+      summary: List reported conversions
+      tags: [Conversions]
+      security: [{ BearerAuth: ["conversions:read"] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 25, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  conversions: { type: array, items: { type: object } }
+
+  /conversions/click:
+    get:
+      summary: Get the captured CTWA click for a contact
+      description: Returns the latest captured Click-to-WhatsApp ad click (full `ctwa_clid` and ad info) for a customer, within the default 7-day attribution window.
+      tags: [Conversions]
+      security: [{ BearerAuth: ["conversions:read"] }]
+      parameters:
+        - { name: phone_number_id, in: query, required: true, schema: { type: string } }
+        - { name: to, in: query, required: true, schema: { type: string, example: "905551234567" } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  found: { type: boolean }
+                  ctwa_clid: { type: [string, "null"] }
+                  source_id: { type: [string, "null"] }
+                  source_type: { type: [string, "null"] }
+                  headline: { type: [string, "null"] }
+                  received_at: { type: [string, "null"] }
 
   /numbers:
     get:

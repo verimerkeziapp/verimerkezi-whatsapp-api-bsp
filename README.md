@@ -1,7 +1,7 @@
 # Veri Merkezi — WhatsApp Business API SDK & Dokümantasyon
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![API](https://img.shields.io/badge/API-v2.34.0-emerald.svg)](https://api.verimerkezi.app)
+[![API](https://img.shields.io/badge/API-v2.35.0-emerald.svg)](https://api.verimerkezi.app)
 [![Status](https://img.shields.io/badge/Status-Production-success.svg)](https://verimerkezi.app)
 
 > Türkiye'nin **Meta onaylı WhatsApp Business Tech Provider**'ı — Veri Merkezi BSP altyapısı için resmî SDK, OpenAPI şeması ve dokümantasyon deposu.
@@ -57,7 +57,8 @@ curl -X POST https://api.verimerkezi.app/wa/messages \
 │ ├── 11-gelismis.md # Yükleme, alıntılı cevap, uzlaştırma, geçmiş, ayarlar, sağlık
 │ ├── 12-arama.md # Arama (Calling): ayarlar, gelen/giden arama, izin, geçmiş
 │ ├── 13-formlar.md # Formlar (WhatsApp Flows)
-│ └── 14-uygulama-rehberi.md # WhatsApp Business uygulaması rehberi (coexistence)
+│ ├── 14-uygulama-rehberi.md # WhatsApp Business uygulaması rehberi (coexistence)
+│ └── 15-ctwa-donusumleri.md # CTWA dönüşümleri (Conversions API)
 ├── examples/
 │ ├── php/ # Örnek kullanımlar
 │ ├── nodejs/
@@ -130,6 +131,7 @@ vm.send_text('1234567890', '905551234567', 'Merhaba!')
 | **Şablon senkronu** (Meta'dan anlık senkron) | Evet — `POST /templates/sync`, `GET /templates?refresh=1` |
 | **Etkileşimli mesajlar** (yanıt düğmeleri, liste, bağlantı düğmesi, konum isteği) | Evet — `POST /messages` `type: interactive` |
 | **WhatsApp Business uygulaması rehberi** (coexistence rehber senkronu, `contact.synced`) | Evet — `GET /app-contacts`, `GET /numbers/{id}/app-contacts/sync` |
+| **CTWA dönüşümleri** (reklamdan gelen satışı Meta'ya bildir, Conversions API for Business Messaging) | Evet — `POST` / `GET /conversions`, `GET /conversions/click` |
 | **Arama (Calling)** (gelen aramayı kabul/ret, izinli müşteriyi arama, arama izni, ayarlar, geçmiş — WebRTC) | Evet — `/numbers/{id}/calling`, `/calls`, `/calls/{call_id}/*`, `/calls/permission*` |
 | **Formlar (WhatsApp Flows)** (statik formlar: oluştur / yayınla / gönder, yanıt `flow.completed`) | Evet — `/flows`, `/flows/{flow_id}/*`, `POST /messages` `type: flow` |
 | **Idempotency-Key** (24h TTL, replay safe) | Evet — `POST /messages`, `POST /calls` |
@@ -171,6 +173,7 @@ Webhook doğrulama örneği için [docs/06-webhooks.md](docs/06-webhooks.md) bö
 | [12-arama.md](docs/12-arama.md) | WhatsApp Arama (Calling): ayarlar, gelen/giden arama, arama izni, geçmiş, ücret, gizlilik |
 | [13-formlar.md](docs/13-formlar.md) | Formlar (WhatsApp Flows): oluşturma, yayın, gönderim, `flow.completed`, hazır teklif formu örneği |
 | [14-uygulama-rehberi.md](docs/14-uygulama-rehberi.md) | WhatsApp Business uygulaması rehberi: liste, senkron durumu, `contact.synced`, ilk aktarım kuralı |
+| [15-ctwa-donusumleri.md](docs/15-ctwa-donusumleri.md) | CTWA dönüşümleri: satış bildirimi, iletilen dönüşümler, yakalanmış tıklama |
 
 ---
 
